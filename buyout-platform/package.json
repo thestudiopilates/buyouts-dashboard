@@ -9,7 +9,8 @@
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "import:monday": "node scripts/import-monday.mjs",
+    "import:monday": "node --env-file=.env.local scripts/import-monday.mjs",
+    "fetch:monday": "node --env-file=.env.local scripts/fetch-monday-export.mjs",
     "seed:demo": "node --import tsx --env-file=.env.local scripts/seed-demo.ts"
   },
   "dependencies": {

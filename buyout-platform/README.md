@@ -52,6 +52,7 @@ export PATH="$HOME/.local/bin:$PATH"
 - `npm run build`: generate Prisma client and create a production build
 - `npm run db:generate`: generate Prisma client
 - `npm run db:push`: push the Prisma schema to the configured database
+- `npm run fetch:monday`: export live Monday buyout records to `data/monday-active-buyouts.json`
 - `npm run import:monday -- ./path/to/export.json`: import a Monday JSON export into Prisma
 - `npm run seed:demo`: seed Supabase with demo buyout records for local review
 

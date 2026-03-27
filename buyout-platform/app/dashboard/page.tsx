@@ -37,12 +37,12 @@ export default async function DashboardPage() {
                   Active buyouts
                 </h2>
                 <p className="section-copy">
-                  This view is currently powered by seeded demo records stored in Supabase so the
-                  team can review a working dashboard shape before the Monday import is completed.
+                  This view is now powered by imported Monday buyout records stored in Supabase, so
+                  the team can review the real pipeline shape inside the new portal.
                 </p>
                 <p className="section-copy">
                   Monday migration planning is now tracked in the migration workspace so we can
-                  bring over active buyouts before the team cuts over.
+                  continue refining the imported data and replace remaining manual process gaps.
                 </p>
               </div>
               <BuyoutTable buyouts={buyouts} />
