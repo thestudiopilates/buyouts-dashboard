@@ -1,0 +1,41 @@
+# ══════════════════════════════════════════════════════════════════
+# MAKE.COM GRAPHQL QUERY — Scenario #4639696, Module 2
+# This is the ExecuteGraphQLQuery used by the Make.com email scenario.
+#
+# Field aliases (t1–t14, dateCol, emailCol, etc.) allow the switch()
+# module to reference template content by a clean name rather than
+# the raw column IDs.
+#
+# NOTE: This query replaced the GetItem module, which could NOT fetch
+# long_text column data at runtime (it reads board schema but returns
+# null for long_text values).
+# ══════════════════════════════════════════════════════════════════
+
+query GetBuyoutItemForEmail($itemId: [ID!]!) {
+  items(ids: $itemId) {
+    id
+    name
+
+    # ── 14 Email Template Bodies (long_text columns) ──
+    t1:  column_values(ids: ["long_text_mkzjxtpp"]) { text }   # First Inquiry Email
+    t2:  column_values(ids: ["long_text_mkzjd66k"]) { text }   # Clarify Food Beverage Policy
+    t3:  column_values(ids: ["long_text_mkzjwxsh"]) { text }   # Deposit & Date Email
+    t4:  column_values(ids: ["long_text_mkzjpmj"])  { text }   # Deposit Reminder Email
+    t5:  column_values(ids: ["long_text_mkzjfbe9"]) { text }   # Event Details & Sign Up
+    t6:  column_values(ids: ["long_text_mkzj7sj5"]) { text }   # Second Half Payment Email
+    t7:  column_values(ids: ["long_text_mkzjemea"]) { text }   # Remaining Balance Reminder
+    t8:  column_values(ids: ["long_text_mkzj2qt0"]) { text }   # Event Cancelled (No Refund)
+    t9:  column_values(ids: ["long_text_mkzj6xcc"]) { text }   # Event Cancelled (Refund)
+    t10: column_values(ids: ["long_text_mkzj45br"]) { text }   # Missing Signups Email
+    t11: column_values(ids: ["long_text_mkzj6cy5"]) { text }   # Final Confirmation Email
+    t12: column_values(ids: ["long_text_mkzjab4d"]) { text }   # Event Complete
+    t13: column_values(ids: ["long_text_mkzj14vc"]) { text }   # Ongoing Discussion (dual-purpose!)
+    t14: column_values(ids: ["long_text_mkzjw24h"]) { text }   # 48-Hour Missing Signups
+
+    # ── Metadata for email routing ──
+    dateCol:         column_values(ids: ["date_mkzjkm1t"])    { text }   # Finalized Class Date (for subject line)
+    emailCol:        column_values(ids: ["emailoeuk5uwf"])    { text }   # Client Email (To field)
+    instructorEmail: column_values(ids: ["email_mkzjh6b9"])   { text }   # Instructor Email
+    ccCol:           column_values(ids: ["text_mm1tnygh"])    { text }   # CC Emails
+  }
+}

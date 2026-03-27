@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Studio Pilates — Buyout Operations</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@0,400;0,500;0,600;0,700&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:#F4EDE7; color:#28200E; }
+  ::selection { background:#9F543F33; }
+  input,select,button,textarea { font-family:inherit; }
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#B5AA9F; border-radius:3px; }
+
+  .tab-btn { padding:10px 18px; border:none; background:transparent; cursor:pointer; font-weight:600; font-size:12px; border-bottom:2px solid transparent; color:#B5AA9F; transition:all .15s; }
+  .tab-btn.active { color:#9F543F; border-bottom-color:#9F543F; }
+  .tab-btn:hover:not(.active) { color:#28200E; }
+
+  .check-row { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; }
+  .check-row:hover { background:#F7F3EF; }
+
+  .email-row { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:10px; border:1px solid #E0D6CC; margin-bottom:8px; }
+  .email-row:hover { border-color:#9F543F44; background:#F7F3EF; }
+
+  .link-card { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; background:#F7F3EF; margin-bottom:8px; cursor:pointer; }
+  .link-card:hover { background:#EEE2D9; }
+
+  .send-btn { padding:4px 12px; border-radius:6px; border:1px solid #006976; background:transparent; color:#006976; font-size:10px; font-weight:700; cursor:pointer; }
+  .send-btn:hover { background:#006976; color:#EEE2D9; }
+  .send-btn.sent { border-color:#A1B1A4; color:#A1B1A4; cursor:default; }
+
+  .var-pill { display:inline-block; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:600; margin:1px 2px; }
+
+  /* TABLE GRID — single source of truth for column widths */
+  .grid-row {
+    display: grid;
+    grid-template-columns: 2.4fr 1.3fr 1.4fr .8fr .55fr .7fr .55fr;
+    align-items: center;
+    gap: 10px;
+    padding: 0 24px;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState, useMemo} = React;
+
+/* ── Brand ── */
+const C = {
+  coffee:"#28200E", oat:"#EEE2D9", oatLight:"#F7F3EF", seaglass:"#006976",
+  sky:"#A1B1A4", sage:"#797F5D", sunshine:"#F2A408", apricot:"#E0800E",
+  terracotta:"#9F543F", cherry:"#E8581B", white:"#FFFFFF",
+  warmGrey:"#B5AA9F", divider:"#E0D6CC", terracottaLight:"#F5EBE7",
+  bg:"#F4EDE7", card:"#FEFCFA",
+};
+const hf = "'Playfair Display',Georgia,serif";
+const bf = "'DM Sans','Segoe UI',sans-serif";
+
+/* ══════════════════════════════════════════════════════════════════
+   SYSTEM DATA — maps directly to Monday.com Board #18394979378
+   Reference: Buyout_Operations_Source_of_Truth.docx, Section 5
+   ══════════════════════════════════════════════════════════════════ */
+
+/*
+ * 16 WORKFLOW CHECKBOX COLUMNS
+ * Each maps to a Yes/No status column on the Monday board.
+ * These are the "Workflow Steps" referenced in CLAUDE.md.
+ * When "Where Are We Now" status changes, these should auto-check
+ * via planned Monday automations (see Source of Truth §6).
+ *
+ * Grouped into 6 operational phases for the Checklist tab.
+ */
+const WORKFLOW_STEPS = [
+  {key:"inquiryReviewed",     label:"Inquiry Reviewed",        group:"Intake"},     // Monday Yes/No col
+  {key:"initialResponseSent", label:"Initial Response Sent",   group:"Intake"},     // triggers t1 email
+  {key:"followUpSent",        label:"Follow-Up Sent",          group:"Intake"},     // triggers t2 if food/bev
+  {key:"feasibilityConfirmed",label:"Feasibility Confirmed",   group:"Planning"},   // date/location locked
+  {key:"quoteSent",           label:"Quote Sent",              group:"Planning"},   // triggers t3 email
+  {key:"depositRequested",    label:"Deposit Requested",       group:"Payment"},    // deposit link sent
+  {key:"depositReceived",     label:"Deposit Received",        group:"Payment"},    // payment confirmed
+  {key:"eventDetailsConfirmed",label:"Event Details Confirmed",group:"Logistics"},  // instructor + time locked
+  {key:"signUpLinkCreated",   label:"Sign-Up Link Created",    group:"Logistics"},  // Momence class created
+  {key:"signUpLinkSent",      label:"Sign-Up Link Sent",       group:"Logistics"},  // triggers t5 email
+  {key:"signUpsMonitored",    label:"Sign-Ups Monitored",      group:"Logistics"},  // ongoing check
+  {key:"finalPaymentReceived",label:"Final Payment Received",  group:"Payment"},    // remaining balance = $0
+  {key:"finalConfirmationSent",label:"Final Confirmation Sent",group:"Pre-Event"},  // triggers t11 email
+  {key:"dayOfPrepComplete",   label:"Day-Of Prep Complete",    group:"Pre-Event"},  // instructor briefed
+  {key:"eventDelivered",      label:"Event Delivered",         group:"Execution"},  // event happened
+  {key:"postEventFollowUp",   label:"Post-Event Follow-Up",   group:"Execution"},  // triggers t12 email
+];
+const GROUPS = ["Intake","Planning","Payment","Logistics","Pre-Event","Execution"];
+const groupColors = {Intake:C.seaglass,Planning:C.sage,Payment:C.terracotta,Logistics:C.sky,"Pre-Event":C.sunshine,Execution:C.apricot};
+
+/*
+ * 14 EMAIL TEMPLATES — Make.com Scenario #4639696
+ * Reference: Buyout_Operations_Source_of_Truth.docx, Section 3
+ *
+ * FLOW: "Send" button → sets board column color_mkzjmcth to trigger label
+ *       → Monday webhook (hookId: 2663435) fires
+ *       → Make.com ExecuteGraphQLQuery fetches item via aliases (t1–t14)
+ *       → switch() maps trigger label to template long_text column
+ *       → Gmail sends from events@thestudiopilates.com (conn: 4719260)
+ *       → Subject: "The Studio Pilates Buyout: [Name] | [Date]"
+ *       → Gmail messageId stored back to board (text_mm1ttgb7 + text_mm1t1dgy)
+ *
+ * id:       GraphQL alias used in Make.com query
+ * trigger:  Label value set on color_mkzjmcth to fire this template
+ * column:   long_text column ID storing the template body on each board item
+ * requiredVars: Board columns that must be populated before sending
+ *               (no validation in Make.com yet — planned, see Source of Truth §8)
+ */
+const EMAIL_TEMPLATES = [
+  {id:"t1", label:"First Inquiry Email",      trigger:"First Inquiry Email Sent",     col:"long_text_mkzjxtpp", requiredVars:["Client First Name","Preferred Date","Preferred Location"]},
+  {id:"t2", label:"Food & Beverage Policy",   trigger:"Clarify Food Beverage Policy", col:"long_text_mkzjd66k", requiredVars:["Client First Name"]},
+  {id:"t3", label:"Deposit & Date",           trigger:"Deposit & Date Email",         col:"long_text_mkzjwxsh", requiredVars:["Client First Name","Event Date","Location","Total Price","Deposit Amount","Deposit Link"]},
+  {id:"t4", label:"Deposit Reminder",         trigger:"Deposit Reminder Email",       col:"long_text_mkzjpmj",  requiredVars:["Client First Name","Deposit Amount","Deposit Link"]},
+  {id:"t5", label:"Event Details & Sign Up",  trigger:"Event Details & Sign Up",      col:"long_text_mkzjfbe9", requiredVars:["Client First Name","Event Date","Start Time","End Time","Location","Instructor","Signup Link"]},
+  {id:"t6", label:"Second Half Payment",      trigger:"Second Half Payment Email",    col:"long_text_mkzj7sj5", requiredVars:["Client First Name","Remaining Balance","Remaining Balance Link"]},
+  {id:"t7", label:"Balance Reminder",         trigger:"Remaining Balance Reminder",   col:"long_text_mkzjemea", requiredVars:["Client First Name","Remaining Balance","Remaining Balance Link"]},
+  {id:"t8", label:"Cancelled (No Refund)",    trigger:"Event Cancelled (No Refund)",  col:"long_text_mkzj2qt0", requiredVars:["Client First Name"]},
+  {id:"t9", label:"Cancelled (Refund)",       trigger:"Event Cancelled (Refund)",     col:"long_text_mkzj6xcc", requiredVars:["Client First Name","Deposit Amount"]},
+  {id:"t10",label:"Missing Signups",          trigger:"Missing Signups Email",        col:"long_text_mkzj45br", requiredVars:["Client First Name","Event Date","Signup Link"]},
+  {id:"t11",label:"Final Confirmation",       trigger:"Final Confirmation Email",     col:"long_text_mkzj6cy5", requiredVars:["Client First Name","Event Date","Start Time","End Time","Location","Instructor"]},
+  {id:"t12",label:"Event Complete",           trigger:"Event Complete",               col:"long_text_mkzjab4d", requiredVars:["Client First Name"]},
+  {id:"t13",label:"Ongoing Discussion",       trigger:"Ongoing Discussion Email",     col:"long_text_mkzj14vc", requiredVars:["Client First Name"]},      // NOTE: dual-purpose column — also used as conversation log. Split planned.
+  {id:"t14",label:"48-Hour Missing Signups",  trigger:"48-Hour Missing Signups",      col:"long_text_mkzjw24h", requiredVars:["Client First Name","Event Date","Signup Link"]},
+];
+
+/*
+ * LIFECYCLE PROGRESS BAR
+ * Maps "Where Are We Now" status column index values to a 12-step visual bar.
+ * Reference: Buyout_Operations_Source_of_Truth.docx, Section 2
+ *
+ * Board column: "Where Are We Now" (status column, 23 labels + 19 legacy)
+ * New lifecycle indices (105–157) map to these display steps:
+ *   106 = New Inquiry Received     → step 0 (Inquiry)
+ *   107 = Initial Response Sent    → step 1 (Respond)
+ *   108 = Follow Up Sent           → step 2 (Discuss)
+ *   109 = Feasibility Confirmed    → step 3 (Feasible)
+ *   110 = Quote Sent               → step 4 (Quote)
+ *   151 = Deposit Received         → step 5 (Deposit)
+ *   152 = Payment Complete         → step 6 (Paid)
+ *   153 = Awaiting Guest Sign-Ups  → step 7 (Sign-Ups)
+ *   154 = Sign-Ups Complete        → step 8 (Confirmed)
+ *   155 = Final Confirmation Sent  → step 9 (Final)
+ *   156 = Ready for Event          → step 10 (Ready)
+ *   15  = Event Complete (legacy)  → step 11 (Complete)
+ */
+const STEPS = ["Inquiry","Respond","Discuss","Feasible","Quote","Deposit","Paid","Sign-Ups","Confirmed","Final","Ready","Complete"];
+const stepMap = {106:0,107:1,108:2,109:3,110:4,151:5,152:6,153:7,154:8,155:9,156:10,15:11};
+const getStep = si => stepMap[si] ?? -1;
+
+/*
+ * ══════════════════════════════════════════════════════════════════
+ * DATA MODEL → BOARD COLUMN MAP
+ * Reference: Buyout_Operations_Source_of_Truth.docx, Section 5
+ * Board: Group Buyouts #18394979378
+ *
+ * Field             → Board Column ID              → Column Title
+ * ──────────────────────────────────────────────────────────────────
+ * name              → item name (first word)        → Your Name
+ * eventDate         → date_mkzjkm1t                 → Finalized Class Date
+ * location          → dropdown_mkzjkhds              → Final Location
+ * instructor        → text_mkzg27y9                  → Instructor Claimed
+ * assignedTo        → (new column needed)            → Front Desk Assigned *
+ * status            → "Where Are We Now" status col  → Where Are We Now
+ * si                → status index value             → (index of above)
+ * bic               → Ball In Court status col       → Ball In Court
+ * dueNext           → "What's Due Next" status col   → What's Due Next
+ * total             → numeric_mkzj1sfj               → Total Price
+ * paid              → numeric_mm1v48qj               → Amount Paid
+ * deposit           → numeric_mm1v472d               → Deposit Amount
+ * remaining         → formula_mm1v17wd               → Remaining Balance
+ * cap               → (from Momence / manual)        → Class Capacity
+ * signups           → (from Momence / manual)        → Current Signups
+ * track             → "How's it Tracking?" status    → How's it Tracking?
+ * startTime         → hour_mm0rahy6                  → Start Time
+ * endTime           → hour_mm0rrxfq                  → End Time
+ * hours             → formula_mm1v4p39               → Number of Hours
+ * clientEmail       → emailoeuk5uwf                  → Your Email
+ * ccEmails          → text_mm1tnygh                  → CC Emails
+ * depositLink       → link_mkzjmvqw                  → Buyout Deposit Link
+ * balanceLink       → link_mkzjsm8r                  → Remaining Balance Payment Link
+ * signupLink        → link_mkzg7k99                  → Live Class Link
+ * emailsSent        → (derived from trigger history)  → Send Email Trigger (color_mkzjmcth)
+ * templateVars      → (aggregated from all columns)   → used by emailVariableReplacer.js
+ * workflow          → 16 Yes/No status columns        → Workflow Steps
+ * notes             → (internal, not on board yet)    → planned: PM Notes column
+ *
+ * * assignedTo: New column recommendation — not yet on the board.
+ *   Currently instructor doubles as the point person, but a dedicated
+ *   "Front Desk / PM" person column is needed for proper routing.
+ * ══════════════════════════════════════════════════════════════════
+ */
+const BUYOUTS = [
+  {id:1,name:"Sarah Chen",eventType:"Birthday",eventDate:"2026-04-15",location:"1583 Decatur",instructor:"Autumn",assignedTo:"Autumn",status:"Awaiting Sign-Ups",si:153,bic:"Client",dueNext:"Check on Fill",total:1200,paid:600,deposit:300,remaining:600,cap:20,signups:12,dw:3,track:"So far so good",lastAction:"2026-03-24",startTime:"2:00 PM",endTime:"3:30 PM",hours:1.5,
+    clientEmail:"sarah@example.com",ccEmails:"",phone:"(404) 555-0112",
+    depositLink:"https://pay.tsp.com/dep-sc",balanceLink:"https://pay.tsp.com/bal-sc",signupLink:"https://momence.com/tsp/sc",
+    emailsSent:["t1","t2","t3","t5"],
+    templateVars:{clientFirstName:"Sarah",preferredDate:"Apr 12",preferredLocation:"Decatur",eventDate:"April 15, 2026",startTime:"2:00 PM",endTime:"3:30 PM",location:"1583 Decatur",instructor:"Autumn",totalPrice:"$1,200",depositAmount:"$300",depositLink:"Y",signupLink:"Y",remainingBalance:"$600",remainingBalanceLink:"Y",amountPaid:"$600",numberOfHours:"1.5"},
+    workflow:{inquiryReviewed:true,initialResponseSent:true,followUpSent:true,feasibilityConfirmed:true,quoteSent:true,depositRequested:true,depositReceived:true,eventDetailsConfirmed:true,signUpLinkCreated:true,signUpLinkSent:true,signUpsMonitored:false,finalPaymentReceived:false,finalConfirmationSent:false,dayOfPrepComplete:false,eventDelivered:false,postEventFollowUp:false},
+    notes:"Client wants champagne — sent food/bev policy. 12/20 signed up."},
+  {id:2,name:"Mike Torres",eventType:"Corporate",eventDate:"2026-04-08",location:"763 Trabert",instructor:"TBD",assignedTo:"Kelly",status:"Deposit Received",si:151,bic:"TSP Team",dueNext:"Secure Instructor",total:2400,paid:1200,deposit:1200,remaining:1200,cap:30,signups:0,dw:5,track:"Running behind",lastAction:"2026-03-22",startTime:"10:00 AM",endTime:"12:00 PM",hours:2,
+    clientEmail:"mike.t@corp.com",ccEmails:"admin@corp.com",phone:"(404) 555-0234",
+    depositLink:"https://pay.tsp.com/dep-mt",balanceLink:"https://pay.tsp.com/bal-mt",signupLink:"",
+    emailsSent:["t1","t3"],
+    templateVars:{clientFirstName:"Mike",preferredDate:"Apr 5-10",preferredLocation:"Trabert",eventDate:"April 8, 2026",startTime:"10:00 AM",endTime:"12:00 PM",location:"763 Trabert",instructor:"",totalPrice:"$2,400",depositAmount:"$1,200",depositLink:"Y",signupLink:"",remainingBalance:"$1,200",remainingBalanceLink:"Y",amountPaid:"$1,200",numberOfHours:"2"},
+    workflow:{inquiryReviewed:true,initialResponseSent:true,followUpSent:true,feasibilityConfirmed:true,quoteSent:true,depositRequested:true,depositReceived:true,eventDetailsConfirmed:false,signUpLinkCreated:false,signUpLinkSent:false,signUpsMonitored:false,finalPaymentReceived:false,finalConfirmationSent:false,dayOfPrepComplete:false,eventDelivered:false,postEventFollowUp:false},
+    notes:"Corporate group of 30. No instructor yet — 12 days out. ASAP."},
+  {id:3,name:"Jenna Woodall",eventType:"Bachelorette",eventDate:"2026-04-02",location:"1581 Decatur",instructor:"Morgan",assignedTo:"Autumn",status:"Final Confirmation",si:155,bic:"Client",dueNext:"7-Day Check",total:900,paid:900,deposit:450,remaining:0,cap:15,signups:15,dw:1,track:"So far so good",lastAction:"2026-03-26",startTime:"6:00 PM",endTime:"7:30 PM",hours:1.5,
+    clientEmail:"jenna.w@gmail.com",ccEmails:"",phone:"(770) 555-0389",
+    depositLink:"",balanceLink:"",signupLink:"https://momence.com/tsp/jw",
+    emailsSent:["t1","t3","t5","t6","t11"],
+    templateVars:{clientFirstName:"Jenna",preferredDate:"Apr 1-3",preferredLocation:"Decatur",eventDate:"April 2, 2026",startTime:"6:00 PM",endTime:"7:30 PM",location:"1581 Decatur",instructor:"Morgan",totalPrice:"$900",depositAmount:"$450",depositLink:"Y",signupLink:"Y",remainingBalance:"$0",remainingBalanceLink:"Y",amountPaid:"$900",numberOfHours:"1.5"},
+    workflow:{inquiryReviewed:true,initialResponseSent:true,followUpSent:true,feasibilityConfirmed:true,quoteSent:true,depositRequested:true,depositReceived:true,eventDetailsConfirmed:true,signUpLinkCreated:true,signUpLinkSent:true,signUpsMonitored:true,finalPaymentReceived:true,finalConfirmationSent:true,dayOfPrepComplete:false,eventDelivered:false,postEventFollowUp:false},
+    notes:"Fully paid & signed up. Bachelorette for friend Kim. Morgan confirmed."},
+  {id:4,name:"David Park",eventType:"Birthday",eventDate:"2026-03-31",location:"1583 Decatur",instructor:"Autumn",assignedTo:"Kelly",status:"Ready for Event",si:156,bic:"TSP Team",dueNext:"Final Emails",total:750,paid:750,deposit:375,remaining:0,cap:12,signups:12,dw:0,track:"So far so good",lastAction:"2026-03-27",startTime:"4:00 PM",endTime:"5:00 PM",hours:1,
+    clientEmail:"dpark@gmail.com",ccEmails:"",phone:"(404) 555-0456",
+    depositLink:"",balanceLink:"",signupLink:"https://momence.com/tsp/dp",
+    emailsSent:["t1","t3","t5","t6","t11"],
+    templateVars:{clientFirstName:"David",preferredDate:"Mar 29-31",preferredLocation:"Decatur",eventDate:"March 31, 2026",startTime:"4:00 PM",endTime:"5:00 PM",location:"1583 Decatur",instructor:"Autumn",totalPrice:"$750",depositAmount:"$375",depositLink:"Y",signupLink:"Y",remainingBalance:"$0",remainingBalanceLink:"Y",amountPaid:"$750",numberOfHours:"1"},
+    workflow:{inquiryReviewed:true,initialResponseSent:true,followUpSent:true,feasibilityConfirmed:true,quoteSent:true,depositRequested:true,depositReceived:true,eventDetailsConfirmed:true,signUpLinkCreated:true,signUpLinkSent:true,signUpsMonitored:true,finalPaymentReceived:true,finalConfirmationSent:true,dayOfPrepComplete:true,eventDelivered:false,postEventFollowUp:false},
+    notes:"Everything locked. 4 days out. Prep complete."},
+  {id:5,name:"Lisa Hernandez",eventType:"Girls Night",eventDate:"2026-04-22",location:"763 Trabert",instructor:"TBD",assignedTo:"Autumn",status:"Response Sent",si:107,bic:"Client",dueNext:"Waiting on Client",total:0,paid:0,deposit:0,remaining:0,cap:0,signups:0,dw:8,track:"Running behind",lastAction:"2026-03-19",startTime:null,endTime:null,hours:0,
+    clientEmail:"lisah@yahoo.com",ccEmails:"",phone:"(678) 555-0567",
+    depositLink:"",balanceLink:"",signupLink:"",
+    emailsSent:["t1"],
+    templateVars:{clientFirstName:"Lisa",preferredDate:"Apr 20-25",preferredLocation:"Trabert",eventDate:"",startTime:"",endTime:"",location:"",instructor:"",totalPrice:"",depositAmount:"",depositLink:"",signupLink:"",remainingBalance:"",remainingBalanceLink:"",amountPaid:"",numberOfHours:""},
+    workflow:{inquiryReviewed:true,initialResponseSent:true,followUpSent:false,feasibilityConfirmed:false,quoteSent:false,depositRequested:false,depositReceived:false,eventDetailsConfirmed:false,signUpLinkCreated:false,signUpLinkSent:false,signUpsMonitored:false,finalPaymentReceived:false,finalConfirmationSent:false,dayOfPrepComplete:false,eventDelivered:false,postEventFollowUp:false},
+    notes:"8 days since inquiry. No reply. Needs follow-up."},
+  {id:6,name:"Corp Wellness Inc",eventType:"Corporate",eventDate:"2026-04-05",location:"1583 Decatur",instructor:"Morgan",assignedTo:"Kelly",status:"Awaiting Sign-Ups",si:153,bic:"Client",dueNext:"Check on Fill",total:3600,paid:3600,deposit:1800,remaining:0,cap:40,signups:28,dw:2,track:"Major issue",lastAction:"2026-03-25",startTime:"9:00 AM",endTime:"11:00 AM",hours:2,
+    clientEmail:"events@corpwellness.com",ccEmails:"hr@corpwellness.com",phone:"(404) 555-0678",
+    depositLink:"",balanceLink:"",signupLink:"https://momence.com/tsp/cw",
+    emailsSent:["t1","t3","t5","t10"],
+    templateVars:{clientFirstName:"Corporate Wellness",preferredDate:"Apr 3-7",preferredLocation:"Decatur",eventDate:"April 5, 2026",startTime:"9:00 AM",endTime:"11:00 AM",location:"1583 Decatur",instructor:"Morgan",totalPrice:"$3,600",depositAmount:"$1,800",depositLink:"Y",signupLink:"Y",remainingBalance:"$0",remainingBalanceLink:"Y",amountPaid:"$3,600",numberOfHours:"2"},
+    workflow:{inquiryReviewed:true,initialResponseSent:true,followUpSent:true,feasibilityConfirmed:true,quoteSent:true,depositRequested:true,depositReceived:true,eventDetailsConfirmed:true,signUpLinkCreated:true,signUpLinkSent:true,signUpsMonitored:false,finalPaymentReceived:true,finalConfirmationSent:false,dayOfPrepComplete:false,eventDelivered:false,postEventFollowUp:false},
+    notes:"FLAGGED: 28/40 signups, 9 days out. Sent Missing Signups email."},
+  {id:7,name:"Amy Richardson",eventType:"Birthday",eventDate:null,location:"TBD",instructor:"TBD",assignedTo:"Unassigned",status:"New Inquiry",si:106,bic:"TSP Team",dueNext:"Review Inquiry",total:0,paid:0,deposit:0,remaining:0,cap:0,signups:0,dw:0,track:"So far so good",lastAction:null,startTime:null,endTime:null,hours:0,
+    clientEmail:"amy.r@outlook.com",ccEmails:"",phone:"(770) 555-0789",
+    depositLink:"",balanceLink:"",signupLink:"",
+    emailsSent:[],
+    templateVars:{clientFirstName:"Amy",preferredDate:"",preferredLocation:"",eventDate:"",startTime:"",endTime:"",location:"",instructor:"",totalPrice:"",depositAmount:"",depositLink:"",signupLink:"",remainingBalance:"",remainingBalanceLink:"",amountPaid:"",numberOfHours:""},
+    workflow:{inquiryReviewed:false,initialResponseSent:false,followUpSent:false,feasibilityConfirmed:false,quoteSent:false,depositRequested:false,depositReceived:false,eventDetailsConfirmed:false,signUpLinkCreated:false,signUpLinkSent:false,signUpsMonitored:false,finalPaymentReceived:false,finalConfirmationSent:false,dayOfPrepComplete:false,eventDelivered:false,postEventFollowUp:false},
+    notes:""},
+  {id:8,name:"Rachel Kim",eventType:"Bachelorette",eventDate:"2026-03-15",location:"1581 Decatur",instructor:"Autumn",assignedTo:"Autumn",status:"Event Complete",si:15,bic:"TSP Team",dueNext:"Done",total:1050,paid:1050,deposit:525,remaining:0,cap:18,signups:18,dw:0,track:"Complete",lastAction:"2026-03-16",startTime:"5:00 PM",endTime:"6:30 PM",hours:1.5,
+    clientEmail:"rachelk@gmail.com",ccEmails:"",phone:"(404) 555-0890",
+    depositLink:"",balanceLink:"",signupLink:"https://momence.com/tsp/rk",
+    emailsSent:["t1","t3","t5","t6","t11","t12"],
+    templateVars:{clientFirstName:"Rachel",preferredDate:"Mar 14-16",preferredLocation:"Decatur",eventDate:"March 15, 2026",startTime:"5:00 PM",endTime:"6:30 PM",location:"1581 Decatur",instructor:"Autumn",totalPrice:"$1,050",depositAmount:"$525",depositLink:"Y",signupLink:"Y",remainingBalance:"$0",remainingBalanceLink:"Y",amountPaid:"$1,050",numberOfHours:"1.5"},
+    workflow:{inquiryReviewed:true,initialResponseSent:true,followUpSent:true,feasibilityConfirmed:true,quoteSent:true,depositRequested:true,depositReceived:true,eventDetailsConfirmed:true,signUpLinkCreated:true,signUpLinkSent:true,signUpsMonitored:true,finalPaymentReceived:true,finalConfirmationSent:true,dayOfPrepComplete:true,eventDelivered:true,postEventFollowUp:true},
+    notes:"Completed. Rachel loved it — wants to book again for mom."},
+];
+
+/* ══════════════════════════════════════════════════════════════════
+ * HELPER FUNCTIONS
+ * Color logic, formatting, and variable readiness checks.
+ * These encode the operational rules that drive the dashboard's
+ * visual urgency system — green/yellow/red at a glance.
+ * ══════════════════════════════════════════════════════════════════ */
+
+/* Date formatters — eventDate sourced from date_mkzjkm1t (Finalized Class Date) */
+const fmt = d => d ? new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}) : "\u2014";
+const fmtFull = d => d ? new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"}) : "TBD";
+
+/* Money formatter — used for numeric_mkzj1sfj (Total), numeric_mm1v48qj (Paid),
+ * numeric_mm1v472d (Deposit), formula_mm1v17wd (Remaining Balance) */
+const money = n => typeof n==="number" && n > 0 ? `$${n.toLocaleString()}` : (n===0 ? "$0" : "\u2014");
+
+/* Days until event — calculates from today vs date_mkzjkm1t.
+ * In production, replace hardcoded "2026-03-27" with new Date() */
+const daysTo = d => { if(!d) return null; return Math.ceil((new Date(d)-new Date("2026-03-27"))/(864e5)); };
+
+/* BALL IN COURT color — maps "Ball In Court" status column on board
+ * Values: "TSP Team" (seaglass/green), "Client" (terracotta/red), "Both" (sage)
+ * Used in: Row waiting-on badge, DetailPanel header pills */
+const bicColor = b => b==="TSP Team"?C.seaglass : b==="Client"?C.terracotta : C.sage;
+
+/* TRACKING HEALTH color — maps "How's it Tracking?" status column
+ * Board column: color_mkzjdr77 (known bug: "v" instead of "No" for negative label)
+ * Values: "So far so good" (idx 0), "Running behind" (idx 1), "Major issue" (idx 2), "Complete" (idx 5)
+ * NOTE: Default currently set to idx 5 ("Complete") for new items — should be idx 0. See CLAUDE.md. */
+const trackColor = t => t==="So far so good"?C.seaglass : t==="Running behind"?C.sunshine : t==="Major issue"?C.cherry : t==="Complete"?C.sky : C.warmGrey;
+
+const pCalc = (a,b) => b > 0 ? Math.round(a/b*100) : 0;
+
+/* COUNTDOWN URGENCY — circle badge color logic
+ * Derived from daysTo(date_mkzjkm1t). Drives the countdown column in the table.
+ * Thresholds: 14+ days = seaglass (all good), 7-13 = sunshine (heads up),
+ *             4-6 = terracotta (getting close), 0-3 = cherry + glow (urgent).
+ * null/past = greyed out. Glow shadow at <=3 days for visual alarm. */
+const countdownColor = days => {
+  if(days === null) return {bg:C.warmGrey+"22", fg:C.warmGrey};
+  if(days < 0) return {bg:C.warmGrey+"22", fg:C.warmGrey};
+  if(days <= 3) return {bg:C.cherry, fg:C.white};
+  if(days <= 6) return {bg:C.terracotta, fg:C.white};
+  if(days <= 13) return {bg:C.sunshine, fg:C.coffee};
+  return {bg:C.seaglass, fg:C.white};
+};
+
+/* STATUS TEXT color — used on the status badge in each Row.
+ * Reads from "How's it Tracking?" to color-code the "Where Are We Now" label.
+ * This cross-references two board columns for visual clarity. */
+const statusColor = track => {
+  if(track === "So far so good") return C.seaglass;
+  if(track === "Running behind") return C.apricot;
+  if(track === "Major issue") return C.cherry;
+  if(track === "Complete") return C.sky;
+  return C.coffee;
+};
+
+/* DUE-NEXT URGENCY — colors the "Next Action" text in each Row.
+ * dw = days waiting (how long since the last action was taken).
+ * >5 days = cherry (overdue), 3-5 = apricot (watch), <3 = seaglass (fresh).
+ * In production: derive from lastAction date vs today, not static dw field. */
+const dueColor = dw => {
+  if(dw > 5) return C.cherry;
+  if(dw > 2) return C.apricot;
+  return C.seaglass;
+};
+
+/* WORKFLOW PROGRESS — counts checked items across 16 Yes/No status columns.
+ * Each key in the workflow object maps to a Monday Yes/No column (see WORKFLOW_STEPS).
+ * wfPct drives the "Progress" column bar in the table and the Checklist tab header. */
+const wfDone = wf => Object.values(wf).filter(Boolean).length;
+const wfTotal = wf => Object.values(wf).length;
+const wfPct = wf => Math.round(wfDone(wf)/wfTotal(wf)*100);
+
+/* EVENT TYPE badge — cosmetic only, not tied to a board column.
+ * Could be derived from a future "Event Type" dropdown column. */
+const typeStyle = t => {
+  if(t==="Birthday") return {bg:C.sunshine+"1A", fg:C.sunshine};
+  if(t==="Corporate") return {bg:C.seaglass+"1A", fg:C.seaglass};
+  if(t==="Bachelorette") return {bg:C.terracotta+"1A", fg:C.terracotta};
+  return {bg:C.sage+"1A", fg:C.sage};
+};
+
+/* TEMPLATE VARIABLE READINESS — used in Emails tab.
+ * Checks whether all required board columns are populated for a given template.
+ * This is the pre-send validation that Make.com currently LACKS (see CLAUDE.md §Issues).
+ *
+ * km maps human-readable variable names → templateVars keys → board column IDs:
+ *   "Client First Name" → clientFirstName → item name (first word parsed)
+ *   "Event Date"        → eventDate       → date_mkzjkm1t
+ *   "Location"          → location        → dropdown_mkzjkhds
+ *   "Instructor"        → instructor      → text_mkzg27y9
+ *   "Total Price"       → totalPrice      → numeric_mkzj1sfj
+ *   "Deposit Amount"    → depositAmount   → numeric_mm1v472d
+ *   "Deposit Link"      → depositLink     → link_mkzjmvqw
+ *   "Signup Link"       → signupLink      → link_mkzg7k99
+ *   "Remaining Balance" → remainingBalance → formula_mm1v17wd
+ *   "Remaining Balance Link" → remainingBalanceLink → link_mkzjsm8r
+ *   "Amount Paid"       → amountPaid      → numeric_mm1v48qj
+ *   "Number of Hours"   → numberOfHours   → formula_mm1v4p39
+ *   "Start Time"        → startTime       → hour_mm0rahy6
+ *   "End Time"          → endTime         → hour_mm0rrxfq
+ *
+ * Returns: { filled, total, ready } — ready=true means all vars populated, safe to send.
+ * In production: should abort Make.com send if ready=false (planned validation). */
+const varReady = (tmpl, tv) => {
+  const km = {"Client First Name":"clientFirstName","Preferred Date":"preferredDate","Preferred Location":"preferredLocation","Event Date":"eventDate","Start Time":"startTime","End Time":"endTime","Location":"location","Instructor":"instructor","Total Price":"totalPrice","Deposit Amount":"depositAmount","Deposit Link":"depositLink","Signup Link":"signupLink","Remaining Balance":"remainingBalance","Remaining Balance Link":"remainingBalanceLink","Amount Paid":"amountPaid","Number of Hours":"numberOfHours"};
+  let filled = 0;
+  tmpl.requiredVars.forEach(v => { if(km[v] && tv[km[v]]) filled++; });
+  return { filled, total:tmpl.requiredVars.length, ready:filled===tmpl.requiredVars.length };
+};
+
+/* ══════════════════════════════════════════════════════════════════
+ * SHARED UI COMPONENTS
+ * Reusable pieces: progress bar, lifecycle strip, KPI card.
+ * ══════════════════════════════════════════════════════════════════ */
+
+/* Bar — horizontal progress indicator. Used for:
+ *   - Sign-up fill (signups vs cap from Momence / manual)
+ *   - Workflow checklist % (16 Yes/No columns)
+ *   - Payment progress (numeric_mm1v48qj / numeric_mkzj1sfj)
+ *   - Email send progress (emailsSent.length / 14) */
+const Bar = ({val, color, h}) => (
+  <div style={{width:"100%",height:h||4,borderRadius:99,background:C.divider,overflow:"hidden"}}>
+    <div style={{width:`${Math.min(val,100)}%`,height:"100%",borderRadius:99,background:color||C.terracotta,transition:"width .3s"}} />
+  </div>
+);
+
+/* Lifecycle — 12-segment progress strip.
+ * Maps "Where Are We Now" status index → visual step (see stepMap above).
+ * Segments: past=seaglass, current=terracotta, future=divider.
+ * Shown in Row (below status badge) and DetailPanel (status strip). */
+const Lifecycle = ({step}) => (
+  <div style={{display:"flex",gap:2,marginTop:4}}>
+    {STEPS.map((_,i) => (
+      <div key={i} title={STEPS[i]} style={{height:3,flex:1,borderRadius:2,background:i < step ? C.seaglass : i===step ? C.terracotta : C.divider}} />
+    ))}
+  </div>
+);
+
+/* KPI — top-of-dashboard summary cards.
+ * Aggregated from BUYOUTS array; in production, from board API query.
+ * accent bar = top 3px color strip for at-a-glance priority. */
+const KPI = ({label,value,sub,accent}) => (
+  <div style={{background:C.card,borderRadius:16,padding:"20px 22px",flex:1,minWidth:135,position:"relative",overflow:"hidden",border:`1px solid ${C.divider}55`}}>
+    <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:accent}} />
+    <div style={{fontSize:10,color:C.warmGrey,fontWeight:700,textTransform:"uppercase",letterSpacing:1.2}}>{label}</div>
+    <div style={{fontSize:28,fontWeight:700,fontFamily:hf,color:C.coffee,marginTop:6,lineHeight:1}}>{value}</div>
+    {sub && <div style={{fontSize:11,color:C.warmGrey,marginTop:8}}>{sub}</div>}
+  </div>
+);
+
+/* ══════════════════════════════════════════════════════════════════
+ * TABLE ROW — one row per buyout item
+ * 7-column CSS Grid (.grid-row): Client | Status | Next Action | Waiting On | Countdown | Sign-Ups | Progress
+ *
+ * BOARD COLUMN MAP per cell:
+ *   Client      → item name + assignedTo (new col needed) + Ball In Court status
+ *   Status      → "Where Are We Now" status col (si index → Lifecycle step)
+ *                  colored by "How's it Tracking?" (color_mkzjdr77)
+ *   Next Action → "What's Due Next" status col + days waiting (derived from lastAction)
+ *   Waiting On  → "Ball In Court" status col (TSP Team / Client / Both)
+ *   Countdown   → days until date_mkzjkm1t, color-coded by urgency thresholds
+ *   Sign-Ups    → Momence data: current signups / class capacity (manual or API)
+ *   Progress    → 16 workflow Yes/No columns → percentage complete
+ * ══════════════════════════════════════════════════════════════════ */
+const Row = ({b, selected, onSelect}) => {
+  const days = daysTo(b.eventDate);
+  const wp = wfPct(b.workflow);
+  const fill = b.cap > 0 ? pCalc(b.signups, b.cap) : -1;
+  const ts = typeStyle(b.eventType);
+  const cd = countdownColor(days);
+  const sc = statusColor(b.track);
+  const dc = dueColor(b.dw);
+
+  return (
+    <div className="grid-row" onClick={() => onSelect(b)}
+      style={{padding:"14px 24px",cursor:"pointer",background:selected?C.terracottaLight:C.card,borderBottom:`1px solid ${C.divider}44`,transition:"background .1s"}}
+      onMouseEnter={e => {if(!selected) e.currentTarget.style.background = C.oatLight;}}
+      onMouseLeave={e => {if(!selected) e.currentTarget.style.background = C.card;}}>
+
+      {/* CLIENT */}
+      <div style={{display:"flex",alignItems:"center",gap:12,minWidth:0}}>
+        <div style={{width:40,height:40,borderRadius:10,background:bicColor(b.bic)+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <span style={{fontFamily:hf,fontSize:16,fontWeight:700,color:bicColor(b.bic)}}>{b.name[0]}</span>
+        </div>
+        <div style={{minWidth:0}}>
+          <div style={{fontFamily:hf,fontWeight:700,fontSize:14,color:C.coffee,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{b.name}</div>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
+            <span style={{padding:"2px 7px",borderRadius:5,fontSize:10,fontWeight:600,background:ts.bg,color:ts.fg,whiteSpace:"nowrap"}}>{b.eventType}</span>
+            <span style={{fontSize:10,color:C.warmGrey,whiteSpace:"nowrap"}}>{b.assignedTo}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* STATUS — color matches tracking health */}
+      <div style={{minWidth:0}}>
+        <div style={{padding:"4px 10px",borderRadius:6,background:sc+"14",display:"inline-block",maxWidth:"100%"}}>
+          <span style={{fontSize:11,fontWeight:600,color:sc,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",display:"block"}}>{b.status}</span>
+        </div>
+        <Lifecycle step={getStep(b.si)} />
+      </div>
+
+      {/* NEXT ACTION — green if fresh, yellow if waiting, red if overdue */}
+      <div style={{minWidth:0}}>
+        <div style={{fontSize:12,fontWeight:600,color:dc,lineHeight:1.35}}>{b.dueNext}</div>
+        {b.dw > 0 && (
+          <span style={{display:"inline-block",marginTop:3,padding:"1px 6px",borderRadius:4,fontSize:9,fontWeight:700,background:dc+"14",color:dc}}>
+            {b.dw}d waiting
+          </span>
+        )}
+      </div>
+
+      {/* WAITING ON */}
+      <div>
+        <span style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:8,background:bicColor(b.bic)+"14",fontSize:11,fontWeight:600,color:bicColor(b.bic),whiteSpace:"nowrap"}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:bicColor(b.bic),flexShrink:0}} />
+          {b.bic === "TSP Team" ? "Us" : b.bic}
+        </span>
+      </div>
+
+      {/* COUNTDOWN — circle badge, green→yellow→terracotta→red */}
+      <div style={{display:"flex",justifyContent:"center",alignItems:"center"}}>
+        {days === null ? (
+          <div style={{width:36,height:36,borderRadius:"50%",background:C.warmGrey+"22",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>
+            <span style={{fontSize:10,fontWeight:700,color:C.warmGrey,lineHeight:1,display:"block",marginTop:0}}>TBD</span>
+          </div>
+        ) : days < 0 ? (
+          <div style={{width:36,height:36,borderRadius:"50%",background:C.warmGrey+"22",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>
+            <span style={{fontSize:10,fontWeight:700,color:C.warmGrey,lineHeight:1,display:"block"}}>Past</span>
+          </div>
+        ) : (
+          <div style={{width:36,height:36,borderRadius:"50%",background:cd.bg,display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,boxShadow:days<=3?`0 0 10px ${C.cherry}40`:"none"}}>
+            <span style={{fontFamily:hf,fontSize:days===0?14:16,fontWeight:700,color:cd.fg,lineHeight:1,display:"block",paddingTop:1}}>{days === 0 ? "!" : days}</span>
+          </div>
+        )}
+      </div>
+
+      {/* SIGN-UPS — green=full, yellow=getting there, red=low */}
+      <div>
+        {fill >= 0 ? (
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:fill>=100?C.seaglass:fill<50?C.cherry:C.coffee,marginBottom:3}}>{b.signups}<span style={{fontWeight:400,color:C.warmGrey,fontSize:10}}>/{b.cap}</span></div>
+            <Bar val={fill} color={fill>=100?C.seaglass:fill>=70?C.sage:fill>=50?C.sunshine:C.cherry} h={4} />
+          </div>
+        ) : <span style={{fontSize:11,color:C.warmGrey}}>&mdash;</span>}
+      </div>
+
+      {/* CHECKLIST PROGRESS — green=done, graduated otherwise */}
+      <div style={{textAlign:"center"}}>
+        <div style={{fontSize:13,fontWeight:700,color:wp>=100?C.seaglass:wp>=50?C.coffee:C.warmGrey,marginBottom:3}}>{wp}<span style={{fontSize:9,fontWeight:500}}>%</span></div>
+        <Bar val={wp} color={wp>=100?C.seaglass:wp>=50?C.sage:C.warmGrey} h={4} />
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════════════
+ * DETAIL PANEL — slide-out sidebar for a single buyout item
+ * Opens on Row click. 4 tabs: Overview, Checklist, Emails, Financials.
+ *
+ * HEADER: item name, eventType, location (dropdown_mkzjkhds),
+ *         assignedTo, clientEmail (emailoeuk5uwf),
+ *         Ball In Court pill, How's it Tracking pill
+ *
+ * STATUS STRIP: "Where Are We Now" label + Lifecycle bar + "What's Due Next"
+ *
+ * TAB: OVERVIEW
+ *   - Quick stats: days out (date_mkzjkm1t), days waiting, checklist count
+ *   - Event Details grid: date, time (hour_mm0rahy6/hour_mm0rrxfq),
+ *     location (dropdown_mkzjkhds), duration (formula_mm1v4p39),
+ *     instructor (text_mkzg27y9), front desk (assignedTo — new col needed)
+ *   - Attendance: signups/cap from Momence or manual entry
+ *   - Contact: emailoeuk5uwf + phone + text_mm1tnygh (CC Emails)
+ *   - Notes: internal PM notes (planned board column)
+ *
+ * TAB: CHECKLIST
+ *   - 16 workflow steps grouped into 6 phases (see WORKFLOW_STEPS)
+ *   - Each checkbox = one Yes/No status column on the board
+ *   - Progress bar + count + percentage
+ *   - In production: checking a box → updates board column via API
+ *     → planned Monday automation auto-checks based on "Where Are We Now"
+ *
+ * TAB: EMAILS
+ *   - All 14 templates with sent/unsent status
+ *   - Variable readiness indicator (red pills = missing board data)
+ *   - "Send" button → sets color_mkzjmcth trigger label
+ *     → Make.com Scenario #4639696 fires (see EMAIL_TEMPLATES comments)
+ *   - Email flow explainer at bottom
+ *   - NOTE: t13 dual-purpose issue — column is both log and template
+ *
+ * TAB: FINANCIALS
+ *   - 4-card grid: Total (numeric_mkzj1sfj), Deposit (numeric_mm1v472d),
+ *     Paid (numeric_mm1v48qj), Remaining (formula_mm1v17wd)
+ *   - Payment progress bar
+ *   - Links: deposit (link_mkzjmvqw), balance (link_mkzjsm8r),
+ *     signup (link_mkzg7k99)
+ *   - Duration from formula_mm1v4p39
+ *
+ * FOOTER: Send Email, Edit Details, Notes action buttons
+ * ══════════════════════════════════════════════════════════════════ */
+const DetailPanel = ({b, onClose}) => {
+  const [tab, setTab] = useState("overview");
+  if(!b) return null;
+  const days = daysTo(b.eventDate);
+  const wp = wfPct(b.workflow);
+  const fill = b.cap > 0 ? pCalc(b.signups, b.cap) : -1;
+  const paidP = b.total > 0 ? pCalc(b.paid, b.total) : -1;
+
+  return (
+    <div style={{position:"fixed",top:0,right:0,width:460,height:"100vh",background:C.card,boxShadow:"-8px 0 32px rgba(40,32,14,.1)",zIndex:100,display:"flex",flexDirection:"column"}}>
+
+      {/* Header */}
+      <div style={{background:`linear-gradient(135deg, ${C.terracotta}, ${C.coffee})`,padding:"22px 24px",flexShrink:0}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"start"}}>
+          <div>
+            <div style={{fontFamily:hf,fontSize:22,fontWeight:700,color:C.oat}}>{b.name}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:5}}>
+              <span style={{padding:"2px 8px",borderRadius:6,fontSize:10,fontWeight:600,background:"rgba(255,255,255,.15)",color:C.oat}}>{b.eventType}</span>
+              <span style={{fontSize:11,color:C.oat+"bb"}}>{b.location}</span>
+            </div>
+            <div style={{fontSize:11,color:C.oat+"88",marginTop:4}}>Assigned: {b.assignedTo} &middot; {b.clientEmail}</div>
+          </div>
+          <button onClick={onClose} style={{background:"rgba(255,255,255,.12)",border:"none",color:C.oat,width:28,height:28,borderRadius:8,cursor:"pointer",fontSize:16,lineHeight:"28px"}}>&times;</button>
+        </div>
+        <div style={{display:"flex",gap:6,marginTop:12}}>
+          {[[b.bic,bicColor(b.bic)],[b.track,trackColor(b.track)]].map(([t,c],i) => (
+            <span key={i} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 10px",borderRadius:8,background:"rgba(255,255,255,.15)",fontSize:11,fontWeight:600,color:C.oat}}>
+              <span style={{width:6,height:6,borderRadius:"50%",background:c}} />{t}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Status Strip */}
+      <div style={{padding:"12px 24px",background:C.oat,borderBottom:`1px solid ${C.divider}`,flexShrink:0}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+          <div>
+            <div style={{fontSize:9,color:C.warmGrey,textTransform:"uppercase",letterSpacing:1}}>Status</div>
+            <div style={{fontFamily:hf,fontSize:15,fontWeight:700,color:C.terracotta}}>{b.status}</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:9,color:C.warmGrey,textTransform:"uppercase",letterSpacing:1}}>Next Action</div>
+            <div style={{fontSize:12,fontWeight:700,color:C.seaglass}}>{b.dueNext}</div>
+          </div>
+        </div>
+        <Lifecycle step={getStep(b.si)} />
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",borderBottom:`1px solid ${C.divider}`,padding:"0 24px",background:C.card,flexShrink:0}}>
+        {[["overview","Overview"],["checklist","Checklist"],["emails","Emails"],["financials","Financials"]].map(([k,l]) => (
+          <button key={k} className={`tab-btn ${tab===k?"active":""}`} onClick={() => setTab(k)}>{l}</button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div style={{flex:1,overflowY:"auto",padding:"18px 24px"}}>
+
+        {/* OVERVIEW */}
+        {tab === "overview" && (
+          <div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:18}}>
+              {[
+                [days!==null&&days>=0?days:(days!==null?"Past":"TBD"),"Days Out",days!==null&&days<=7&&days>=0],
+                [b.dw>0?b.dw:"0","Waiting",b.dw>5],
+                [wfDone(b.workflow)+"/"+wfTotal(b.workflow),"Checklist",false],
+              ].map(([v,l,warn],i) => (
+                <div key={i} style={{background:warn?C.cherry+"0C":C.oatLight,borderRadius:10,padding:"12px",textAlign:"center",border:`1px solid ${warn?C.cherry+"22":"transparent"}`}}>
+                  <div style={{fontFamily:hf,fontSize:22,fontWeight:700,color:warn?C.cherry:C.coffee}}>{v}</div>
+                  <div style={{fontSize:9,color:C.warmGrey,textTransform:"uppercase",letterSpacing:.8,marginTop:2}}>{l}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{fontSize:10,color:C.terracotta,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Event Details</div>
+            <div style={{background:C.oatLight,borderRadius:12,marginBottom:18,overflow:"hidden"}}>
+              {[["Date",b.eventDate?fmtFull(b.eventDate):"TBD"],["Time",b.startTime?`${b.startTime} \u2013 ${b.endTime}`:"TBD"],["Location",b.location],["Duration",b.hours?`${b.hours} hr${b.hours!==1?"s":""}`:"TBD"],["Instructor",b.instructor],["Front Desk",b.assignedTo]].map(([l,v],i,a) => (
+                <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"9px 16px",borderBottom:i<a.length-1?`1px solid ${C.divider}44`:"none"}}>
+                  <span style={{fontSize:11,color:C.warmGrey}}>{l}</span>
+                  <span style={{fontSize:11,fontWeight:600,color:v==="TBD"||v==="Unassigned"?C.cherry:C.coffee}}>{v}</span>
+                </div>
+              ))}
+            </div>
+
+            {fill >= 0 && (
+              <div style={{marginBottom:18}}>
+                <div style={{fontSize:10,color:C.terracotta,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Attendance</div>
+                <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:5}}>
+                  <span style={{fontFamily:hf,fontSize:24,fontWeight:700,color:C.coffee}}>{b.signups}</span>
+                  <span style={{fontSize:12,color:C.warmGrey}}>/ {b.cap} ({fill}%)</span>
+                </div>
+                <Bar val={fill} color={fill>=100?C.seaglass:fill>=70?C.sage:C.sunshine} h={6} />
+                {fill < 100 && <div style={{fontSize:10,color:C.warmGrey,marginTop:3}}>{b.cap - b.signups} spots remaining</div>}
+              </div>
+            )}
+
+            <div style={{fontSize:10,color:C.terracotta,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Contact</div>
+            <div style={{background:C.oatLight,borderRadius:10,padding:"12px 16px",marginBottom:18}}>
+              <div style={{fontSize:12,fontWeight:600,color:C.coffee}}>{b.clientEmail}</div>
+              {b.phone && <div style={{fontSize:11,color:C.warmGrey,marginTop:2}}>{b.phone}</div>}
+              {b.ccEmails && <div style={{fontSize:11,color:C.warmGrey,marginTop:2}}>CC: {b.ccEmails}</div>}
+            </div>
+
+            <div style={{fontSize:10,color:C.terracotta,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Notes</div>
+            <div style={{background:C.oatLight,borderRadius:10,padding:"12px 16px",fontSize:12,color:C.coffee,lineHeight:1.6,minHeight:50,fontStyle:b.notes?"normal":"italic"}}>
+              {b.notes || "No notes yet"}
+            </div>
+          </div>
+        )}
+
+        {/* CHECKLIST */}
+        {tab === "checklist" && (
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"baseline",gap:6}}>
+                <span style={{fontFamily:hf,fontSize:22,fontWeight:700,color:C.coffee}}>{wfDone(b.workflow)}</span>
+                <span style={{fontSize:12,color:C.warmGrey}}>of {wfTotal(b.workflow)} complete</span>
+              </div>
+              <span style={{padding:"4px 12px",borderRadius:8,background:wp>=100?C.seaglass+"14":C.terracotta+"14",fontSize:12,fontWeight:700,color:wp>=100?C.seaglass:C.terracotta}}>{wp}%</span>
+            </div>
+            <Bar val={wp} color={wp>=100?C.seaglass:wp>=50?C.sage:C.warmGrey} h={5} />
+            <div style={{marginTop:18}}>
+              {GROUPS.map(g => {
+                const items = WORKFLOW_STEPS.filter(s => s.group === g);
+                const done = items.filter(s => b.workflow[s.key]).length;
+                return (
+                  <div key={g} style={{marginBottom:16}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <div style={{width:3,height:16,borderRadius:2,background:groupColors[g]}} />
+                        <span style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.8}}>{g}</span>
+                      </div>
+                      <span style={{fontSize:10,fontWeight:600,color:done===items.length?C.seaglass:C.warmGrey}}>{done}/{items.length}</span>
+                    </div>
+                    {items.map(s => (
+                      <div key={s.key} className="check-row">
+                        <div style={{width:18,height:18,borderRadius:5,border:`2px solid ${b.workflow[s.key]?C.seaglass:C.divider}`,background:b.workflow[s.key]?C.seaglass:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                          {b.workflow[s.key] && <span style={{color:C.white,fontSize:11,fontWeight:700}}>{"\u2713"}</span>}
+                        </div>
+                        <span style={{fontSize:12,color:b.workflow[s.key]?C.coffee:C.warmGrey}}>{s.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* EMAILS */}
+        {tab === "emails" && (
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"baseline",gap:6}}>
+                <span style={{fontFamily:hf,fontSize:22,fontWeight:700,color:C.coffee}}>{b.emailsSent.length}</span>
+                <span style={{fontSize:12,color:C.warmGrey}}>of {EMAIL_TEMPLATES.length} sent</span>
+              </div>
+            </div>
+            <Bar val={pCalc(b.emailsSent.length, EMAIL_TEMPLATES.length)} color={C.seaglass} h={4} />
+            <div style={{marginTop:16}}>
+              {EMAIL_TEMPLATES.map(tmpl => {
+                const sent = b.emailsSent.includes(tmpl.id);
+                const vr = varReady(tmpl, b.templateVars);
+                return (
+                  <div key={tmpl.id} className="email-row" style={{borderColor:sent?C.seaglass+"33":!vr.ready?C.cherry+"22":C.divider}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{width:8,height:8,borderRadius:"50%",background:sent?C.seaglass:C.divider,flexShrink:0}} />
+                        <span style={{fontSize:12,fontWeight:600}}>{tmpl.label}</span>
+                      </div>
+                      <div style={{marginTop:4,marginLeft:16}}>
+                        {sent ? <span style={{fontSize:10,color:C.seaglass,fontWeight:600}}>Sent</span> :
+                         !vr.ready ? (
+                          <div>
+                            <span style={{fontSize:10,color:C.cherry,fontWeight:600}}>Missing {vr.total-vr.filled} var{vr.total-vr.filled>1?"s":""}: </span>
+                            {tmpl.requiredVars.map(v => {
+                              const km = {"Client First Name":"clientFirstName","Preferred Date":"preferredDate","Preferred Location":"preferredLocation","Event Date":"eventDate","Start Time":"startTime","End Time":"endTime","Location":"location","Instructor":"instructor","Total Price":"totalPrice","Deposit Amount":"depositAmount","Deposit Link":"depositLink","Signup Link":"signupLink","Remaining Balance":"remainingBalance","Remaining Balance Link":"remainingBalanceLink","Amount Paid":"amountPaid","Number of Hours":"numberOfHours"};
+                              if(km[v] && b.templateVars[km[v]]) return null;
+                              return <span key={v} className="var-pill" style={{background:C.cherry+"14",color:C.cherry}}>{`{{${v}}}`}</span>;
+                            })}
+                          </div>
+                        ) : <span style={{fontSize:10,color:C.sage}}>Ready &middot; {vr.total} vars filled</span>}
+                      </div>
+                    </div>
+                    <button className={`send-btn ${sent?"sent":""}`} disabled={sent}>{sent ? "Sent" : "Send"}</button>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{background:C.oat,borderRadius:10,padding:"12px 16px",marginTop:14}}>
+              <div style={{fontSize:10,color:C.warmGrey,textTransform:"uppercase",letterSpacing:.8,marginBottom:4}}>Email Flow</div>
+              <div style={{fontSize:11,color:C.coffee,lineHeight:1.5}}>
+                "Send" sets trigger on Monday &rarr; Make.com fires &rarr; vars replaced &rarr; sent via events@thestudiopilates.com &rarr; auto-threaded.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FINANCIALS */}
+        {tab === "financials" && (
+          <div>
+            {b.total > 0 ? (
+              <div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18}}>
+                  {[["Total",money(b.total),C.coffee],["Deposit",money(b.deposit),C.sage],["Paid",money(b.paid),C.seaglass],["Remaining",money(b.remaining),b.remaining>0?C.cherry:C.seaglass]].map(([l,v,c],i) => (
+                    <div key={i} style={{background:C.oatLight,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
+                      <div style={{fontSize:10,color:C.warmGrey,textTransform:"uppercase",letterSpacing:.8}}>{l}</div>
+                      <div style={{fontFamily:hf,fontSize:22,fontWeight:700,color:c,marginTop:4}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{marginBottom:18}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span style={{fontSize:11,color:C.warmGrey}}>Payment Progress</span>
+                    <span style={{fontSize:11,fontWeight:700,color:paidP>=100?C.seaglass:C.terracotta}}>{paidP}%</span>
+                  </div>
+                  <Bar val={paidP} color={paidP>=100?C.seaglass:C.terracotta} h={6} />
+                </div>
+                <div style={{fontSize:10,color:C.terracotta,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Links</div>
+                {[["Deposit Link",b.depositLink,"Payment page"],["Balance Link",b.balanceLink,"Remaining balance"],["Sign-Up Link",b.signupLink,"Momence booking"]].map(([label,url,desc],i) => (
+                  <div key={i} className="link-card">
+                    <div style={{width:28,height:28,borderRadius:8,background:url?C.seaglass+"18":C.divider,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <span style={{fontSize:12}}>{url ? "\uD83D\uDD17" : "\u2014"}</span>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:12,fontWeight:600}}>{label}</div>
+                      <div style={{fontSize:10,color:C.warmGrey}}>{url ? desc : "Not created"}</div>
+                    </div>
+                    {url && <span style={{fontSize:10,color:C.seaglass,fontWeight:600}}>Copy</span>}
+                  </div>
+                ))}
+                {b.hours > 0 && (
+                  <div style={{background:C.oatLight,borderRadius:10,padding:"10px 14px",marginTop:10,display:"flex",justifyContent:"space-between"}}>
+                    <span style={{fontSize:11,color:C.warmGrey}}>Duration</span>
+                    <span style={{fontFamily:hf,fontSize:16,fontWeight:700}}>{b.hours} hr{b.hours!==1?"s":""}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{textAlign:"center",padding:40}}>
+                <div style={{fontFamily:hf,fontSize:18,color:C.warmGrey}}>No Financial Data</div>
+                <div style={{fontSize:12,color:C.warmGrey,marginTop:6}}>Quote not set yet.</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{padding:"14px 24px",borderTop:`1px solid ${C.divider}`,background:C.card,flexShrink:0,display:"flex",gap:10}}>
+        <button style={{flex:1,padding:11,borderRadius:10,border:"none",background:C.seaglass,color:C.oat,fontWeight:700,fontSize:12,cursor:"pointer"}}>Send Email</button>
+        <button style={{flex:1,padding:11,borderRadius:10,border:`2px solid ${C.terracotta}`,background:"transparent",color:C.terracotta,fontWeight:700,fontSize:12,cursor:"pointer"}}>Edit Details</button>
+        <button style={{padding:"11px 14px",borderRadius:10,border:`1px solid ${C.divider}`,background:C.card,color:C.warmGrey,fontWeight:600,fontSize:12,cursor:"pointer"}}>Notes</button>
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════════════
+ * APP — Main dashboard container
+ *
+ * STATE:
+ *   sel      → currently selected buyout (drives DetailPanel)
+ *   fBIC     → Ball In Court filter ("All" | "TSP Team" | "Client")
+ *   fLoc     → Location filter → board: dropdown_mkzjkhds values
+ *   fStaff   → Staff filter → board: assignedTo (new column needed)
+ *   search   → text filter on item name
+ *   sort     → sort key: eventDate, daysWaiting, status, checklist, name
+ *   showDone → toggle to include terminal-state items
+ *
+ * TERMINAL STATES — "Where Are We Now" status indices that mean "done":
+ *   15  = Event Complete (legacy)
+ *   105 = (reserved)
+ *   157 = Cancelled
+ *   17  = Event Cancelled (No Refund) (legacy)
+ *   18  = Event Cancelled (Refund) (legacy)
+ *   Hidden by default; toggle "Completed" checkbox to show.
+ *
+ * KPI CARDS (top of dashboard):
+ *   Active Buyouts  → count of non-terminal items, split by Ball In Court
+ *   This Week       → items with date_mkzjkm1t within 7 days
+ *   Needs Attention → items where dw>5 OR track="Running behind"/"Major issue"
+ *   Pipeline        → sum of numeric_mkzj1sfj for all active items
+ *   Outstanding     → Pipeline minus sum of numeric_mm1v48qj
+ *
+ * FILTERS: Ball In Court, Location (3 studios), Staff, Search, Sort, Show Completed
+ * In production: filter values populated dynamically from board column options.
+ * ══════════════════════════════════════════════════════════════════ */
+function App() {
+  const [sel, setSel] = useState(null);
+  const [fBIC, setFBIC] = useState("All");
+  const [fLoc, setFLoc] = useState("All");
+  const [fStaff, setFStaff] = useState("All");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("eventDate");
+  const [showDone, setShowDone] = useState(false);
+
+  /* FILTER + SORT LOGIC
+   * terminal array = status indices for completed/cancelled items.
+   * Sort options map to board data:
+   *   eventDate    → date_mkzjkm1t (soonest first, TBD items last)
+   *   daysWaiting  → derived from lastAction date (most stale first)
+   *   status       → "Where Are We Now" step index (earliest lifecycle first)
+   *   checklist    → 16 workflow columns % (most complete first)
+   *   name         → item name alphabetical */
+  const visible = useMemo(() => {
+    const terminal = [15,105,157,17,18];
+    return BUYOUTS.filter(b => {
+      if(!showDone && terminal.includes(b.si)) return false;
+      if(fBIC !== "All" && b.bic !== fBIC) return false;
+      if(fLoc !== "All" && b.location !== fLoc) return false;
+      if(fStaff !== "All" && b.assignedTo !== fStaff) return false;
+      if(search && !b.name.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    }).sort((a,b) => {
+      if(sort === "eventDate") { if(!a.eventDate) return 1; if(!b.eventDate) return -1; return new Date(a.eventDate) - new Date(b.eventDate); }
+      if(sort === "daysWaiting") return b.dw - a.dw;
+      if(sort === "status") return getStep(a.si) - getStep(b.si);
+      if(sort === "checklist") return wfPct(b.workflow) - wfPct(a.workflow);
+      if(sort === "name") return a.name.localeCompare(b.name);
+      return 0;
+    });
+  }, [fBIC,fLoc,fStaff,search,sort,showDone]);
+
+  const active = BUYOUTS.filter(b => ![15,105,157,17,18].includes(b.si));
+  const totalRev = active.reduce((s,b) => s + b.total, 0);
+  const collected = active.reduce((s,b) => s + b.paid, 0);
+  const attention = active.filter(b => b.dw > 5 || b.track === "Running behind" || b.track === "Major issue").length;
+  const thisWeek = active.filter(b => { const d = daysTo(b.eventDate); return d !== null && d >= 0 && d <= 7; }).length;
+
+  return (
+    <div style={{background:C.bg,minHeight:"100vh"}}>
+      {/* Nav */}
+      <div style={{background:C.coffee,padding:"0 32px",height:56,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <div style={{width:34,height:34,borderRadius:10,background:C.seaglass,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:hf,fontSize:20,fontWeight:700,color:C.oat}}>S</div>
+          <div>
+            <span style={{fontFamily:hf,fontSize:16,fontWeight:700,color:C.oat}}>The Studio Pilates</span>
+            <span style={{fontSize:11,color:C.sky,marginLeft:10,fontWeight:500}}>Buyout Operations</span>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <button style={{padding:"8px 18px",borderRadius:8,border:"none",background:C.terracotta,color:C.oat,fontWeight:700,fontSize:12,cursor:"pointer"}}>+ New Buyout</button>
+          <div style={{width:34,height:34,borderRadius:10,background:C.terracotta,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:hf,fontWeight:700,fontSize:14,color:C.oat}}>KJ</div>
+        </div>
+      </div>
+
+      <div style={{padding:"24px 32px",maxWidth:1440,margin:"0 auto"}}>
+        {/* KPIs */}
+        <div style={{display:"flex",gap:14,marginBottom:24}}>
+          <KPI label="Active Buyouts" value={active.length} sub={`${active.filter(b=>b.bic==="TSP Team").length} on you \u00B7 ${active.filter(b=>b.bic==="Client").length} on client`} accent={C.seaglass} />
+          <KPI label="This Week" value={thisWeek} sub="events in next 7 days" accent={thisWeek > 0 ? C.sunshine : C.seaglass} />
+          <KPI label="Needs Attention" value={attention} sub="overdue or flagged" accent={attention > 0 ? C.cherry : C.seaglass} />
+          <KPI label="Pipeline" value={money(totalRev)} sub={`${money(collected)} collected`} accent={C.terracotta} />
+          <KPI label="Outstanding" value={money(totalRev - collected)} sub="remaining balance" accent={totalRev - collected > 0 ? C.apricot : C.seaglass} />
+        </div>
+
+        {/* Filters */}
+        <div style={{display:"flex",gap:8,marginBottom:16,alignItems:"center",flexWrap:"wrap"}}>
+          <input type="text" placeholder="Search clients..." value={search} onChange={e => setSearch(e.target.value)}
+            style={{padding:"8px 14px",borderRadius:10,border:`1px solid ${C.divider}`,fontSize:12,width:180,outline:"none",background:C.card,color:C.coffee}} />
+          {["All","TSP Team","Client"].map(opt => (
+            <button key={opt} onClick={() => setFBIC(opt)}
+              style={{padding:"6px 14px",borderRadius:20,border:fBIC===opt?"none":`1px solid ${C.divider}`,fontSize:11,fontWeight:700,cursor:"pointer",background:fBIC===opt?(opt==="All"?C.coffee:bicColor(opt)):C.card,color:fBIC===opt?C.oat:C.coffee}}>
+              {opt === "TSP Team" ? "Us" : opt}
+            </button>
+          ))}
+          <div style={{width:1,height:20,background:C.divider}} />
+          <select value={fLoc} onChange={e => setFLoc(e.target.value)} style={{padding:"6px 12px",borderRadius:10,border:`1px solid ${C.divider}`,fontSize:11,background:C.card,cursor:"pointer"}}>
+            <option value="All">All Locations</option>
+            <option value="1583 Decatur">1583 Decatur</option>
+            <option value="1581 Decatur">1581 Decatur</option>
+            <option value="763 Trabert">763 Trabert</option>
+          </select>
+          <select value={fStaff} onChange={e => setFStaff(e.target.value)} style={{padding:"6px 12px",borderRadius:10,border:`1px solid ${C.divider}`,fontSize:11,background:C.card,cursor:"pointer"}}>
+            <option value="All">All Staff</option>
+            <option value="Kelly">Kelly</option>
+            <option value="Autumn">Autumn</option>
+            <option value="Unassigned">Unassigned</option>
+          </select>
+          <select value={sort} onChange={e => setSort(e.target.value)} style={{padding:"6px 12px",borderRadius:10,border:`1px solid ${C.divider}`,fontSize:11,background:C.card,cursor:"pointer"}}>
+            <option value="eventDate">Event Date</option>
+            <option value="daysWaiting">Days Waiting</option>
+            <option value="status">Lifecycle</option>
+            <option value="checklist">Checklist %</option>
+            <option value="name">Name</option>
+          </select>
+          <label style={{fontSize:11,display:"flex",alignItems:"center",gap:5,color:C.warmGrey,cursor:"pointer",marginLeft:4}}>
+            <input type="checkbox" checked={showDone} onChange={e => setShowDone(e.target.checked)} style={{accentColor:C.seaglass}} /> Completed
+          </label>
+        </div>
+
+        {/* Table */}
+        <div style={{background:C.card,borderRadius:16,overflow:"hidden",border:`1px solid ${C.divider}55`,boxShadow:"0 1px 8px rgba(40,32,14,.04)"}}>
+          {/* Header */}
+          <div className="grid-row" style={{padding:"12px 24px",background:C.oat,borderBottom:`1px solid ${C.divider}`}}>
+            {["Client","Status","Next Action","Waiting On","Countdown","Sign-Ups","Progress"].map((h,i) => (
+              <div key={i} style={{fontSize:10,fontWeight:700,color:C.terracotta,textTransform:"uppercase",letterSpacing:1.2,textAlign:[4,5,6].includes(i)?"center":"left"}}>{h}</div>
+            ))}
+          </div>
+          {/* Rows */}
+          {visible.length === 0 ? (
+            <div style={{padding:60,textAlign:"center",color:C.warmGrey,fontSize:14}}>No buyouts match your filters.</div>
+          ) : visible.map(b => <Row key={b.id} b={b} selected={sel?.id===b.id} onSelect={setSel} />)}
+        </div>
+
+        <div style={{marginTop:14,fontSize:11,color:C.warmGrey,textAlign:"center"}}>
+          {visible.length} of {BUYOUTS.length} buyouts &middot; The Studio Pilates
+        </div>
+      </div>
+
+      {sel && (
+        <React.Fragment>
+          <div onClick={() => setSel(null)} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(40,32,14,.3)",zIndex:99}} />
+          <DetailPanel b={sel} onClose={() => setSel(null)} />
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>

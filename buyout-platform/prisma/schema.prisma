@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InquiryStatus {
+  NEW
+  REVIEWED
+  CONVERTED
+  CLOSED
+}
+
+enum BuyoutStage {
+  INQUIRY
+  RESPOND
+  DISCUSS
+  FEASIBLE
+  QUOTE
+  DEPOSIT
+  PAID
+  SIGNUPS
+  CONFIRMED
+  FINAL
+  READY
+  COMPLETE
+  CANCELLED
+}
+
+enum TrackingHealth {
+  ON_TRACK
+  AT_RISK
+  MAJOR_ISSUE
+  COMPLETE
+}
+
+enum BallInCourt {
+  TEAM
+  CLIENT
+  BOTH
+}
+
+enum WorkflowGroup {
+  INTAKE
+  PLANNING
+  PAYMENT
+  LOGISTICS
+  PRE_EVENT
+  EXECUTION
+}
+
+enum EmailStatus {
+  DRAFT
+  SENT
+  FAILED
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  SKIPPED
+}
+
+model StaffUser {
+  id              String       @id @default(cuid())
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  name            String
+  email           String       @unique
+  role            String
+  team            String?
+  assignedBuyouts Buyout[]
+  tasks           BuyoutTask[] @relation("TaskOwner")
+}
+
+model Location {
+  id       String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name     String
+  address  String?
+  timezone String   @default("America/New_York")
+  buyouts  Buyout[]
+}
+
+model BuyoutInquiry {
+  id                 String        @id @default(cuid())
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  legacyMondayItemId String?       @unique
+  source             String        @default("website")
+  clientName         String
+  clientEmail        String
+  clientPhone        String?
+  companyName        String?
+  eventType          String?
+  preferredDates     String?
+  preferredLocation  String?
+  guestCountEstimate Int?
+  notes              String?
+  status             InquiryStatus @default(NEW)
+  buyout             Buyout?
+}
+
+model Buyout {
+  id                String               @id @default(cuid())
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  legacyMondayItemId String?             @unique
+  displayName       String
+  inquiryId         String?              @unique
+  lifecycleStage    BuyoutStage          @default(INQUIRY)
+  trackingHealth    TrackingHealth       @default(ON_TRACK)
+  ballInCourt       BallInCourt          @default(TEAM)
+  nextAction        String?
+  notesInternal     String?
+  eventDate         DateTime?
+  startTime         String?
+  endTime           String?
+  instructorName    String?
+  capacity          Int?
+  signupCount       Int                  @default(0)
+  lastActionAt      DateTime?
+  assignedManagerId String?
+  locationId        String?
+  inquiry           BuyoutInquiry?       @relation(fields: [inquiryId], references: [id])
+  assignedManager   StaffUser?           @relation(fields: [assignedManagerId], references: [id])
+  location          Location?            @relation(fields: [locationId], references: [id])
+  contacts          BuyoutContact[]
+  financial         BuyoutFinancial?
+  workflowSteps     BuyoutWorkflowStep[]
+  emails            BuyoutEmail[]
+  tasks             BuyoutTask[]
+}
+
+model BuyoutContact {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  buyoutId  String
+  name      String
+  email     String?
+  phone     String?
+  role      String?
+  isPrimary Boolean  @default(false)
+  buyout    Buyout   @relation(fields: [buyoutId], references: [id], onDelete: Cascade)
+}
+
+model BuyoutFinancial {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  buyoutId          String   @unique
+  quotedTotal       Int?
+  depositAmount     Int?
+  amountPaid        Int      @default(0)
+  remainingBalance  Int?
+  depositDueAt      DateTime?
+  finalPaymentDueAt DateTime?
+  depositLink       String?
+  balanceLink       String?
+  buyout            Buyout   @relation(fields: [buyoutId], references: [id], onDelete: Cascade)
+}
+
+model BuyoutWorkflowStep {
+  id          String        @id @default(cuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  buyoutId    String
+  stepKey     String
+  stepGroup   WorkflowGroup
+  label       String
+  isComplete  Boolean       @default(false)
+  completedAt DateTime?
+  completedBy String?
+  buyout      Buyout        @relation(fields: [buyoutId], references: [id], onDelete: Cascade)
+}
+
+model BuyoutEmail {
+  id               String      @id @default(cuid())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  buyoutId         String
+  templateKey      String
+  subject          String
+  bodyHtml         String?
+  bodyText         String?
+  sentAt           DateTime?
+  sentBy           String?
+  providerMessageId String?
+  providerThreadId String?
+  status           EmailStatus @default(DRAFT)
+  buyout           Buyout      @relation(fields: [buyoutId], references: [id], onDelete: Cascade)
+}
+
+model BuyoutTask {
+  id         String     @id @default(cuid())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  buyoutId   String
+  title      String
+  dueAt      DateTime?
+  ownerId    String?
+  status     TaskStatus @default(OPEN)
+  taskType   String?
+  buyout     Buyout     @relation(fields: [buyoutId], references: [id], onDelete: Cascade)
+  owner      StaffUser? @relation("TaskOwner", fields: [ownerId], references: [id])
+}
