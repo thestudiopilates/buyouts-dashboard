@@ -9,13 +9,68 @@ const TEST_EMAIL = "kelly@thestudiopilates.com";
 const TEST_ITEM_ID = "10989594648";
 const TEST_NAMES = new Set(["Kelly Jackson Test Event", "TEST — Email Threading Test"]);
 const TEST_SIGNUP_LINK = "https://momence.com/l/4ZhnW48O";
-const TEST_SOURCE_STATUS_LABEL = "Still Discussing Dates / Times";
 const TEST_SENT_TEMPLATES = ["t5"];
 
-function reconcileKellyStatus(workflow: WorkflowStep[], countdown: number | null) {
+const TRACKING_SOURCE_LABEL_MAP: Record<string, BuyoutSummary["trackingHealth"]> = {
+  "So far so good": "On track",
+  "Running behind": "At risk",
+  "Major issue": "Major issue",
+  Complete: "Complete"
+};
+
+const BALL_SOURCE_LABEL_MAP: Record<string, BuyoutSummary["ballInCourt"]> = {
+  "TSP Team": "Team",
+  Client: "Client",
+  Both: "Both"
+};
+
+function getSignupLinkFromSnapshot(sourceSnapshot: unknown) {
+  if (
+    !sourceSnapshot ||
+    typeof sourceSnapshot !== "object" ||
+    !("values" in sourceSnapshot) ||
+    !sourceSnapshot.values ||
+    typeof sourceSnapshot.values !== "object" ||
+    !("signupLink" in sourceSnapshot.values)
+  ) {
+    return undefined;
+  }
+
+  return typeof sourceSnapshot.values.signupLink === "string"
+    ? sourceSnapshot.values.signupLink
+    : undefined;
+}
+
+function stageRank(stage: BuyoutSummary["lifecycleStage"]) {
+  return STAGE_ORDER.indexOf(stage);
+}
+
+function reconcileOperationalState({
+  workflow,
+  countdown,
+  sourceLifecycleStage,
+  sourceTrackingHealth,
+  sourceBallInCourt,
+  sourceStatusLabel,
+  sourceNextAction,
+  amountPaid
+}: {
+  workflow: WorkflowStep[];
+  countdown: number | null;
+  sourceLifecycleStage: BuyoutSummary["lifecycleStage"];
+  sourceTrackingHealth: BuyoutSummary["trackingHealth"];
+  sourceBallInCourt: BuyoutSummary["ballInCourt"];
+  sourceStatusLabel: string;
+  sourceNextAction: string;
+  amountPaid: number;
+}) {
   const completed = new Set(workflow.filter((step) => step.complete).map((step) => step.key));
 
-  if (countdown !== null && countdown < 0) {
+  if (
+    countdown !== null &&
+    countdown < 0 &&
+    !["Complete", "Cancelled"].includes(sourceLifecycleStage)
+  ) {
     return {
       statusLabel: "Source Cleanup Required",
       lifecycleStage: "Ready" as const,
@@ -25,17 +80,27 @@ function reconcileKellyStatus(workflow: WorkflowStep[], countdown: number | null
     };
   }
 
-  if (completed.has("momence-link-sign-up-sent")) {
+  if (completed.has("remaining-payment-received") && amountPaid === 0) {
+    return {
+      statusLabel: "Source Cleanup Required",
+      lifecycleStage: sourceLifecycleStage,
+      trackingHealth: "Major issue" as const,
+      ballInCourt: "Team" as const,
+      nextAction: "Resolve payment mismatch from Monday"
+    };
+  }
+
+  if (completed.has("momence-link-sign-up-sent") && stageRank(sourceLifecycleStage) < stageRank("Sign-Ups")) {
     return {
       statusLabel: "Awaiting Guest Sign-Ups",
       lifecycleStage: "Sign-Ups" as const,
-      trackingHealth: "At risk" as const,
+      trackingHealth: sourceTrackingHealth === "Major issue" ? sourceTrackingHealth : "At risk" as const,
       ballInCourt: "Client" as const,
       nextAction: "Monitor registrations and waivers"
     };
   }
 
-  if (completed.has("deposit-paid-and-terms-signed")) {
+  if (completed.has("deposit-paid-and-terms-signed") && stageRank(sourceLifecycleStage) < stageRank("Deposit")) {
     return {
       statusLabel: "Deposit Received",
       lifecycleStage: "Deposit" as const,
@@ -46,11 +111,11 @@ function reconcileKellyStatus(workflow: WorkflowStep[], countdown: number | null
   }
 
   return {
-    statusLabel: TEST_SOURCE_STATUS_LABEL,
-    lifecycleStage: "Discuss" as const,
-    trackingHealth: "On track" as const,
-    ballInCourt: "Team" as const,
-    nextAction: "Schedule Desk"
+    statusLabel: sourceStatusLabel,
+    lifecycleStage: sourceLifecycleStage,
+    trackingHealth: sourceTrackingHealth,
+    ballInCourt: sourceBallInCourt,
+    nextAction: sourceNextAction
   };
 }
 
@@ -234,19 +299,29 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       !buyout.endTime && buyout.eventDate
         ? formatTime(new Date(buyout.eventDate.getTime() + 60 * 60 * 1000))
         : buyout.endTime ?? undefined;
+    const sourceStatusLabel = buyout.sourceStatusLabel ?? lifecycleStage;
     const sourceLifecycleStage = lifecycleStage;
     const sourceTrackingHealth = trackingLabelMap[buyout.trackingHealth];
-    const sourceBallInCourt =
+    const sourceBallInCourt = ballInCourtLabelMap[buyout.ballInCourt];
+    const sourceNextAction = buyout.sourceNextActionLabel ?? buyout.nextAction ?? "Review record";
+    const reconciledState = reconcileOperationalState({
+      workflow,
+      countdown,
+      sourceLifecycleStage,
+      sourceTrackingHealth,
+      sourceBallInCourt,
+      sourceStatusLabel,
+      sourceNextAction,
+      amountPaid: buyout.financial?.amountPaid ?? 0
+    });
+    const effectiveLifecycleStage = reconciledState.lifecycleStage;
+    const effectiveTrackingHealth = reconciledState.trackingHealth;
+    const effectiveBallInCourt =
       isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
         ? "Team"
-        : ballInCourtLabelMap[buyout.ballInCourt];
-    const sourceNextAction = buyout.nextAction ?? "Review record";
-    const reconciledKelly = isKellyTest ? reconcileKellyStatus(workflow, countdown) : null;
-    const effectiveLifecycleStage = reconciledKelly?.lifecycleStage ?? lifecycleStage;
-    const effectiveTrackingHealth = reconciledKelly?.trackingHealth ?? sourceTrackingHealth;
-    const effectiveBallInCourt = reconciledKelly?.ballInCourt ?? sourceBallInCourt;
-    const effectiveNextAction = reconciledKelly?.nextAction ?? sourceNextAction;
-    const effectiveStatusLabel = reconciledKelly?.statusLabel ?? lifecycleStage;
+        : reconciledState.ballInCourt;
+    const effectiveNextAction = reconciledState.nextAction;
+    const effectiveStatusLabel = reconciledState.statusLabel;
     const healthFlags = [
       countdown !== null && countdown < 0 ? "Event date on the source board is in the past." : null,
       workflow.some((step) => step.key === "remaining-payment-received" && step.complete) &&
@@ -257,8 +332,8 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       workflow.some((step) => step.key === "date-finalized" && step.complete)
         ? "Lifecycle status is behind the checklist state on the Monday board."
         : null,
-      isKellyTest && effectiveStatusLabel !== TEST_SOURCE_STATUS_LABEL
-        ? `Operationally this reads as "${effectiveStatusLabel}" even though Monday still shows "${TEST_SOURCE_STATUS_LABEL}".`
+      effectiveStatusLabel !== sourceStatusLabel
+        ? `Operationally this reads as "${effectiveStatusLabel}" even though Monday still shows "${sourceStatusLabel}".`
         : null
     ].filter((value): value is string => Boolean(value));
 
@@ -267,7 +342,7 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     name: buyout.displayName,
     eventType: buyout.inquiry?.eventType ?? "Buyout",
     statusLabel: effectiveStatusLabel,
-    sourceStatusLabel: isKellyTest ? TEST_SOURCE_STATUS_LABEL : lifecycleStage,
+    sourceStatusLabel,
     eventDate: toIsoDay(buyout.eventDate),
     countdownDays: countdown,
     location: buyout.location?.name ?? "Unassigned",
@@ -280,9 +355,13 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     sourceLifecycleStage,
     lifecycleStep: Math.max(0, STAGE_ORDER.indexOf(effectiveLifecycleStage)),
     trackingHealth: effectiveTrackingHealth,
-    sourceTrackingHealth,
+    sourceTrackingHealth: buyout.sourceTrackingLabel
+      ? TRACKING_SOURCE_LABEL_MAP[buyout.sourceTrackingLabel] ?? sourceTrackingHealth
+      : sourceTrackingHealth,
     ballInCourt: effectiveBallInCourt,
-    sourceBallInCourt,
+    sourceBallInCourt: buyout.sourceBallInCourtLabel
+      ? BALL_SOURCE_LABEL_MAP[buyout.sourceBallInCourtLabel] ?? sourceBallInCourt
+      : sourceBallInCourt,
     nextAction: effectiveNextAction,
     sourceNextAction,
     daysWaiting: waiting,
@@ -304,7 +383,7 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     preferredDates: buyout.inquiry?.preferredDates ?? undefined,
     depositLink: buyout.financial?.depositLink ?? undefined,
     balanceLink: buyout.financial?.balanceLink ?? undefined,
-    signupLink: isKellyTest ? TEST_SIGNUP_LINK : undefined,
+    signupLink: isKellyTest ? TEST_SIGNUP_LINK : getSignupLinkFromSnapshot(buyout.sourceSnapshot),
     notes: buyout.notesInternal ?? "",
     healthFlags,
     sentTemplateIds: isKellyTest ? TEST_SENT_TEMPLATES : [],

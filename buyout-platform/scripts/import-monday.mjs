@@ -172,6 +172,56 @@ function getPreferredDates(item) {
     .join(" / ");
 }
 
+function buildSourceSnapshot(item) {
+  const columnValues = Object.fromEntries(
+    item.column_values.map((column) => [
+      column.id,
+      {
+        text: column.text ?? "",
+        type: column.type ?? null
+      }
+    ])
+  );
+
+  return {
+    itemId: item.id,
+    itemName: item.name,
+    importedAt: new Date().toISOString(),
+    labels: {
+      status: getTextValue(item, COLUMN_IDS.stage) || null,
+      nextAction: getTextValue(item, COLUMN_IDS.nextAction) || null,
+      tracking: getTextValue(item, COLUMN_IDS.tracking) || null,
+      ballInCourt: getTextValue(item, COLUMN_IDS.ballInCourt) || null,
+      emailTrigger: getTextValue(item, COLUMN_IDS.emailTrigger) || null,
+      paymentStatus: getTextValue(item, COLUMN_IDS.paymentStatus) || null,
+      deskStaff: getTextValue(item, COLUMN_IDS.deskStaff) || null
+    },
+    values: {
+      preferredDates: getPreferredDates(item) || null,
+      finalizedDate: getTextValue(item, COLUMN_IDS.finalizedDate) || null,
+      startTime: getTextValue(item, COLUMN_IDS.startTime) || null,
+      endTime: getTextValue(item, COLUMN_IDS.endTime) || null,
+      preferredLocation: getTextValue(item, COLUMN_IDS.preferredLocation) || null,
+      finalLocation: getTextValue(item, COLUMN_IDS.finalLocation) || null,
+      instructor: getTextValue(item, COLUMN_IDS.instructor) || null,
+      preferredInstructor: getTextValue(item, COLUMN_IDS.preferredInstructor) || null,
+      clientEmail: getTextValue(item, COLUMN_IDS.clientEmail) || null,
+      clientPhone: getTextValue(item, COLUMN_IDS.clientPhone) || null,
+      totalPrice: getNumericValue(item, COLUMN_IDS.totalPrice) ?? null,
+      amountPaid: getNumericValue(item, COLUMN_IDS.amountPaid) ?? null,
+      depositAmount: getNumericValue(item, COLUMN_IDS.depositAmount) ?? null,
+      remainingBalance: getNumericValue(item, COLUMN_IDS.remainingBalance) ?? null,
+      signupLink: getTextValue(item, COLUMN_IDS.signupLink) || null,
+      depositLink: getTextValue(item, COLUMN_IDS.depositLink) || null,
+      balanceLink: getTextValue(item, COLUMN_IDS.balanceLink) || null
+    },
+    workflow: Object.fromEntries(
+      WORKFLOW_DEFINITIONS.map((definition) => [definition.stepKey, getBooleanStatus(item, definition.columnId)])
+    ),
+    columnValues
+  };
+}
+
 function getInquiryStatus(stage) {
   if (stage === BuyoutStage.COMPLETE || stage === BuyoutStage.CANCELLED) {
     return InquiryStatus.CLOSED;
@@ -203,6 +253,9 @@ async function main() {
   for (const item of data.items) {
     const stageLabel = getTextValue(item, COLUMN_IDS.stage);
     const stage = STATUS_TO_STAGE[stageLabel] ?? BuyoutStage.INQUIRY;
+    const trackingLabel = getTextValue(item, COLUMN_IDS.tracking);
+    const ballInCourtLabel = getTextValue(item, COLUMN_IDS.ballInCourt);
+    const nextActionLabel = getTextValue(item, COLUMN_IDS.nextAction);
     const locationName =
       getTextValue(item, COLUMN_IDS.finalLocation) || getTextValue(item, COLUMN_IDS.preferredLocation);
     const eventType = getTextValue(item, COLUMN_IDS.eventType) || null;
@@ -261,11 +314,19 @@ async function main() {
       where: { legacyMondayItemId: item.id },
       update: {
         displayName: item.name,
-        inquiryId: inquiry.id,
+        inquiry: { connect: { id: inquiry.id } },
         lifecycleStage: stage,
-        trackingHealth: TRACKING_TO_HEALTH[getTextValue(item, COLUMN_IDS.tracking)] ?? TrackingHealth.ON_TRACK,
-        ballInCourt: BALL_TO_ENUM[getTextValue(item, COLUMN_IDS.ballInCourt)] ?? BallInCourt.TEAM,
-        nextAction: getTextValue(item, COLUMN_IDS.nextAction) || null,
+        trackingHealth: TRACKING_TO_HEALTH[trackingLabel] ?? TrackingHealth.ON_TRACK,
+        ballInCourt: BALL_TO_ENUM[ballInCourtLabel] ?? BallInCourt.TEAM,
+        nextAction: nextActionLabel || null,
+        sourceStatusLabel: stageLabel || null,
+        sourceTrackingLabel: trackingLabel || null,
+        sourceBallInCourtLabel: ballInCourtLabel || null,
+        sourceNextActionLabel: nextActionLabel || null,
+        sourceEmailTriggerLabel: getTextValue(item, COLUMN_IDS.emailTrigger) || null,
+        sourcePaymentStatusLabel: getTextValue(item, COLUMN_IDS.paymentStatus) || null,
+        sourceDeskStaff: getTextValue(item, COLUMN_IDS.deskStaff) || null,
+        sourceSnapshot: buildSourceSnapshot(item),
         notesInternal,
         eventDate: getDateValue(item, COLUMN_IDS.finalizedDate),
         startTime: getTextValue(item, COLUMN_IDS.startTime) || null,
@@ -274,16 +335,24 @@ async function main() {
         capacity,
         signupCount,
         lastActionAt: getDateValue(item, COLUMN_IDS.lastTspAction),
-        locationId: location?.id ?? null
+        location: location ? { connect: { id: location.id } } : { disconnect: true }
       },
       create: {
         legacyMondayItemId: item.id,
         displayName: item.name,
-        inquiryId: inquiry.id,
+        inquiry: { connect: { id: inquiry.id } },
         lifecycleStage: stage,
-        trackingHealth: TRACKING_TO_HEALTH[getTextValue(item, COLUMN_IDS.tracking)] ?? TrackingHealth.ON_TRACK,
-        ballInCourt: BALL_TO_ENUM[getTextValue(item, COLUMN_IDS.ballInCourt)] ?? BallInCourt.TEAM,
-        nextAction: getTextValue(item, COLUMN_IDS.nextAction) || null,
+        trackingHealth: TRACKING_TO_HEALTH[trackingLabel] ?? TrackingHealth.ON_TRACK,
+        ballInCourt: BALL_TO_ENUM[ballInCourtLabel] ?? BallInCourt.TEAM,
+        nextAction: nextActionLabel || null,
+        sourceStatusLabel: stageLabel || null,
+        sourceTrackingLabel: trackingLabel || null,
+        sourceBallInCourtLabel: ballInCourtLabel || null,
+        sourceNextActionLabel: nextActionLabel || null,
+        sourceEmailTriggerLabel: getTextValue(item, COLUMN_IDS.emailTrigger) || null,
+        sourcePaymentStatusLabel: getTextValue(item, COLUMN_IDS.paymentStatus) || null,
+        sourceDeskStaff: getTextValue(item, COLUMN_IDS.deskStaff) || null,
+        sourceSnapshot: buildSourceSnapshot(item),
         notesInternal,
         eventDate: getDateValue(item, COLUMN_IDS.finalizedDate),
         startTime: getTextValue(item, COLUMN_IDS.startTime) || null,
@@ -292,7 +361,7 @@ async function main() {
         capacity,
         signupCount,
         lastActionAt: getDateValue(item, COLUMN_IDS.lastTspAction),
-        locationId: location?.id ?? null
+        location: location ? { connect: { id: location.id } } : undefined
       }
     });
 

@@ -118,6 +118,14 @@ model Buyout {
   trackingHealth    TrackingHealth       @default(ON_TRACK)
   ballInCourt       BallInCourt          @default(TEAM)
   nextAction        String?
+  sourceStatusLabel String?
+  sourceTrackingLabel String?
+  sourceBallInCourtLabel String?
+  sourceNextActionLabel String?
+  sourceEmailTriggerLabel String?
+  sourcePaymentStatusLabel String?
+  sourceDeskStaff   String?
+  sourceSnapshot    Json?
   notesInternal     String?
   eventDate         DateTime?
   startTime         String?
