@@ -37,8 +37,8 @@ export default async function DashboardPage() {
                   Active buyouts
                 </h2>
                 <p className="section-copy">
-                  This view is seeded with mock data for now. The next step is wiring it to the
-                  live database and replacing the mock repository with Prisma-backed queries.
+                  This view is currently powered by seeded demo records stored in Supabase so the
+                  team can review a working dashboard shape before the Monday import is completed.
                 </p>
                 <p className="section-copy">
                   Monday migration planning is now tracked in the migration workspace so we can

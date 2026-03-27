@@ -53,6 +53,7 @@ export PATH="$HOME/.local/bin:$PATH"
 - `npm run db:generate`: generate Prisma client
 - `npm run db:push`: push the Prisma schema to the configured database
 - `npm run import:monday -- ./path/to/export.json`: import a Monday JSON export into Prisma
+- `npm run seed:demo`: seed Supabase with demo buyout records for local review
 
 ## Supabase Connection Setup
 
@@ -70,12 +71,12 @@ DIRECT_URL="postgresql://postgres:PASSWORD@db.PROJECT_REF.supabase.co:5432/postg
 
 ## Recommended Next Build Steps
 
-1. Move inquiry creation into Prisma so website submissions persist in the database.
-2. Expand the Monday import command to preserve workflow steps once the missing status and workflow column IDs are exported from Monday.
-3. Add authentication and protect internal routes.
-4. Add email templates, send history, and provider integration.
-5. Add assignment logic, tasks, and reminders.
+1. Expand the Monday import command to preserve workflow steps once the missing status and workflow column IDs are exported from Monday.
+2. Add authentication and protect internal routes.
+3. Add email templates, send history, and provider integration.
+4. Add assignment logic, tasks, and reminders.
+5. Replace demo seed data with imported Monday records and live website submissions only.
 
 ## Verification Note
 
-The app dependencies have been installed locally and `npm run build` completes successfully in this workspace. A database has not been configured yet, so Prisma-backed reads and the Monday import script still require a real `DATABASE_URL` before they can be exercised end to end.
+The app dependencies are installed locally, `npm run build` completes successfully, and the Supabase schema plus demo seed data are in place. The next milestone is importing real Monday records so the dashboard can move from demo content to live operational data.

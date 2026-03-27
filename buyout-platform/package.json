@@ -9,14 +9,16 @@
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "import:monday": "node scripts/import-monday.mjs"
+    "import:monday": "node scripts/import-monday.mjs",
+    "seed:demo": "node --import tsx --env-file=.env.local scripts/seed-demo.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.6.0",
     "next": "^15.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "tsx": "^4.20.3"
   },
   "devDependencies": {
     "@types/node": "^22.13.14",

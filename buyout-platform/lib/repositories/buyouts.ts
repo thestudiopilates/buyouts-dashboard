@@ -34,6 +34,34 @@ const ballInCourtLabelMap: Record<BallInCourt, BuyoutSummary["ballInCourt"]> = {
   BOTH: "Both"
 };
 
+const stageEnumMap: Record<BuyoutSummary["lifecycleStage"], BuyoutStage> = {
+  Inquiry: BuyoutStage.INQUIRY,
+  Respond: BuyoutStage.RESPOND,
+  Discuss: BuyoutStage.DISCUSS,
+  Feasible: BuyoutStage.FEASIBLE,
+  Quote: BuyoutStage.QUOTE,
+  Deposit: BuyoutStage.DEPOSIT,
+  Paid: BuyoutStage.PAID,
+  "Sign-Ups": BuyoutStage.SIGNUPS,
+  Confirmed: BuyoutStage.CONFIRMED,
+  Final: BuyoutStage.FINAL,
+  Ready: BuyoutStage.READY,
+  Complete: BuyoutStage.COMPLETE
+};
+
+const trackingEnumMap: Record<BuyoutSummary["trackingHealth"], TrackingHealth> = {
+  "On track": TrackingHealth.ON_TRACK,
+  "At risk": TrackingHealth.AT_RISK,
+  "Major issue": TrackingHealth.MAJOR_ISSUE,
+  Complete: TrackingHealth.COMPLETE
+};
+
+const ballInCourtEnumMap: Record<BuyoutSummary["ballInCourt"], BallInCourt> = {
+  Team: BallInCourt.TEAM,
+  Client: BallInCourt.CLIENT,
+  Both: BallInCourt.BOTH
+};
+
 export function mapWorkflowGroup(group: string): WorkflowGroup {
   switch (group) {
     case "Intake":
@@ -125,7 +153,13 @@ export async function seedMockBuyoutsToDb() {
         locationId: location.id,
         assignedManagerId: manager.id,
         notesInternal: item.notes,
-        nextAction: item.nextAction
+        nextAction: item.nextAction,
+        lifecycleStage: stageEnumMap[item.lifecycleStage],
+        trackingHealth: trackingEnumMap[item.trackingHealth],
+        ballInCourt: ballInCourtEnumMap[item.ballInCourt],
+        eventDate: new Date(item.eventDate),
+        signupCount: item.signups,
+        capacity: item.capacity
       },
       create: {
         legacyMondayItemId: item.id,
@@ -134,6 +168,9 @@ export async function seedMockBuyoutsToDb() {
         assignedManagerId: manager.id,
         notesInternal: item.notes,
         nextAction: item.nextAction,
+        lifecycleStage: stageEnumMap[item.lifecycleStage],
+        trackingHealth: trackingEnumMap[item.trackingHealth],
+        ballInCourt: ballInCourtEnumMap[item.ballInCourt],
         eventDate: new Date(item.eventDate),
         signupCount: item.signups,
         capacity: item.capacity
