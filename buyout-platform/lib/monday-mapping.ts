@@ -1,15 +1,37 @@
 import { MondayImportRecord, MondayItem } from "@/lib/monday-types";
 
 const COLUMN_IDS = {
+  eventDetails: "long_texth99wlmi8",
+  internalNotes: "long_text_mm1vj480",
   clientEmail: "emailoeuk5uwf",
+  nextAction: "color_mkzj2yse",
+  emailTrigger: "color_mkzjmcth",
+  eventType: "color_mkzjpp7j",
+  rushRequest: "color_mkzjwwcf",
+  stage: "color_mkzgwzg9",
+  tracking: "color_mkzg4hne",
   ccEmails: "text_mm1tnygh",
   preferredDate1: "date_mkzgxvy2",
+  preferredDate2: "datex1qbi6on",
+  recommendedDate: "date_mkzjxc1t",
   finalizedDate: "date_mkzjkm1t",
   startTime: "hour_mm0rahy6",
   endTime: "hour_mm0rrxfq",
+  totalMinutes: "numeric_mkzj6seb",
   preferredLocation: "dropdown_mkzgaf3g",
   finalLocation: "dropdown_mkzjkhds",
+  paymentStatus: "color_mkzgvmxg",
+  capacity: "numeric_mkzgwpay",
+  signupCount: "numeric_mkzgbp8m",
+  deskConfirmed: "color_mkzgyn00",
+  deskStaff: "text_mkzj98wp",
+  preferredInstructor: "short_text3hyk6jn8",
+  clientQuestions: "long_textjgw42nuj",
+  clientPhone: "phone0kwsc7vn",
+  claimed: "color_mkzgz71q",
   instructor: "text_mkzg27y9",
+  lastTspAction: "date_mm1vya30",
+  ballInCourt: "color_mm1vd046",
   totalPrice: "numeric_mkzj1sfj",
   amountPaid: "numeric_mm1v48qj",
   depositAmount: "numeric_mm1v472d",
@@ -17,7 +39,6 @@ const COLUMN_IDS = {
   depositLink: "link_mkzjmvqw",
   balanceLink: "link_mkzjsm8r",
   signupLink: "link_mkzg7k99",
-  tracking: "color_mkzjdr77",
   emailThreadId: "text_mm1ttgb7",
   emailMessageId: "text_mm1t1dgy",
   t1: "long_text_mkzjxtpp",
@@ -37,18 +58,26 @@ const COLUMN_IDS = {
 } as const;
 
 const STATUS_TO_STAGE: Record<string, MondayImportRecord["lifecycleStage"]> = {
+  "New Inquiry": "INQUIRY",
   "New Inquiry Received": "INQUIRY",
+  "Still Discussing Dates / Times": "DISCUSS",
   "Initial Response Sent": "RESPOND",
   "Follow Up Sent": "DISCUSS",
+  "Date Agreement Reached": "FEASIBLE",
   "Feasibility Confirmed": "FEASIBLE",
   "Quote Sent": "QUOTE",
+  "Waiting on 1st Payment": "DEPOSIT",
   "Deposit Received": "DEPOSIT",
   "Payment Complete": "PAID",
+  "Waiting on Sign Ups": "SIGNUPS",
   "Awaiting Guest Sign-Ups": "SIGNUPS",
+  "Sign ups Complete": "CONFIRMED",
   "Sign-Ups Complete": "CONFIRMED",
   "Final Confirmation Sent": "FINAL",
   "Ready for Event": "READY",
   "Event Complete": "COMPLETE",
+  "Not Possible": "CANCELLED",
+  "Event Not Possible": "CANCELLED",
   "Cancelled": "CANCELLED",
   "Event Cancelled (No Refund)": "CANCELLED",
   "Event Cancelled (Refund)": "CANCELLED"
@@ -69,21 +98,21 @@ const BALL_TO_ENUM: Record<string, MondayImportRecord["ballInCourt"]> = {
 
 export const WORKFLOW_IMPORT_KEYS = [
   "inquiryReviewed",
-  "initialResponseSent",
-  "followUpSent",
-  "feasibilityConfirmed",
-  "quoteSent",
-  "depositRequested",
-  "depositReceived",
-  "finalPaymentReceived",
-  "eventDetailsConfirmed",
-  "signUpLinkCreated",
-  "signUpLinkSent",
-  "signUpsMonitored",
+  "initialInquiryResponseSent",
+  "customerResponded",
+  "dateFinalized",
+  "depositLinkSentAndTermsShared",
+  "depositPaidAndTermsSigned",
+  "instructorFinalized",
+  "momenceClassCreated",
+  "momenceLinkSent",
+  "remainingPaymentReceived",
+  "allAttendeesRegistered",
+  "allWaiversSigned",
+  "frontDeskAssigned",
+  "frontDeskShiftExtended",
   "finalConfirmationSent",
-  "dayOfPrepComplete",
-  "eventDelivered",
-  "postEventFollowUp"
+  "eventCompleted"
 ] as const;
 
 function getTextValue(item: MondayItem, columnId: string) {
@@ -112,9 +141,16 @@ function pickTemplateBodies(item: MondayItem) {
 }
 
 export function mapMondayItemToImportRecord(item: MondayItem): MondayImportRecord {
-  const statusLabel = getTextValue(item, "where_are_we_now");
+  const statusLabel = getTextValue(item, COLUMN_IDS.stage);
   const trackingLabel = getTextValue(item, COLUMN_IDS.tracking);
-  const ballInCourtLabel = getTextValue(item, "ball_in_court");
+  const ballInCourtLabel = getTextValue(item, COLUMN_IDS.ballInCourt);
+  const preferredDates = [
+    getTextValue(item, COLUMN_IDS.preferredDate1),
+    getTextValue(item, COLUMN_IDS.preferredDate2),
+    getTextValue(item, COLUMN_IDS.recommendedDate)
+  ]
+    .filter(Boolean)
+    .join(" / ");
 
   return {
     legacyMondayItemId: item.id,
@@ -122,7 +158,7 @@ export function mapMondayItemToImportRecord(item: MondayItem): MondayImportRecor
     clientName: item.name,
     clientEmail: getTextValue(item, COLUMN_IDS.clientEmail) || undefined,
     ccEmails: getTextValue(item, COLUMN_IDS.ccEmails) || undefined,
-    preferredDates: getTextValue(item, COLUMN_IDS.preferredDate1) || undefined,
+    preferredDates: preferredDates || undefined,
     preferredLocation: getTextValue(item, COLUMN_IDS.preferredLocation) || undefined,
     finalLocation: getTextValue(item, COLUMN_IDS.finalLocation) || undefined,
     eventDate: getTextValue(item, COLUMN_IDS.finalizedDate) || undefined,
@@ -132,7 +168,7 @@ export function mapMondayItemToImportRecord(item: MondayItem): MondayImportRecor
     lifecycleStage: STATUS_TO_STAGE[statusLabel] ?? "INQUIRY",
     trackingHealth: TRACKING_TO_HEALTH[trackingLabel] ?? "ON_TRACK",
     ballInCourt: BALL_TO_ENUM[ballInCourtLabel] ?? "TEAM",
-    nextAction: getTextValue(item, "whats_due_next") || undefined,
+    nextAction: getTextValue(item, COLUMN_IDS.nextAction) || undefined,
     totalPrice: getNumericValue(item, COLUMN_IDS.totalPrice),
     amountPaid: getNumericValue(item, COLUMN_IDS.amountPaid),
     depositAmount: getNumericValue(item, COLUMN_IDS.depositAmount),
@@ -150,14 +186,12 @@ export function mapMondayItemToImportRecord(item: MondayItem): MondayImportRecor
 
 export const MONDAY_IMPORT_NOTES = {
   unresolvedColumns: [
-    "where_are_we_now",
-    "whats_due_next",
-    "ball_in_court",
-    "16 workflow checkbox column ids"
+    "notes are still condensed into app-friendly fields rather than mirrored 1:1",
+    "email trigger history is not yet normalized into BuyoutEmail rows"
   ],
   knownLimitations: [
-    "Current repo documentation does not contain the actual Monday column ids for three status columns.",
-    "Workflow checkbox ids still need to be exported from Monday before a complete import can preserve all checklist state.",
+    "Workflow state can now be imported from the real 16 Monday status columns.",
+    "The dashboard still summarizes some imported fields instead of showing every Monday column directly.",
     "t13 should not be treated as a clean email template because it was also used as a conversation log."
   ]
 };

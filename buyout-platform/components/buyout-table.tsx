@@ -9,6 +9,20 @@ function trackingClass(value: BuyoutSummary["trackingHealth"]) {
   return "positive";
 }
 
+function ballClass(value: BuyoutSummary["ballInCourt"]) {
+  if (value === "Client") return "client";
+  if (value === "Both") return "both";
+  return "team";
+}
+
+function money(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
 export function BuyoutTable({ buyouts }: { buyouts: BuyoutSummary[] }) {
   return (
     <div className="table-card">
@@ -23,22 +37,22 @@ export function BuyoutTable({ buyouts }: { buyouts: BuyoutSummary[] }) {
       </div>
       {buyouts.map((buyout) => (
         <div className="table-row" key={buyout.id}>
-          <div>
-            <Link href={`/buyouts/${buyout.id}`} style={{ fontWeight: 700 }}>
+          <div className="client-cell">
+            <Link className="client-link" href={`/buyouts/${buyout.id}`}>
               {buyout.name}
             </Link>
-            <div className="muted">
+            <div className="client-meta">
               {buyout.eventType} · {buyout.location} · {buyout.assignedTo}
             </div>
           </div>
           <span className={`pill ${trackingClass(buyout.trackingHealth)}`}>{buyout.lifecycleStage}</span>
-          <span>{buyout.nextAction}</span>
-          <span>{buyout.ballInCourt}</span>
-          <span>{buyout.eventDate}</span>
-          <span>
+          <span className="next-action">{buyout.nextAction}</span>
+          <span className={`ball-pill ${ballClass(buyout.ballInCourt)}`}>{buyout.ballInCourt}</span>
+          <span className="date-cell">{buyout.eventDate}</span>
+          <span className="signup-cell">
             {buyout.signups}/{buyout.capacity}
           </span>
-          <span>${buyout.amountPaid}</span>
+          <span className="money-cell">{money(buyout.amountPaid)}</span>
         </div>
       ))}
     </div>

@@ -18,7 +18,7 @@ const stageLabelMap: Record<BuyoutStage, BuyoutSummary["lifecycleStage"]> = {
   FINAL: "Final",
   READY: "Ready",
   COMPLETE: "Complete",
-  CANCELLED: "Complete"
+  CANCELLED: "Cancelled"
 };
 
 const trackingLabelMap: Record<TrackingHealth, BuyoutSummary["trackingHealth"]> = {
@@ -46,7 +46,8 @@ const stageEnumMap: Record<BuyoutSummary["lifecycleStage"], BuyoutStage> = {
   Confirmed: BuyoutStage.CONFIRMED,
   Final: BuyoutStage.FINAL,
   Ready: BuyoutStage.READY,
-  Complete: BuyoutStage.COMPLETE
+  Complete: BuyoutStage.COMPLETE,
+  Cancelled: BuyoutStage.CANCELLED
 };
 
 const trackingEnumMap: Record<BuyoutSummary["trackingHealth"], TrackingHealth> = {
@@ -95,6 +96,7 @@ function normalizeWorkflow(steps: Array<{ stepKey: string; label: string; stepGr
 export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
   const buyouts = await prisma.buyout.findMany({
     include: {
+      inquiry: true,
       location: true,
       assignedManager: true,
       financial: true,
@@ -108,7 +110,7 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
   return buyouts.map((buyout) => ({
     id: buyout.id,
     name: buyout.displayName,
-    eventType: "Buyout",
+    eventType: buyout.inquiry?.eventType ?? "Buyout",
     eventDate: buyout.eventDate ? buyout.eventDate.toISOString().slice(0, 10) : "TBD",
     location: buyout.location?.name ?? "Unassigned",
     assignedTo: buyout.assignedManager?.name ?? "Unassigned",

@@ -24,7 +24,10 @@ export function PortalShell({
       <aside className="portal-sidebar">
         <Link className="brand-mark" href="/dashboard">
           <span className="brand-badge">TSP</span>
-          <span>Manager Portal</span>
+          <span className="brand-wordmark">
+            <strong>The Studio Pilates</strong>
+            <em>Management Portal</em>
+          </span>
         </Link>
         <nav className="nav-list">
           {navItems.map((item) => (
