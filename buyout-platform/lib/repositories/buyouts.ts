@@ -2,7 +2,7 @@ import { BallInCourt, BuyoutStage, TrackingHealth, WorkflowGroup } from "@prisma
 
 import { mockBuyouts } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
-import { BuyoutSummary, WorkflowStep } from "@/lib/types";
+import { BuyoutInquiryInput, BuyoutSummary, WorkflowStep } from "@/lib/types";
 import { buildWorkflow } from "@/lib/workflows";
 
 const stageLabelMap: Record<BuyoutStage, BuyoutSummary["lifecycleStage"]> = {
@@ -176,4 +176,27 @@ export async function seedMockBuyoutsToDb() {
       });
     }
   }
+}
+
+export async function createInquiryInDb(input: BuyoutInquiryInput) {
+  const inquiry = await prisma.buyoutInquiry.create({
+    data: {
+      source: "website",
+      clientName: input.clientName,
+      clientEmail: input.clientEmail,
+      clientPhone: input.clientPhone,
+      companyName: input.companyName,
+      eventType: input.eventType,
+      preferredDates: input.preferredDates,
+      preferredLocation: input.preferredLocation,
+      guestCountEstimate: input.guestCountEstimate,
+      notes: input.notes
+    }
+  });
+
+  return {
+    id: inquiry.id,
+    createdAt: inquiry.createdAt.toISOString(),
+    ...input
+  };
 }

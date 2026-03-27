@@ -1,6 +1,6 @@
 import { mockBuyouts } from "@/lib/mock-data";
 import { hasDatabaseUrl } from "@/lib/prisma";
-import { listBuyoutsFromDb } from "@/lib/repositories/buyouts";
+import { createInquiryInDb, listBuyoutsFromDb } from "@/lib/repositories/buyouts";
 import { BuyoutInquiryInput, BuyoutSummary } from "@/lib/types";
 
 const inquiries: Array<BuyoutInquiryInput & { id: string; createdAt: string }> = [];
@@ -19,6 +19,10 @@ export async function getBuyout(id: string): Promise<BuyoutSummary | null> {
 }
 
 export async function createInquiry(input: BuyoutInquiryInput) {
+  if (hasDatabaseUrl()) {
+    return createInquiryInDb(input);
+  }
+
   const inquiry = {
     id: `inq_${Date.now()}`,
     createdAt: new Date().toISOString(),
