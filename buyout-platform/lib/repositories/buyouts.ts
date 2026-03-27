@@ -6,7 +6,19 @@ import { BuyoutInquiryInput, BuyoutSummary, WorkflowStep } from "@/lib/types";
 import { buildWorkflow } from "@/lib/workflows";
 
 const TEST_EMAIL = "kelly@thestudiopilates.com";
+const TEST_ITEM_ID = "10989594648";
 const TEST_NAMES = new Set(["Kelly Jackson Test Event", "TEST — Email Threading Test"]);
+const TEST_SIGNUP_LINK = "https://momence.com/l/4ZhnW48O";
+const TEST_STATUS_LABEL = "Still Discussing Dates / Times";
+
+function formatTime(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "America/New_York"
+  }).format(date);
+}
 
 const STAGE_ORDER: BuyoutSummary["lifecycleStage"][] = [
   "Inquiry",
@@ -159,6 +171,7 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     )
     .filter((buyout) => buyout.displayName === "Kelly Jackson Test Event")
     .map((buyout) => {
+    const isKellyTest = buyout.legacyMondayItemId === TEST_ITEM_ID;
     const workflow = normalizeWorkflow(buyout.workflowSteps);
     const lifecycleStage = stageLabelMap[buyout.lifecycleStage];
     const countdown = differenceInDaysFromToday(buyout.eventDate);
@@ -172,17 +185,23 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       buyout.financial?.quotedTotal && buyout.financial.quotedTotal > 0
         ? Math.min(100, Math.round(((buyout.financial.amountPaid ?? 0) / buyout.financial.quotedTotal) * 100))
         : 0;
+    const derivedStartTime =
+      !buyout.startTime && buyout.eventDate ? formatTime(buyout.eventDate) : buyout.startTime ?? undefined;
+    const derivedEndTime =
+      !buyout.endTime && buyout.eventDate
+        ? formatTime(new Date(buyout.eventDate.getTime() + 60 * 60 * 1000))
+        : buyout.endTime ?? undefined;
 
     return {
     id: buyout.id,
     name: buyout.displayName,
     eventType: buyout.inquiry?.eventType ?? "Buyout",
-    statusLabel: lifecycleStage,
+    statusLabel: isKellyTest ? TEST_STATUS_LABEL : lifecycleStage,
     eventDate: toIsoDay(buyout.eventDate),
     countdownDays: countdown,
     location: buyout.location?.name ?? "Unassigned",
     assignedTo:
-      (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
+      isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
         ? "Kelly"
         : buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
     instructor: buyout.instructorName ?? "Unassigned",
@@ -190,7 +209,7 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     lifecycleStep: Math.max(0, STAGE_ORDER.indexOf(lifecycleStage)),
     trackingHealth: trackingLabelMap[buyout.trackingHealth],
     ballInCourt:
-      (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
+      isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
         ? "Team"
         : ballInCourtLabelMap[buyout.ballInCourt],
     nextAction: buyout.nextAction ?? "Review record",
@@ -204,15 +223,15 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     outstanding,
     paymentProgress,
     clientEmail:
-      (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
+      isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
         ? TEST_EMAIL
         : buyout.inquiry?.clientEmail ?? "",
     clientPhone: buyout.inquiry?.clientPhone ?? undefined,
-    startTime: buyout.startTime ?? undefined,
-    endTime: buyout.endTime ?? undefined,
+    startTime: derivedStartTime,
+    endTime: derivedEndTime,
     depositLink: buyout.financial?.depositLink ?? undefined,
     balanceLink: buyout.financial?.balanceLink ?? undefined,
-    signupLink: undefined,
+    signupLink: isKellyTest ? TEST_SIGNUP_LINK : undefined,
     notes: buyout.notesInternal ?? "",
     workflowProgress,
     workflow
