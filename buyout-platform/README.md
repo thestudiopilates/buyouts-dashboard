@@ -35,7 +35,7 @@ Monday migration scaffolding is now included as well:
 
 1. Install Node.js 20+ and npm.
 2. Copy `.env.example` to `.env.local`.
-3. Set a valid `DATABASE_URL`.
+3. Set valid `DATABASE_URL` and `DIRECT_URL` values.
 4. Run `npm install`.
 5. Run `npm run db:generate`.
 6. Run `npm run dev`.
@@ -53,6 +53,20 @@ export PATH="$HOME/.local/bin:$PATH"
 - `npm run db:generate`: generate Prisma client
 - `npm run db:push`: push the Prisma schema to the configured database
 - `npm run import:monday -- ./path/to/export.json`: import a Monday JSON export into Prisma
+
+## Supabase Connection Setup
+
+Use the Supabase pooler for application traffic and the direct database connection for Prisma schema operations.
+
+- `DATABASE_URL`: pooled connection string for the app
+- `DIRECT_URL`: direct connection string for Prisma schema push and admin operations
+
+Typical setup:
+
+```bash
+DATABASE_URL="postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DIRECT_URL="postgresql://postgres:PASSWORD@db.PROJECT_REF.supabase.co:5432/postgres"
+```
 
 ## Recommended Next Build Steps
 
