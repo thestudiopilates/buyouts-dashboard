@@ -68,6 +68,30 @@ Export or query the Monday board into a JSON payload shaped like:
 
 That is the shape expected by the migration mapper types in [monday-types.ts](/Users/kellyjackson/Documents/Codex/Buyouts%20Dashboard/buyout-platform/lib/monday-types.ts).
 
+## Fastest Path To Real Import
+
+If you want the fastest practical cutover:
+
+1. Export only active buyouts first.
+2. Include item `id`, `name`, and full `column_values`.
+3. Save the export as `buyout-platform/data/monday-active-buyouts.json`.
+4. Run:
+
+```bash
+cd buyout-platform
+export PATH="$HOME/.local/bin:$PATH"
+npm run import:monday -- ./data/monday-active-buyouts.json
+```
+
+The importer currently handles:
+
+- core buyout details
+- financials
+- linked imported inquiry records
+- default workflow derivation from lifecycle stage
+
+It does not yet preserve exact workflow checkbox completion unless the missing workflow column ids are included in a later export.
+
 ## Migration Sequence
 
 1. Export Monday board data for all active buyouts.
@@ -96,11 +120,6 @@ That lets us trace every migrated record back to Monday during reconciliation.
 
 ## Next Practical Step
 
-We should add a real import command that:
+The real import command now exists at [import-monday.mjs](/Users/kellyjackson/Documents/Codex/Buyouts%20Dashboard/buyout-platform/scripts/import-monday.mjs).
 
-- reads a Monday JSON export file
-- maps each item through `mapMondayItemToImportRecord`
-- writes the results with Prisma
-- logs skipped fields and unresolved mappings
-
-That depends on getting Node installed in this environment or running the import locally in your normal dev setup.
+The next blocker is the actual Monday JSON export file.

@@ -55,6 +55,24 @@ export PATH="$HOME/.local/bin:$PATH"
 - `npm run import:monday -- ./path/to/export.json`: import a Monday JSON export into Prisma
 - `npm run seed:demo`: seed Supabase with demo buyout records for local review
 
+## Local Review
+
+With `.env.local` configured, the app runs locally at:
+
+- `http://localhost:3000`
+- `http://localhost:3000/dashboard`
+- `http://localhost:3000/buyouts/inquire`
+
+The current Supabase project already has the initial schema and seeded demo records, so the dashboard is reviewable locally.
+
+## Deployment Readiness
+
+This repo now includes `vercel.json` for a straightforward Vercel deployment path. For the first hosted preview, configure these environment variables in Vercel:
+
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `NEXT_PUBLIC_APP_NAME`
+
 ## Supabase Connection Setup
 
 Use the Supabase pooler for application traffic and the direct database connection for Prisma schema operations.
