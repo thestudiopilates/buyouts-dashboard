@@ -20,16 +20,18 @@ export function PortalShell({
   activeHref: string;
 }) {
   return (
-    <div className="portal-layout">
-      <aside className="portal-sidebar">
-        <Link className="brand-mark" href="/dashboard">
-          <span className="brand-badge">TSP</span>
-          <span className="brand-wordmark">
-            <strong>The Studio Pilates</strong>
-            <em>Management Portal</em>
-          </span>
-        </Link>
-        <nav className="nav-list">
+    <div className="portal-shell">
+      <header className="portal-header">
+        <div className="portal-header-row">
+          <Link className="brand-mark" href="/dashboard">
+            <span className="brand-badge">TSP</span>
+            <span className="brand-wordmark">
+              <strong>The Studio Pilates</strong>
+              <em>Management Portal</em>
+            </span>
+          </Link>
+        </div>
+        <nav className="portal-nav-list">
           {navItems.map((item) => (
             <Link
               key={item.label}
@@ -40,7 +42,7 @@ export function PortalShell({
             </Link>
           ))}
         </nav>
-      </aside>
+      </header>
       <main className="portal-main">{children}</main>
     </div>
   );

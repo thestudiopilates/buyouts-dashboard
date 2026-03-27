@@ -23,6 +23,21 @@ function money(value: number) {
   }).format(value);
 }
 
+function countdownClass(days: number | null) {
+  if (days === null) return "unknown";
+  if (days < 0) return "past";
+  if (days <= 3) return "urgent";
+  if (days <= 6) return "close";
+  if (days <= 13) return "warning";
+  return "healthy";
+}
+
+function nextActionClass(daysWaiting: number) {
+  if (daysWaiting > 5) return "danger";
+  if (daysWaiting > 2) return "warning";
+  return "positive";
+}
+
 export function BuyoutTable({ buyouts }: { buyouts: BuyoutSummary[] }) {
   return (
     <div className="table-card">
@@ -30,10 +45,10 @@ export function BuyoutTable({ buyouts }: { buyouts: BuyoutSummary[] }) {
         <span>Client</span>
         <span>Stage</span>
         <span>Next Action</span>
-        <span>Ball in Court</span>
-        <span>Event Date</span>
+        <span>Waiting On</span>
+        <span>Countdown</span>
         <span>Sign-Ups</span>
-        <span>Paid</span>
+        <span>Progress</span>
       </div>
       {buyouts.map((buyout) => (
         <div className="table-row" key={buyout.id}>
@@ -45,14 +60,51 @@ export function BuyoutTable({ buyouts }: { buyouts: BuyoutSummary[] }) {
               {buyout.eventType} · {buyout.location} · {buyout.assignedTo}
             </div>
           </div>
-          <span className={`pill ${trackingClass(buyout.trackingHealth)}`}>{buyout.lifecycleStage}</span>
-          <span className="next-action">{buyout.nextAction}</span>
+          <div>
+            <span className={`pill ${trackingClass(buyout.trackingHealth)}`}>{buyout.statusLabel}</span>
+            <div className="lifecycle-strip" aria-hidden="true">
+              {Array.from({ length: 12 }).map((_, index) => (
+                <span
+                  className={
+                    index < buyout.lifecycleStep
+                      ? "done"
+                      : index === Math.min(buyout.lifecycleStep, 11)
+                        ? "current"
+                        : ""
+                  }
+                  key={`${buyout.id}_${index}`}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="next-action-cell">
+            <span className={`next-action ${nextActionClass(buyout.daysWaiting)}`}>{buyout.nextAction}</span>
+            {buyout.daysWaiting > 0 ? (
+              <span className={`waiting-chip ${nextActionClass(buyout.daysWaiting)}`}>
+                {buyout.daysWaiting}d waiting
+              </span>
+            ) : null}
+          </div>
           <span className={`ball-pill ${ballClass(buyout.ballInCourt)}`}>{buyout.ballInCourt}</span>
-          <span className="date-cell">{buyout.eventDate}</span>
-          <span className="signup-cell">
-            {buyout.signups}/{buyout.capacity}
-          </span>
-          <span className="money-cell">{money(buyout.amountPaid)}</span>
+          <div className="countdown-cell">
+            <span className={`countdown-badge ${countdownClass(buyout.countdownDays)}`}>
+              {buyout.countdownDays === null ? "TBD" : buyout.countdownDays < 0 ? "Past" : buyout.countdownDays}
+            </span>
+          </div>
+          <div className="progress-cell">
+            <div className="progress-value">
+              {buyout.signups}/{buyout.capacity || 0}
+            </div>
+            <div className="mini-progress">
+              <span style={{ width: `${buyout.signupFillPercent ?? 0}%` }} />
+            </div>
+          </div>
+          <div className="progress-cell">
+            <div className="progress-value">{buyout.workflowProgress}%</div>
+            <div className="mini-progress workflow">
+              <span style={{ width: `${buyout.workflowProgress}%` }} />
+            </div>
+          </div>
         </div>
       ))}
     </div>

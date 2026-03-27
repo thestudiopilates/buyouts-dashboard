@@ -5,6 +5,22 @@ import { prisma } from "@/lib/prisma";
 import { BuyoutInquiryInput, BuyoutSummary, WorkflowStep } from "@/lib/types";
 import { buildWorkflow } from "@/lib/workflows";
 
+const STAGE_ORDER: BuyoutSummary["lifecycleStage"][] = [
+  "Inquiry",
+  "Respond",
+  "Discuss",
+  "Feasible",
+  "Quote",
+  "Deposit",
+  "Paid",
+  "Sign-Ups",
+  "Confirmed",
+  "Final",
+  "Ready",
+  "Complete",
+  "Cancelled"
+];
+
 const stageLabelMap: Record<BuyoutStage, BuyoutSummary["lifecycleStage"]> = {
   INQUIRY: "Inquiry",
   RESPOND: "Respond",
@@ -93,6 +109,31 @@ function normalizeWorkflow(steps: Array<{ stepKey: string; label: string; stepGr
   }));
 }
 
+function differenceInDaysFromToday(date: Date | null) {
+  if (!date) {
+    return null;
+  }
+
+  const today = new Date();
+  const startOfToday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  const startOfTarget = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  return Math.ceil((startOfTarget.getTime() - startOfToday.getTime()) / 86_400_000);
+}
+
+function daysWaiting(lastActionAt: Date | null, createdAt: Date) {
+  const reference = lastActionAt ?? createdAt;
+  const today = new Date();
+  const startOfToday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  const startOfReference = new Date(
+    Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth(), reference.getUTCDate())
+  );
+  return Math.max(0, Math.floor((startOfToday.getTime() - startOfReference.getTime()) / 86_400_000));
+}
+
+function toIsoDay(date: Date | null) {
+  return date ? date.toISOString().slice(0, 10) : "TBD";
+}
+
 export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
   const buyouts = await prisma.buyout.findMany({
     include: {
@@ -107,24 +148,57 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }]
   });
 
-  return buyouts.map((buyout) => ({
+  return buyouts.map((buyout) => {
+    const workflow = normalizeWorkflow(buyout.workflowSteps);
+    const lifecycleStage = stageLabelMap[buyout.lifecycleStage];
+    const countdown = differenceInDaysFromToday(buyout.eventDate);
+    const waiting = daysWaiting(buyout.lastActionAt, buyout.createdAt);
+    const outstanding = Math.max(0, (buyout.financial?.quotedTotal ?? 0) - (buyout.financial?.amountPaid ?? 0));
+    const signupFillPercent =
+      buyout.capacity && buyout.capacity > 0 ? Math.round((buyout.signupCount / buyout.capacity) * 100) : null;
+    const workflowProgress =
+      workflow.length > 0 ? Math.round((workflow.filter((step) => step.complete).length / workflow.length) * 100) : 0;
+    const paymentProgress =
+      buyout.financial?.quotedTotal && buyout.financial.quotedTotal > 0
+        ? Math.min(100, Math.round(((buyout.financial.amountPaid ?? 0) / buyout.financial.quotedTotal) * 100))
+        : 0;
+
+    return {
     id: buyout.id,
     name: buyout.displayName,
     eventType: buyout.inquiry?.eventType ?? "Buyout",
-    eventDate: buyout.eventDate ? buyout.eventDate.toISOString().slice(0, 10) : "TBD",
+    statusLabel: lifecycleStage,
+    eventDate: toIsoDay(buyout.eventDate),
+    countdownDays: countdown,
     location: buyout.location?.name ?? "Unassigned",
-    assignedTo: buyout.assignedManager?.name ?? "Unassigned",
-    lifecycleStage: stageLabelMap[buyout.lifecycleStage],
+    assignedTo: buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
+    instructor: buyout.instructorName ?? "Unassigned",
+    lifecycleStage,
+    lifecycleStep: Math.max(0, STAGE_ORDER.indexOf(lifecycleStage)),
     trackingHealth: trackingLabelMap[buyout.trackingHealth],
     ballInCourt: ballInCourtLabelMap[buyout.ballInCourt],
     nextAction: buyout.nextAction ?? "Review record",
+    daysWaiting: waiting,
+    lastAction: buyout.lastActionAt ? toIsoDay(buyout.lastActionAt) : null,
     signups: buyout.signupCount,
     capacity: buyout.capacity ?? 0,
+    signupFillPercent,
     total: buyout.financial?.quotedTotal ?? 0,
     amountPaid: buyout.financial?.amountPaid ?? 0,
+    outstanding,
+    paymentProgress,
+    clientEmail: buyout.inquiry?.clientEmail ?? "",
+    clientPhone: buyout.inquiry?.clientPhone ?? undefined,
+    startTime: buyout.startTime ?? undefined,
+    endTime: buyout.endTime ?? undefined,
+    depositLink: buyout.financial?.depositLink ?? undefined,
+    balanceLink: buyout.financial?.balanceLink ?? undefined,
+    signupLink: undefined,
     notes: buyout.notesInternal ?? "",
-    workflow: normalizeWorkflow(buyout.workflowSteps)
-  }));
+    workflowProgress,
+    workflow
+    };
+  });
 }
 
 export async function seedMockBuyoutsToDb() {

@@ -313,44 +313,54 @@ textarea {
   color: var(--positive);
 }
 
-.portal-layout {
-  display: grid;
-  grid-template-columns: 270px 1fr;
-  overflow: hidden;
+.portal-shell {
+  min-height: 100vh;
 }
 
-.portal-sidebar {
-  background:
-    radial-gradient(circle at top, rgba(159, 84, 63, 0.22), transparent 30%),
-    linear-gradient(180deg, #302616 0%, #28200e 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 1.4rem;
-  color: var(--oat-light);
+.portal-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 0.9rem 1.4rem 1rem;
+  background: rgba(244, 237, 231, 0.94);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(40, 32, 14, 0.08);
+}
+
+.portal-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .portal-main {
   min-width: 0;
 }
 
-.nav-list {
-  display: grid;
-  gap: 0.45rem;
-  margin-top: 2rem;
+.portal-nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
 }
 
 .nav-item {
-  padding: 0.85rem 1rem;
-  border-radius: 14px;
-  color: rgba(247, 243, 239, 0.72);
+  padding: 0.52rem 0.9rem;
+  border-radius: 999px;
+  color: rgba(40, 32, 14, 0.72);
   font-family: var(--font-body), "Segoe UI", sans-serif;
-  border: 1px solid transparent;
+  border: 1px solid rgba(40, 32, 14, 0.08);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .nav-item.active,
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--oat-light);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(159, 84, 63, 0.1);
+  color: var(--brand);
+  border-color: rgba(159, 84, 63, 0.14);
 }
 
 .section-block {
@@ -530,7 +540,6 @@ textarea {
 
 @media (max-width: 980px) {
   .hero-grid,
-  .portal-layout,
   .detail-grid,
   .grid-4,
   .metrics-grid {

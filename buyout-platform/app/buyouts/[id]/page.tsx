@@ -20,11 +20,6 @@ export default async function BuyoutDetailPage({
     notFound();
   }
 
-  const outstanding = buyout.total - buyout.amountPaid;
-  const progress = Math.round(
-    (buyout.workflow.filter((step) => step.complete).length / buyout.workflow.length) * 100
-  );
-
   return (
     <div className="shell">
       <PortalShell activeHref="/buyouts">
@@ -42,8 +37,8 @@ export default async function BuyoutDetailPage({
               </p>
             </div>
             <div className="header-actions">
-              <span className="pill positive">{buyout.lifecycleStage}</span>
-              <span className="pill neutral">{buyout.ballInCourt}</span>
+              <span className="pill positive">{buyout.statusLabel}</span>
+              <span className="ball-pill client">{buyout.ballInCourt}</span>
             </div>
           </div>
 
@@ -55,7 +50,7 @@ export default async function BuyoutDetailPage({
                 </h2>
                 <div className="grid-4">
                   <div className="metric">
-                    <p className="metric-label">Assigned manager</p>
+                    <p className="metric-label">Assigned staff</p>
                     <p className="metric-value" style={{ fontSize: "1.3rem" }}>
                       {buyout.assignedTo}
                     </p>
@@ -75,18 +70,77 @@ export default async function BuyoutDetailPage({
                   <div className="metric">
                     <p className="metric-label">Outstanding</p>
                     <p className="metric-value" style={{ fontSize: "1.3rem" }}>
-                      {formatCurrency(outstanding)}
+                      {formatCurrency(buyout.outstanding)}
                     </p>
                   </div>
                 </div>
 
-                <div style={{ marginTop: "1rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.45rem" }}>
-                    <span className="metric-label">Workflow completion</span>
-                    <span className="metric-label">{progress}%</span>
+                <div className="detail-info-grid">
+                  <div className="info-line">
+                    <span>Stage</span>
+                    <strong>{buyout.statusLabel}</strong>
                   </div>
-                  <div className="progress">
-                    <span style={{ width: `${progress}%` }} />
+                  <div className="info-line">
+                    <span>Next action</span>
+                    <strong>{buyout.nextAction}</strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Tracking health</span>
+                    <strong>{buyout.trackingHealth}</strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Event countdown</span>
+                    <strong>
+                      {buyout.countdownDays === null
+                        ? "TBD"
+                        : buyout.countdownDays < 0
+                          ? "Past"
+                          : `${buyout.countdownDays} days`}
+                    </strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Instructor</span>
+                    <strong>{buyout.instructor}</strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Time</span>
+                    <strong>
+                      {buyout.startTime && buyout.endTime
+                        ? `${buyout.startTime} - ${buyout.endTime}`
+                        : "TBD"}
+                    </strong>
+                  </div>
+                </div>
+              </section>
+
+              <section className="detail-card card">
+                <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: 0 }}>
+                  Contacts and links
+                </h2>
+                <div className="detail-info-grid">
+                  <div className="info-line">
+                    <span>Email</span>
+                    <strong>{buyout.clientEmail || "Not captured"}</strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Phone</span>
+                    <strong>{buyout.clientPhone || "Not captured"}</strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Deposit link</span>
+                    <strong>{buyout.depositLink ? "Ready" : "Missing"}</strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Balance link</span>
+                    <strong>{buyout.balanceLink ? "Ready" : "Missing"}</strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Sign-up link</span>
+                    <strong>{buyout.signupLink ? "Ready" : "Missing"}</strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Last team action</span>
+                    <strong>{buyout.lastAction || "Unknown"}</strong>
                   </div>
                 </div>
               </section>
@@ -95,10 +149,7 @@ export default async function BuyoutDetailPage({
                 <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: 0 }}>
                   Team notes
                 </h2>
-                <p className="section-copy">{buyout.notes}</p>
-                <p className="section-copy">
-                  Next action: <strong>{buyout.nextAction}</strong>
-                </p>
+                <pre className="notes-block">{buyout.notes || "No notes captured yet."}</pre>
               </section>
             </div>
 
@@ -107,6 +158,13 @@ export default async function BuyoutDetailPage({
                 <h2 className="section-title" style={{ fontSize: "1.45rem", marginTop: 0 }}>
                   Workflow
                 </h2>
+                <div className="detail-progress-summary">
+                  <span className="metric-label">Checklist completion</span>
+                  <strong>{buyout.workflowProgress}%</strong>
+                </div>
+                <div className="progress">
+                  <span style={{ width: `${buyout.workflowProgress}%` }} />
+                </div>
                 <div className="workflow-list">
                   {buyout.workflow.map((step) => (
                     <div className="workflow-item" key={step.key}>
@@ -119,6 +177,33 @@ export default async function BuyoutDetailPage({
                       </span>
                     </div>
                   ))}
+                </div>
+              </section>
+
+              <section className="sidebar card">
+                <h2 className="section-title" style={{ fontSize: "1.45rem", marginTop: 0 }}>
+                  Financials
+                </h2>
+                <div className="detail-progress-summary">
+                  <span className="metric-label">Payment progress</span>
+                  <strong>{buyout.paymentProgress}%</strong>
+                </div>
+                <div className="progress">
+                  <span style={{ width: `${buyout.paymentProgress}%` }} />
+                </div>
+                <div className="detail-info-grid" style={{ marginTop: "1rem" }}>
+                  <div className="info-line">
+                    <span>Total quoted</span>
+                    <strong>{formatCurrency(buyout.total)}</strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Amount paid</span>
+                    <strong>{formatCurrency(buyout.amountPaid)}</strong>
+                  </div>
+                  <div className="info-line">
+                    <span>Remaining</span>
+                    <strong>{formatCurrency(buyout.outstanding)}</strong>
+                  </div>
                 </div>
               </section>
             </aside>
