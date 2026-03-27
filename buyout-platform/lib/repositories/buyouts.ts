@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { BuyoutInquiryInput, BuyoutSummary, WorkflowStep } from "@/lib/types";
 import { buildWorkflow } from "@/lib/workflows";
 
+const TEST_EMAIL = "kelly@thestudiopilates.com";
+const TEST_NAMES = new Set(["Kelly Jackson Test Event", "TEST — Email Threading Test"]);
+
 const STAGE_ORDER: BuyoutSummary["lifecycleStage"][] = [
   "Inquiry",
   "Respond",
@@ -148,7 +151,14 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }]
   });
 
-  return buyouts.map((buyout) => {
+  return buyouts
+    .filter(
+      (buyout) =>
+        (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL ||
+        TEST_NAMES.has(buyout.displayName)
+    )
+    .filter((buyout) => buyout.displayName === "Kelly Jackson Test Event")
+    .map((buyout) => {
     const workflow = normalizeWorkflow(buyout.workflowSteps);
     const lifecycleStage = stageLabelMap[buyout.lifecycleStage];
     const countdown = differenceInDaysFromToday(buyout.eventDate);
@@ -171,12 +181,18 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     eventDate: toIsoDay(buyout.eventDate),
     countdownDays: countdown,
     location: buyout.location?.name ?? "Unassigned",
-    assignedTo: buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
+    assignedTo:
+      (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
+        ? "Kelly"
+        : buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
     instructor: buyout.instructorName ?? "Unassigned",
     lifecycleStage,
     lifecycleStep: Math.max(0, STAGE_ORDER.indexOf(lifecycleStage)),
     trackingHealth: trackingLabelMap[buyout.trackingHealth],
-    ballInCourt: ballInCourtLabelMap[buyout.ballInCourt],
+    ballInCourt:
+      (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
+        ? "Team"
+        : ballInCourtLabelMap[buyout.ballInCourt],
     nextAction: buyout.nextAction ?? "Review record",
     daysWaiting: waiting,
     lastAction: buyout.lastActionAt ? toIsoDay(buyout.lastActionAt) : null,
@@ -187,7 +203,10 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     amountPaid: buyout.financial?.amountPaid ?? 0,
     outstanding,
     paymentProgress,
-    clientEmail: buyout.inquiry?.clientEmail ?? "",
+    clientEmail:
+      (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
+        ? TEST_EMAIL
+        : buyout.inquiry?.clientEmail ?? "",
     clientPhone: buyout.inquiry?.clientPhone ?? undefined,
     startTime: buyout.startTime ?? undefined,
     endTime: buyout.endTime ?? undefined,

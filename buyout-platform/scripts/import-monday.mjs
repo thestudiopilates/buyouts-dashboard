@@ -12,6 +12,8 @@ import {
 } from "@prisma/client";
 
 const prisma = new PrismaClient();
+const TEST_ITEM_ID = "10989594648";
+const TEST_EMAIL = "kelly@thestudiopilates.com";
 
 const COLUMN_IDS = {
   eventDetails: "long_texth99wlmi8",
@@ -204,7 +206,10 @@ async function main() {
     const locationName =
       getTextValue(item, COLUMN_IDS.finalLocation) || getTextValue(item, COLUMN_IDS.preferredLocation);
     const eventType = getTextValue(item, COLUMN_IDS.eventType) || null;
-    const primaryEmail = getTextValue(item, COLUMN_IDS.clientEmail) || `monday-${item.id}@placeholder.local`;
+    const primaryEmail =
+      item.id === TEST_ITEM_ID
+        ? TEST_EMAIL
+        : getTextValue(item, COLUMN_IDS.clientEmail) || `monday-${item.id}@placeholder.local`;
     const primaryPhone = getTextValue(item, COLUMN_IDS.clientPhone) || null;
     const inquiryNotes = getTextValue(item, COLUMN_IDS.eventDetails) || null;
     const notesInternal = buildNotes(item) || null;
