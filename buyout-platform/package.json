@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "import:monday": "node scripts/import-monday.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.6.0",

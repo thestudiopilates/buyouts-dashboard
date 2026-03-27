@@ -5,12 +5,12 @@ const navItems = [
   { href: "/dashboard", label: "Home" },
   { href: "/buyouts", label: "Buyouts" },
   { href: "/dashboard/migration", label: "Migration" },
-  { href: "#", label: "Projects" },
-  { href: "#", label: "Studio Schedule" },
-  { href: "#", label: "Front Desk" },
-  { href: "#", label: "Reports" },
-  { href: "#", label: "Settings" }
-];
+  { href: "/projects", label: "Projects" },
+  { href: "/studio-schedule", label: "Studio Schedule" },
+  { href: "/front-desk", label: "Front Desk" },
+  { href: "/reports", label: "Reports" },
+  { href: "/settings", label: "Settings" }
+] as const;
 
 export function PortalShell({
   children,

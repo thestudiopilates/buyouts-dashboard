@@ -11,9 +11,9 @@ function formatCurrency(value: number) {
 export default async function BuyoutDetailPage({
   params
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = await params;
   const buyout = await getBuyout(id);
 
   if (!buyout) {
