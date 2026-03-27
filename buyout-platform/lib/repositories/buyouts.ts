@@ -10,6 +10,7 @@ const TEST_ITEM_ID = "10989594648";
 const TEST_NAMES = new Set(["Kelly Jackson Test Event", "TEST — Email Threading Test"]);
 const TEST_SIGNUP_LINK = "https://momence.com/l/4ZhnW48O";
 const TEST_STATUS_LABEL = "Still Discussing Dates / Times";
+const TEST_SENT_TEMPLATES = ["t5"];
 
 function formatTime(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -191,6 +192,17 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       !buyout.endTime && buyout.eventDate
         ? formatTime(new Date(buyout.eventDate.getTime() + 60 * 60 * 1000))
         : buyout.endTime ?? undefined;
+    const healthFlags = [
+      countdown !== null && countdown < 0 ? "Event date on the source board is in the past." : null,
+      workflow.some((step) => step.key === "remaining-payment-received" && step.complete) &&
+      (buyout.financial?.amountPaid ?? 0) === 0
+        ? "Workflow shows payment completed, but financials still show $0 paid."
+        : null,
+      lifecycleStage === "Discuss" &&
+      workflow.some((step) => step.key === "date-finalized" && step.complete)
+        ? "Lifecycle status is behind the checklist state on the Monday board."
+        : null
+    ].filter((value): value is string => Boolean(value));
 
     return {
     id: buyout.id,
@@ -229,10 +241,13 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     clientPhone: buyout.inquiry?.clientPhone ?? undefined,
     startTime: derivedStartTime,
     endTime: derivedEndTime,
+    preferredDates: buyout.inquiry?.preferredDates ?? undefined,
     depositLink: buyout.financial?.depositLink ?? undefined,
     balanceLink: buyout.financial?.balanceLink ?? undefined,
     signupLink: isKellyTest ? TEST_SIGNUP_LINK : undefined,
     notes: buyout.notesInternal ?? "",
+    healthFlags,
+    sentTemplateIds: isKellyTest ? TEST_SENT_TEMPLATES : [],
     workflowProgress,
     workflow
     };

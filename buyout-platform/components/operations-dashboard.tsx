@@ -49,6 +49,15 @@ const EMAIL_TEMPLATES = [
   { id: "t11", label: "Final Confirmation", requiredFields: ["eventDate", "startTime", "endTime"] }
 ] as const;
 
+const TEMPLATE_HINTS: Record<string, string> = {
+  t1: "Initial intake response",
+  t3: "Date confirmation and payment request",
+  t5: "Locked event details and signup link",
+  t6: "Remaining balance follow-up",
+  t10: "Missing attendee signups reminder",
+  t11: "Final event details"
+};
+
 function formatMoney(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -241,6 +250,17 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
         <div className="ops-drawer-body">
           {tab === "overview" ? (
             <div>
+              {buyout.healthFlags.length > 0 ? (
+                <div className="ops-alert-box">
+                  <div className="ops-alert-title">Source board inconsistencies</div>
+                  {buyout.healthFlags.map((flag) => (
+                    <div className="ops-alert-line" key={flag}>
+                      {flag}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
               <div className="ops-quick-grid">
                 {[
                   [
@@ -278,6 +298,7 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
               <div className="ops-detail-card">
                 {[
                   ["Date", buyout.eventDate],
+                  ["Preferred", buyout.preferredDates || "Not captured"],
                   ["Time", buyout.startTime && buyout.endTime ? `${buyout.startTime} - ${buyout.endTime}` : "TBD"],
                   ["Location", buyout.location],
                   ["Instructor", buyout.instructor],
@@ -369,39 +390,44 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
               <div className="ops-tab-summary">
                 <div>
                   <span className="ops-tab-big">
-                    {
-                      EMAIL_TEMPLATES.filter((template) =>
-                        readiness(buyout, template.requiredFields).ready
-                      ).length
-                    }
+                    {buyout.sentTemplateIds.length}
                   </span>
-                  <span className="ops-tab-small">ready templates</span>
+                  <span className="ops-tab-small">templates already sent</span>
                 </div>
               </div>
               <div className="ops-group-stack">
                 {EMAIL_TEMPLATES.map((template) => {
                   const state = readiness(buyout, template.requiredFields);
+                  const sent = buyout.sentTemplateIds.includes(template.id);
                   return (
                     <div
                       className="ops-email-row"
                       key={template.id}
                       style={{
-                        borderColor: state.ready ? `${COLORS.seaglass}33` : `${COLORS.cherry}22`
+                        borderColor: sent
+                          ? `${COLORS.seaglass}33`
+                          : state.ready
+                            ? `${COLORS.sunshine}33`
+                            : `${COLORS.cherry}22`
                       }}
                     >
                       <div>
                         <div className="ops-email-title">{template.label}</div>
                         <div className="ops-email-meta">
-                          {state.ready
-                            ? "Ready to send once automation is wired"
+                          {sent
+                            ? TEMPLATE_HINTS[template.id]
+                            : state.ready
+                              ? "Ready to send once automation is wired"
                             : `Missing ${state.total - state.filled} required field${state.total - state.filled === 1 ? "" : "s"}`}
                         </div>
                       </div>
                       <span
                         className="ops-email-state"
-                        style={{ color: state.ready ? COLORS.seaglass : COLORS.cherry }}
+                        style={{
+                          color: sent ? COLORS.seaglass : state.ready ? COLORS.apricot : COLORS.cherry
+                        }}
                       >
-                        {state.ready ? "Ready" : "Blocked"}
+                        {sent ? "Sent" : state.ready ? "Ready" : "Blocked"}
                       </span>
                     </div>
                   );
@@ -445,7 +471,7 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
                     <div className="ops-link-icon" style={{ background: url ? `${COLORS.seaglass}18` : COLORS.divider }} />
                     <div className="ops-link-copy">
                       <div>{label}</div>
-                      <small>{url ? "Available" : "Not created"}</small>
+                      <small>{url ? "Available for Kelly test flow" : "Not created"}</small>
                     </div>
                   </div>
                 ))}

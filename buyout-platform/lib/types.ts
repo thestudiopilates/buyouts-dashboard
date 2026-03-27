@@ -51,10 +51,13 @@ export type BuyoutSummary = {
   clientPhone?: string;
   startTime?: string;
   endTime?: string;
+  preferredDates?: string;
   depositLink?: string;
   balanceLink?: string;
   signupLink?: string;
   notes: string;
+  healthFlags: string[];
+  sentTemplateIds: string[];
   workflowProgress: number;
   workflow: WorkflowStep[];
 };

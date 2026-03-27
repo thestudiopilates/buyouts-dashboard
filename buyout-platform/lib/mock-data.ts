@@ -34,6 +34,8 @@ export const mockBuyouts: BuyoutSummary[] = [
     balanceLink: "https://pay.tsp.com/bal-sc",
     signupLink: "https://momence.com/tsp/sc",
     notes: "Client wants light food and champagne guidance.",
+    healthFlags: [],
+    sentTemplateIds: ["t1", "t3", "t5"],
     workflowProgress: 63,
     workflow: buildWorkflow([
       "inquiry-reviewed",
@@ -80,6 +82,8 @@ export const mockBuyouts: BuyoutSummary[] = [
     balanceLink: "https://pay.tsp.com/bal-mt",
     signupLink: "",
     notes: "Corporate team event. Instructor assignment is still open.",
+    healthFlags: ["Instructor is still unassigned."],
+    sentTemplateIds: ["t1", "t3"],
     workflowProgress: 38,
     workflow: buildWorkflow([
       "inquiry-reviewed",
@@ -122,6 +126,8 @@ export const mockBuyouts: BuyoutSummary[] = [
     balanceLink: "",
     signupLink: "https://momence.com/tsp/jw",
     notes: "Fully paid and nearly complete. Final confirmation has been sent.",
+    healthFlags: [],
+    sentTemplateIds: ["t1", "t3", "t5", "t11"],
     workflowProgress: 75,
     workflow: buildWorkflow([
       "inquiry-reviewed",

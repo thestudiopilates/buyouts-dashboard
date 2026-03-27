@@ -1101,6 +1101,29 @@ textarea {
   color: var(--coffee);
 }
 
+.ops-alert-box {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: rgba(232, 88, 27, 0.08);
+  border: 1px solid rgba(232, 88, 27, 0.16);
+}
+
+.ops-alert-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--danger);
+}
+
+.ops-alert-line {
+  margin-top: 0.45rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--coffee);
+}
+
 .ops-group-stack,
 .ops-link-stack {
   display: grid;
