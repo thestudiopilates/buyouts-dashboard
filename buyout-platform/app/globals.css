@@ -543,6 +543,46 @@ textarea {
   gap: 1rem;
 }
 
+.ops-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid rgba(159, 84, 63, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(245, 235, 231, 0.96));
+}
+
+.ops-mode-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.ops-mode-copy,
+.ops-row-meta,
+.ops-client-meta {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  color: #7b6c61;
+}
+
+.ops-mode-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 0.95rem;
+  border-radius: 999px;
+  background: var(--coffee);
+  color: var(--oat-light);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .ops-kpi-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -745,6 +785,12 @@ textarea {
   flex-wrap: wrap;
 }
 
+.ops-client-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .ops-type-pill {
   display: inline-flex;
   align-items: center;
@@ -780,6 +826,10 @@ textarea {
 
 .ops-lifecycle-bar.table {
   width: 100%;
+}
+
+.ops-row-meta {
+  min-height: 1rem;
 }
 
 .ops-next-cell {
@@ -1011,6 +1061,10 @@ textarea {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.ops-source-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .ops-financial-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -1025,6 +1079,17 @@ textarea {
 
 .ops-quick-value {
   font-size: 1.35rem;
+}
+
+.ops-source-card {
+  text-align: left;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 243, 239, 0.92));
+  border-color: rgba(224, 214, 204, 0.8);
+}
+
+.ops-source-value {
+  font-size: 1rem;
+  line-height: 1.25;
 }
 
 .ops-section-label {
@@ -1266,6 +1331,7 @@ textarea {
   .detail-grid,
   .grid-4,
   .metrics-grid,
+  .ops-source-grid,
   .ops-kpi-grid,
   .ops-quick-grid,
   .ops-financial-grid {
@@ -1284,5 +1350,10 @@ textarea {
 
   .ops-drawer {
     width: 100%;
+  }
+
+  .ops-mode-banner {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

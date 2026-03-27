@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { BuyoutSummary } from "@/lib/types";
@@ -64,6 +65,24 @@ function formatMoney(value: number) {
     currency: "USD",
     maximumFractionDigits: 0
   }).format(value);
+}
+
+function formatDisplayDate(value: string) {
+  if (!value || value === "TBD") {
+    return "TBD";
+  }
+
+  const parsed = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "America/New_York"
+  }).format(parsed);
 }
 
 function eventTypeStyle(type: string) {
@@ -294,6 +313,21 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
                 ))}
               </div>
 
+              <div className="ops-section-label">Source Snapshot</div>
+              <div className="ops-quick-grid ops-source-grid">
+                {[
+                  [buyout.lifecycleStage, "Lifecycle"],
+                  [buyout.nextAction, "Due Next"],
+                  [buyout.trackingHealth, "Tracking"],
+                  [buyout.ballInCourt === "Team" ? "Us" : buyout.ballInCourt, "Ball In Court"]
+                ].map(([value, label]) => (
+                  <div className="ops-quick-card ops-source-card" key={label as string}>
+                    <div className="ops-quick-value ops-source-value">{value}</div>
+                    <div className="ops-quick-label">{label}</div>
+                  </div>
+                ))}
+              </div>
+
               <div className="ops-section-label">Event Details</div>
               <div className="ops-detail-card">
                 {[
@@ -467,13 +501,19 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
                   ["Balance Link", buyout.balanceLink],
                   ["Sign-Up Link", buyout.signupLink]
                 ].map(([label, url]) => (
-                  <div className="ops-link-card" key={label as string}>
+                  <a
+                    className="ops-link-card"
+                    href={url || undefined}
+                    key={label as string}
+                    rel="noreferrer"
+                    target={url ? "_blank" : undefined}
+                  >
                     <div className="ops-link-icon" style={{ background: url ? `${COLORS.seaglass}18` : COLORS.divider }} />
                     <div className="ops-link-copy">
                       <div>{label}</div>
                       <small>{url ? "Available for Kelly test flow" : "Not created"}</small>
                     </div>
-                  </div>
+                  </a>
                 ))}
               </div>
             </div>
@@ -543,6 +583,19 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
 
   return (
     <div className="ops-shell">
+      <div className="ops-mode-banner">
+        <div>
+          <div className="ops-mode-title">Kelly test record</div>
+          <div className="ops-mode-copy">
+            Live dashboard is intentionally focused on the single test buyout while we finish status
+            and workflow alignment.
+          </div>
+        </div>
+        <Link className="ops-mode-link" href="/buyouts/inquire">
+          Open intake form
+        </Link>
+      </div>
+
       <div className="ops-kpi-grid">
         <KPI
           label="Active Buyouts"
@@ -663,12 +716,20 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       </span>
                       <span>{buyout.assignedTo}</span>
                     </div>
+                    <div className="ops-client-meta">
+                      <span>{formatDisplayDate(buyout.eventDate)}</span>
+                      <span>•</span>
+                      <span>{buyout.location}</span>
+                    </div>
                   </div>
                 </div>
 
                 <div>
                   <div className="ops-status-badge" style={{ background: `${track}14`, color: track }}>
                     {buyout.statusLabel}
+                  </div>
+                  <div className="ops-row-meta">
+                    {buyout.lifecycleStage} · {buyout.trackingHealth}
                   </div>
                   <div className="ops-lifecycle-bar table">
                     {lifecycleSegments(buyout.lifecycleStep).map((color, index) => (
@@ -680,6 +741,9 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                 <div className="ops-next-cell">
                   <div className="ops-next-text" style={{ color: wait }}>
                     {buyout.nextAction}
+                  </div>
+                  <div className="ops-row-meta">
+                    {buyout.lastAction ? `Last action ${formatDisplayDate(buyout.lastAction)}` : "No action logged"}
                   </div>
                   {buyout.daysWaiting > 0 ? (
                     <span className="ops-wait-pill" style={{ background: `${wait}14`, color: wait }}>
