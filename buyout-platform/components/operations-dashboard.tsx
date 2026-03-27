@@ -241,10 +241,16 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
             <div>
               <div className="ops-status-label">Status</div>
               <div className="ops-status-value">{buyout.statusLabel}</div>
+              {buyout.sourceStatusLabel && buyout.sourceStatusLabel !== buyout.statusLabel ? (
+                <div className="ops-source-note">Monday source: {buyout.sourceStatusLabel}</div>
+              ) : null}
             </div>
             <div className="ops-status-right">
               <div className="ops-status-label">Next Action</div>
               <div className="ops-status-next">{buyout.nextAction}</div>
+              {buyout.sourceNextAction && buyout.sourceNextAction !== buyout.nextAction ? (
+                <div className="ops-source-note">Monday source: {buyout.sourceNextAction}</div>
+              ) : null}
             </div>
           </div>
           <div className="ops-lifecycle-bar">
@@ -316,13 +322,38 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
               <div className="ops-section-label">Source Snapshot</div>
               <div className="ops-quick-grid ops-source-grid">
                 {[
-                  [buyout.lifecycleStage, "Lifecycle"],
-                  [buyout.nextAction, "Due Next"],
-                  [buyout.trackingHealth, "Tracking"],
-                  [buyout.ballInCourt === "Team" ? "Us" : buyout.ballInCourt, "Ball In Court"]
-                ].map(([value, label]) => (
+                  [
+                    buyout.lifecycleStage,
+                    buyout.sourceLifecycleStage && buyout.sourceLifecycleStage !== buyout.lifecycleStage
+                      ? `Monday: ${buyout.sourceLifecycleStage}`
+                      : null,
+                    "Lifecycle"
+                  ],
+                  [
+                    buyout.nextAction,
+                    buyout.sourceNextAction && buyout.sourceNextAction !== buyout.nextAction
+                      ? `Monday: ${buyout.sourceNextAction}`
+                      : null,
+                    "Due Next"
+                  ],
+                  [
+                    buyout.trackingHealth,
+                    buyout.sourceTrackingHealth && buyout.sourceTrackingHealth !== buyout.trackingHealth
+                      ? `Monday: ${buyout.sourceTrackingHealth}`
+                      : null,
+                    "Tracking"
+                  ],
+                  [
+                    buyout.ballInCourt === "Team" ? "Us" : buyout.ballInCourt,
+                    buyout.sourceBallInCourt && buyout.sourceBallInCourt !== buyout.ballInCourt
+                      ? `Monday: ${buyout.sourceBallInCourt === "Team" ? "Us" : buyout.sourceBallInCourt}`
+                      : null,
+                    "Ball In Court"
+                  ]
+                ].map(([value, subvalue, label]) => (
                   <div className="ops-quick-card ops-source-card" key={label as string}>
                     <div className="ops-quick-value ops-source-value">{value}</div>
+                    {subvalue ? <div className="ops-source-subvalue">{subvalue}</div> : null}
                     <div className="ops-quick-label">{label}</div>
                   </div>
                 ))}
@@ -730,6 +761,9 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                   </div>
                   <div className="ops-row-meta">
                     {buyout.lifecycleStage} · {buyout.trackingHealth}
+                    {buyout.sourceStatusLabel && buyout.sourceStatusLabel !== buyout.statusLabel
+                      ? ` · Monday: ${buyout.sourceStatusLabel}`
+                      : ""}
                   </div>
                   <div className="ops-lifecycle-bar table">
                     {lifecycleSegments(buyout.lifecycleStep).map((color, index) => (
@@ -743,7 +777,11 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                     {buyout.nextAction}
                   </div>
                   <div className="ops-row-meta">
-                    {buyout.lastAction ? `Last action ${formatDisplayDate(buyout.lastAction)}` : "No action logged"}
+                    {buyout.sourceNextAction && buyout.sourceNextAction !== buyout.nextAction
+                      ? `Monday says ${buyout.sourceNextAction}`
+                      : buyout.lastAction
+                        ? `Last action ${formatDisplayDate(buyout.lastAction)}`
+                        : "No action logged"}
                   </div>
                   {buyout.daysWaiting > 0 ? (
                     <span className="ops-wait-pill" style={{ background: `${wait}14`, color: wait }}>

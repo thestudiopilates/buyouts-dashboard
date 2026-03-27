@@ -564,7 +564,9 @@ textarea {
 
 .ops-mode-copy,
 .ops-row-meta,
-.ops-client-meta {
+.ops-client-meta,
+.ops-source-note,
+.ops-source-subvalue {
   margin-top: 0.25rem;
   font-size: 0.72rem;
   color: #7b6c61;
@@ -1090,6 +1092,15 @@ textarea {
 .ops-source-value {
   font-size: 1rem;
   line-height: 1.25;
+}
+
+.ops-source-subvalue,
+.ops-source-note {
+  line-height: 1.45;
+}
+
+.ops-source-note {
+  max-width: 240px;
 }
 
 .ops-section-label {

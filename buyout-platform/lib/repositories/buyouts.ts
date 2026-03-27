@@ -9,8 +9,50 @@ const TEST_EMAIL = "kelly@thestudiopilates.com";
 const TEST_ITEM_ID = "10989594648";
 const TEST_NAMES = new Set(["Kelly Jackson Test Event", "TEST — Email Threading Test"]);
 const TEST_SIGNUP_LINK = "https://momence.com/l/4ZhnW48O";
-const TEST_STATUS_LABEL = "Still Discussing Dates / Times";
+const TEST_SOURCE_STATUS_LABEL = "Still Discussing Dates / Times";
 const TEST_SENT_TEMPLATES = ["t5"];
+
+function reconcileKellyStatus(workflow: WorkflowStep[], countdown: number | null) {
+  const completed = new Set(workflow.filter((step) => step.complete).map((step) => step.key));
+
+  if (countdown !== null && countdown < 0) {
+    return {
+      statusLabel: "Source Cleanup Required",
+      lifecycleStage: "Ready" as const,
+      trackingHealth: "Major issue" as const,
+      ballInCourt: "Team" as const,
+      nextAction: "Clean up event date and payment state"
+    };
+  }
+
+  if (completed.has("momence-link-sign-up-sent")) {
+    return {
+      statusLabel: "Awaiting Guest Sign-Ups",
+      lifecycleStage: "Sign-Ups" as const,
+      trackingHealth: "At risk" as const,
+      ballInCourt: "Client" as const,
+      nextAction: "Monitor registrations and waivers"
+    };
+  }
+
+  if (completed.has("deposit-paid-and-terms-signed")) {
+    return {
+      statusLabel: "Deposit Received",
+      lifecycleStage: "Deposit" as const,
+      trackingHealth: "On track" as const,
+      ballInCourt: "Team" as const,
+      nextAction: "Send event details and signup link"
+    };
+  }
+
+  return {
+    statusLabel: TEST_SOURCE_STATUS_LABEL,
+    lifecycleStage: "Discuss" as const,
+    trackingHealth: "On track" as const,
+    ballInCourt: "Team" as const,
+    nextAction: "Schedule Desk"
+  };
+}
 
 function formatTime(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -192,6 +234,19 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       !buyout.endTime && buyout.eventDate
         ? formatTime(new Date(buyout.eventDate.getTime() + 60 * 60 * 1000))
         : buyout.endTime ?? undefined;
+    const sourceLifecycleStage = lifecycleStage;
+    const sourceTrackingHealth = trackingLabelMap[buyout.trackingHealth];
+    const sourceBallInCourt =
+      isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
+        ? "Team"
+        : ballInCourtLabelMap[buyout.ballInCourt];
+    const sourceNextAction = buyout.nextAction ?? "Review record";
+    const reconciledKelly = isKellyTest ? reconcileKellyStatus(workflow, countdown) : null;
+    const effectiveLifecycleStage = reconciledKelly?.lifecycleStage ?? lifecycleStage;
+    const effectiveTrackingHealth = reconciledKelly?.trackingHealth ?? sourceTrackingHealth;
+    const effectiveBallInCourt = reconciledKelly?.ballInCourt ?? sourceBallInCourt;
+    const effectiveNextAction = reconciledKelly?.nextAction ?? sourceNextAction;
+    const effectiveStatusLabel = reconciledKelly?.statusLabel ?? lifecycleStage;
     const healthFlags = [
       countdown !== null && countdown < 0 ? "Event date on the source board is in the past." : null,
       workflow.some((step) => step.key === "remaining-payment-received" && step.complete) &&
@@ -201,6 +256,9 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       lifecycleStage === "Discuss" &&
       workflow.some((step) => step.key === "date-finalized" && step.complete)
         ? "Lifecycle status is behind the checklist state on the Monday board."
+        : null,
+      isKellyTest && effectiveStatusLabel !== TEST_SOURCE_STATUS_LABEL
+        ? `Operationally this reads as "${effectiveStatusLabel}" even though Monday still shows "${TEST_SOURCE_STATUS_LABEL}".`
         : null
     ].filter((value): value is string => Boolean(value));
 
@@ -208,7 +266,8 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     id: buyout.id,
     name: buyout.displayName,
     eventType: buyout.inquiry?.eventType ?? "Buyout",
-    statusLabel: isKellyTest ? TEST_STATUS_LABEL : lifecycleStage,
+    statusLabel: effectiveStatusLabel,
+    sourceStatusLabel: isKellyTest ? TEST_SOURCE_STATUS_LABEL : lifecycleStage,
     eventDate: toIsoDay(buyout.eventDate),
     countdownDays: countdown,
     location: buyout.location?.name ?? "Unassigned",
@@ -217,14 +276,15 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
         ? "Kelly"
         : buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
     instructor: buyout.instructorName ?? "Unassigned",
-    lifecycleStage,
-    lifecycleStep: Math.max(0, STAGE_ORDER.indexOf(lifecycleStage)),
-    trackingHealth: trackingLabelMap[buyout.trackingHealth],
-    ballInCourt:
-      isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
-        ? "Team"
-        : ballInCourtLabelMap[buyout.ballInCourt],
-    nextAction: buyout.nextAction ?? "Review record",
+    lifecycleStage: effectiveLifecycleStage,
+    sourceLifecycleStage,
+    lifecycleStep: Math.max(0, STAGE_ORDER.indexOf(effectiveLifecycleStage)),
+    trackingHealth: effectiveTrackingHealth,
+    sourceTrackingHealth,
+    ballInCourt: effectiveBallInCourt,
+    sourceBallInCourt,
+    nextAction: effectiveNextAction,
+    sourceNextAction,
     daysWaiting: waiting,
     lastAction: buyout.lastActionAt ? toIsoDay(buyout.lastActionAt) : null,
     signups: buyout.signupCount,
