@@ -430,6 +430,23 @@ function Drawer({
     });
   }
 
+  function handleMarkSent(templateId: string, currentlySent: boolean) {
+    startTransition(async () => {
+      const response = await fetch(`/api/buyouts/${buyout.id}/mark-sent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateKey: templateId, unmark: currentlySent })
+      });
+
+      const payload = (await response.json()) as { buyout?: BuyoutSummary; error?: string };
+
+      if (payload.buyout) {
+        onBuyoutUpdated(payload.buyout);
+        setEmailMessage(currentlySent ? `${templateId} unmarked.` : `${templateId} marked as sent offline.`);
+      }
+    });
+  }
+
   function handleStageChange(newStage: string) {
     if (!newStage) return;
     setMessage("");
@@ -1036,7 +1053,18 @@ function Drawer({
                                 : `${COLORS.cherry}22`
                           }}
                         >
-                          <div>
+                          {template.id !== "t0" ? (
+                            <button
+                              className={`ops-mark-sent-check${sent ? " checked" : ""}`}
+                              disabled={isPending}
+                              onClick={(e) => { e.stopPropagation(); handleMarkSent(template.id, sent); }}
+                              title={sent ? "Unmark as sent" : "Mark as sent (offline)"}
+                              type="button"
+                            >
+                              {sent ? "✓" : ""}
+                            </button>
+                          ) : null}
+                          <div style={{ flex: 1, minWidth: 0 }}>
                             <div className="ops-email-title">{template.label}</div>
                             <div className="ops-email-meta">
                               {sent
@@ -1047,14 +1075,6 @@ function Drawer({
                             </div>
                           </div>
                           <div className="ops-email-action-stack">
-                            <span
-                              className="ops-email-state"
-                              style={{
-                                color: sent ? COLORS.seaglass : state.ready ? COLORS.apricot : COLORS.cherry
-                              }}
-                            >
-                              {sent ? "Sent" : state.ready ? "Ready" : "Blocked"}
-                            </span>
                             <button
                               className={`ops-email-send-btn${blocked ? " blocked" : ""}`}
                               disabled={isPending || blocked}
