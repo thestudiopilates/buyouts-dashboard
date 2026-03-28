@@ -916,9 +916,21 @@ function Drawer({
             type ChecklistRow = {
               phase: string;
               color: string;
-              client: { key: string; label: string } | null;
-              operator: { key: string; label: string; blocked?: string } | null;
+              client: { key: string; label: string; dueLabel?: string } | null;
+              operator: { key: string; label: string; blocked?: string; dueLabel?: string } | null;
             };
+
+            const eventDateObj = buyout.eventDate && buyout.eventDate !== "TBD" ? new Date(buyout.eventDate + "T12:00:00") : null;
+            function daysBeforeEvent(days: number) {
+              if (!eventDateObj) return undefined;
+              const d = new Date(eventDateObj); d.setDate(d.getDate() - days);
+              return formatDisplayDate(d.toISOString().slice(0, 10));
+            }
+            function isDuePast(days: number) {
+              if (!eventDateObj) return false;
+              const d = new Date(eventDateObj); d.setDate(d.getDate() - days);
+              return new Date() > d;
+            }
 
             const LIFECYCLE_ROWS: ChecklistRow[] = [
               // ── Intake
@@ -968,11 +980,32 @@ function Drawer({
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-shift-extended", label: "Extend desk shift if needed" } },
 
               // ── Registration
-              { phase: "Registration", color: COLORS.sunshine, client: { key: "all-attendees-registered", label: "All guests registered" }, operator: { key: "all-attendees-registered", label: "Confirm registrations or send reminder (t10)" } },
-              { phase: "Registration", color: COLORS.sunshine, client: null, operator: { key: "all-waivers-signed", label: "Confirm all waivers signed" } },
+              { phase: "Registration", color: COLORS.sunshine, client: {
+                key: "all-attendees-registered",
+                label: "All guests registered",
+                dueLabel: daysBeforeEvent(2) ? `Due by ${daysBeforeEvent(2)} (48hrs before)` : "Due 48 hours before event"
+              }, operator: {
+                key: "all-attendees-registered",
+                label: "Confirm registrations or send reminder (t10)",
+                dueLabel: isDuePast(2) && !stepDone("all-attendees-registered") ? "OVERDUE" : undefined
+              } },
+              { phase: "Registration", color: COLORS.sunshine, client: null, operator: {
+                key: "all-waivers-signed",
+                label: "Confirm all waivers signed",
+                dueLabel: daysBeforeEvent(2) ? `Due by ${daysBeforeEvent(2)}` : "Due 48 hours before event"
+              } },
 
               // ── Pre-Event
-              { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: { key: "final-confirmation-emails-sent", label: "Send final confirmation (t11)" } },
+              { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: {
+                key: "final-confirmation-emails-sent",
+                label: "Send final confirmation (t11)",
+                dueLabel: daysBeforeEvent(1) ? `Due by ${daysBeforeEvent(1)} (24hrs before)` : "Due 24 hours before event"
+              } },
+              { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: {
+                key: "final-confirmation-emails-sent",
+                label: "Send day-of confirmation (same details)",
+                dueLabel: eventDateObj ? `Due ${formatDisplayDate(buyout.eventDate)} (day of event)` : "Due day of event"
+              } },
 
               // ── Execution
               { phase: "Execution", color: COLORS.cherry, client: null, operator: { key: "event-completed", label: "Event delivered & follow-up (t12)" } }
@@ -1029,7 +1062,10 @@ function Drawer({
                                 >
                                   {stepDone(row.client.key) ? "✓" : ""}
                                 </div>
-                                <span>{row.client.label}</span>
+                                <div>
+                                  <span>{row.client.label}</span>
+                                  {row.client.dueLabel ? <div className={`ops-due-label${row.client.dueLabel === "OVERDUE" ? " overdue" : ""}`}>{row.client.dueLabel}</div> : null}
+                                </div>
                               </button>
                             ) : <div className="ops-dual-empty" />}
                           </div>
@@ -1057,7 +1093,10 @@ function Drawer({
                                   >
                                     {done ? "✓" : isBlocked ? "!" : ""}
                                   </div>
-                                  <span style={{ opacity: isBlocked ? 0.5 : 1 }}>{row.operator!.label}</span>
+                                  <div style={{ opacity: isBlocked ? 0.5 : 1 }}>
+                                    <span>{row.operator!.label}</span>
+                                    {row.operator!.dueLabel ? <div className={`ops-due-label${row.operator!.dueLabel === "OVERDUE" ? " overdue" : ""}`}>{row.operator!.dueLabel}</div> : null}
+                                  </div>
                                 </button>
                               );
                             })() : <div className="ops-dual-empty" />}

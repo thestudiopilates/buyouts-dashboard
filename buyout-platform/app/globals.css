@@ -2014,6 +2014,20 @@ textarea {
   font-size: 0.6rem;
 }
 
+.ops-due-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--warmGrey);
+  margin-top: 2px;
+}
+
+.ops-due-label.overdue {
+  color: var(--cherry);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .ops-dual-empty {
   min-height: 36px;
 }
