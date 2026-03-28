@@ -53,7 +53,7 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
     fallbackBodyTemplate:
       "Hi {{Client First Name}},\n\n\n\nWarmly,\nAutumn\nThe Studio Pilates Team",
     requiredVariables: [{ key: "clientFirstName", label: "Client First Name" }],
-    allowedStages: ALL_ACTIVE_STAGES,
+    allowedStages: [...ALL_ACTIVE_STAGES, "Complete", "Cancelled", "DOA", "Not Possible"],
     effectConfig: {
       eventType: "informational",
       sendPolicy: "repeatable"
@@ -330,7 +330,7 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
     fallbackBodyTemplate:
       "Hi {{Client First Name}},\n\nFollowing up on your buyout inquiry.\n\nWarmly,\nThe Studio Pilates Team",
     requiredVariables: [{ key: "clientFirstName", label: "Client First Name" }],
-    allowedStages: ALL_ACTIVE_STAGES,
+    allowedStages: [...ALL_ACTIVE_STAGES, "Complete", "Cancelled", "DOA", "Not Possible"],
     effectConfig: {
       eventType: "informational",
       sendPolicy: "repeatable"
