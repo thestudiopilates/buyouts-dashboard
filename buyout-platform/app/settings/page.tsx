@@ -2,6 +2,8 @@ import { EmailTemplateWorkspace } from "@/components/email-template-workspace";
 import { PortalShell } from "@/components/portal-shell";
 import { getEmailWorkspaceData } from "@/lib/email-templates";
 
+export const dynamic = "force-dynamic";
+
 export default async function SettingsPage() {
   const { templates, buyout, previews, activity, gmail } = await getEmailWorkspaceData();
 
