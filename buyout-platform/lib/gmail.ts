@@ -232,13 +232,26 @@ function extractBodyText(msg: GmailMessageResponse): string {
 
 export type ParsedPayment = {
   gmailMessageId: string;
+  threadId: string;
   orderNumber: string;
   clientName: string;
+  clientEmail: string;
   amount: number;
   paymentMethod: string;
+  productName: string;
   date: string;
   rawSubject: string;
+  bodyText: string;
 };
+
+const BUYOUT_PRODUCTS = [
+  "private buyout",
+  "private event",
+  "buyout / event",
+  "buyout deposit",
+  "remaining balance",
+  "studio buyout"
+];
 
 function getHeader(msg: GmailMessageResponse, name: string): string {
   return msg.payload?.headers?.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? "";
@@ -303,11 +316,14 @@ export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPaymen
   if (!config) return [];
 
   const accessToken = await getAccessToken(config);
-  const query = 'in:anywhere subject:("New order" OR "new order") newer_than:90d';
+
+  // Search broadly: all mail including archived/labeled, from our store, with order in subject
+  const query = `in:anywhere from:${config.senderEmail} subject:"New order #"`;
 
   const listUrl = new URL(`https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages`);
   listUrl.searchParams.set("q", query);
   listUrl.searchParams.set("maxResults", String(maxResults));
+  listUrl.searchParams.set("includeSpamTrash", "true");
 
   const listResponse = await fetch(listUrl.toString(), {
     headers: { Authorization: `Bearer ${accessToken}` }
@@ -321,6 +337,7 @@ export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPaymen
   const payments: ParsedPayment[] = [];
 
   for (const ref of listData.messages.slice(0, maxResults)) {
+    // Fetch full message content for body parsing
     const msgUrl = `https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages/${ref.id}?format=full`;
     const msgResponse = await fetch(msgUrl, {
       headers: { Authorization: `Bearer ${accessToken}` }
@@ -331,37 +348,60 @@ export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPaymen
     const msg = (await msgResponse.json()) as GmailMessageResponse;
     const subject = getHeader(msg, "Subject");
     const date = getHeader(msg, "Date");
+    const replyTo = getHeader(msg, "Reply-To");
     const body = extractBodyText(msg);
 
-    const orderMatch = subject.match(/New order #(\d+)/);
+    // Extract order number from subject
+    const orderMatch = subject.match(/New order #(\d+)/i);
     if (!orderMatch) continue;
-
     const orderNumber = orderMatch[1];
 
-    const replyTo = getHeader(msg, "Reply-To");
-    const replyToName = replyTo.match(/^([^<@]+)/)?.[1]?.trim() ?? "";
+    // Primary client identity from Reply-To header
+    const replyToNameMatch = replyTo.match(/^([^<]+)/);
+    const replyToName = replyToNameMatch?.[1]?.trim() ?? "";
+    const replyToEmailMatch = replyTo.match(/<([^>]+)>/) ?? replyTo.match(/([^\s<]+@[^\s>]+)/);
+    const replyToEmail = replyToEmailMatch?.[1]?.trim() ?? "";
 
-    const nameMatch = body.match(/(?:order from|received the following order from)\s*([A-Z][a-z]+ [A-Z][a-z]+)/i)
-      ?? body.match(/(?:Reply-To:\s*)([A-Z][a-z]+ [A-Z][a-z]+)/i)
-      ?? body.match(/(?:from\s+)([A-Z][a-z]+ [A-Z][a-z]+)/i);
-    const clientName = replyToName || nameMatch?.[1]?.trim() || "";
+    // Fallback name from body
+    const bodyNameMatch = body.match(/(?:order from|following order from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i);
+    const clientName = replyToName || bodyNameMatch?.[1]?.trim() || "";
+    const clientEmail = replyToEmail;
 
-    const amountMatch = body.match(/\$([0-9,]+\.?\d{0,2})/);
-    const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, "")) : 0;
+    // Extract product name — filter to buyout-related only
+    const productMatch = body.match(/(?:Product|Item)[:\s]*\n?\s*([^\n\t]+?)(?:\t|\s{2,}|\n)/i)
+      ?? body.match(/(Private Buyout[^\n]*)/i)
+      ?? body.match(/(Studio Buyout[^\n]*)/i);
+    const productName = productMatch?.[1]?.trim() ?? "";
 
-    const methodMatch = body.match(/Payment method:\s*(.+?)(?:\n|$)/i)
-      ?? body.match(/via\s+([\w\s]+(?:\([\w\s]+\))?)/i);
+    const isBuyoutProduct = BUYOUT_PRODUCTS.some((p) =>
+      productName.toLowerCase().includes(p) || body.toLowerCase().includes(p)
+    );
+    if (!isBuyoutProduct) continue;
+
+    // Extract total amount — look for Total: line first, then last dollar amount
+    const totalMatch = body.match(/Total:\s*\$([0-9,]+\.?\d{0,2})/i);
+    const subtotalMatch = body.match(/Subtotal:\s*\$([0-9,]+\.?\d{0,2})/i);
+    const anyAmountMatch = body.match(/\$([0-9,]+\.?\d{0,2})/);
+    const amountStr = totalMatch?.[1] ?? subtotalMatch?.[1] ?? anyAmountMatch?.[1];
+    const amount = amountStr ? parseFloat(amountStr.replace(/,/g, "")) : 0;
+
+    // Extract payment method
+    const methodMatch = body.match(/Payment method:\s*(.+?)(?:\n|$)/i);
     const paymentMethod = methodMatch?.[1]?.trim() ?? "Unknown";
 
     if (clientName && amount > 0) {
       payments.push({
         gmailMessageId: ref.id,
+        threadId: msg.threadId,
         orderNumber,
         clientName,
+        clientEmail,
         amount,
         paymentMethod,
+        productName,
         date,
-        rawSubject: subject
+        rawSubject: subject,
+        bodyText: body.slice(0, 500)
       });
     }
   }
