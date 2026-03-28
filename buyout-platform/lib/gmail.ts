@@ -202,6 +202,7 @@ type GmailMessageResponse = {
   threadId: string;
   snippet: string;
   payload?: {
+    mimeType?: string;
     headers?: Array<{ name: string; value: string }>;
     body?: { data?: string };
     parts?: GmailMessagePart[];
@@ -216,6 +217,17 @@ type GmailMessagePart = {
 
 function decodeBase64Url(data: string) {
   return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8");
+}
+
+function htmlToText(html: string) {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#\d+;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function findPartData(parts: GmailMessagePart[] | undefined, mimeType: string): string | undefined {
@@ -237,7 +249,11 @@ function findPartData(parts: GmailMessagePart[] | undefined, mimeType: string): 
 function extractBodyText(msg: GmailMessageResponse): string {
   // Direct body (simple messages)
   if (msg.payload?.body?.data) {
-    return decodeBase64Url(msg.payload.body.data);
+    const decoded = decodeBase64Url(msg.payload.body.data);
+    if (msg.payload?.mimeType === "text/html") {
+      return htmlToText(decoded);
+    }
+    return decoded;
   }
 
   // Search all parts recursively for text/plain first
@@ -249,14 +265,7 @@ function extractBodyText(msg: GmailMessageResponse): string {
   // Fall back to text/html stripped of tags
   const htmlData = findPartData(msg.payload?.parts, "text/html");
   if (htmlData) {
-    return decodeBase64Url(htmlData)
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&")
-      .replace(/&#\d+;/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+    return htmlToText(decodeBase64Url(htmlData));
   }
 
   return msg.snippet ?? "";
