@@ -743,7 +743,7 @@ export async function listEmailActivity(buyoutId?: string | null): Promise<Email
       FROM "BuyoutEvent"
       WHERE "buyoutId" = $1
       ORDER BY "createdAt" DESC
-      LIMIT 20
+      LIMIT 100
     `,
     buyoutId
   )) as EventRow[];

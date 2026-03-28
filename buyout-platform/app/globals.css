@@ -2144,6 +2144,16 @@ textarea {
   color: var(--terracotta);
 }
 
+.ops-activity-badge.inquiry {
+  background: rgba(242, 164, 8, 0.15);
+  color: #b87a00;
+}
+
+.ops-activity-badge.checklist {
+  background: rgba(121, 127, 93, 0.12);
+  color: var(--sage);
+}
+
 .ops-stage-select {
   display: block;
   margin-top: 6px;

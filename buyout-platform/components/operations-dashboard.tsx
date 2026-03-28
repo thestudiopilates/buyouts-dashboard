@@ -1180,8 +1180,20 @@ function Drawer({
                               {new Date(event.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
                             </div>
                             <div className="ops-activity-text">
-                              <span className={`ops-activity-badge ${event.eventType === "EMAIL_TEST_SENT" ? "email" : event.eventType === "NOTE_ADDED" ? "note" : "status"}`}>
-                                {event.eventType === "EMAIL_TEST_SENT" ? "Email" : event.eventType === "NOTE_ADDED" ? "Note" : "Event"}
+                              <span className={`ops-activity-badge ${
+                                event.eventType.includes("EMAIL") ? "email"
+                                : event.eventType === "NOTE_ADDED" ? "note"
+                                : event.eventType === "INQUIRY_RECEIVED" ? "inquiry"
+                                : event.eventType.includes("WORKFLOW") ? "checklist"
+                                : "status"
+                              }`}>
+                                {event.eventType === "EMAIL_TEST_SENT" || event.eventType === "EMAIL_SENT" ? "Email"
+                                  : event.eventType === "NOTE_ADDED" ? "Note"
+                                  : event.eventType === "INQUIRY_RECEIVED" ? "Inquiry"
+                                  : event.eventType === "BUYOUT_CREATED" ? "Created"
+                                  : event.eventType === "WORKFLOW_STEP_COMPLETED" ? "Checklist"
+                                  : event.eventType === "LAST_ACTION_RECORDED" ? "Action"
+                                  : "Event"}
                               </span>
                               {event.summary}
                             </div>
