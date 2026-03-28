@@ -303,7 +303,7 @@ export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPaymen
   if (!config) return [];
 
   const accessToken = await getAccessToken(config);
-  const query = 'in:anywhere subject:"New order" (from:thestudiopilates.com OR from:wordpress OR from:woocommerce OR subject:"Studio Pilates") newer_than:90d';
+  const query = 'in:anywhere subject:("New order" OR "new order") newer_than:90d';
 
   const listUrl = new URL(`https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages`);
   listUrl.searchParams.set("q", query);
