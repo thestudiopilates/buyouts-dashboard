@@ -94,13 +94,13 @@ const STEP_ADVANCEMENT_RULES: Array<{
   {
     requires: ["date-finalized"],
     advancesTo: "Feasible",
-    nextAction: "Prepare quote and send deposit link",
+    nextAction: "Send payment link and buyout terms",
     ballInCourt: "Team"
   },
   {
     requires: ["customer-responded"],
     advancesTo: "Discuss",
-    nextAction: "Confirm dates, location, and event details",
+    nextAction: "Confirm dates, times, location, and event details",
     ballInCourt: "Both"
   },
   {

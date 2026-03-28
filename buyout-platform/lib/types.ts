@@ -70,6 +70,9 @@ export type BuyoutSummary = {
   notes: string;
   healthFlags: string[];
   sentTemplateIds: string[];
+  inquiryDate: string | null;
+  paymentTier: "standard" | "full" | "rush";
+  rushFee: number;
   workflowProgress: number;
   workflow: WorkflowStep[];
 };

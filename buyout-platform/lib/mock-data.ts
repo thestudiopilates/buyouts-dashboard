@@ -45,6 +45,9 @@ export const mockBuyouts: BuyoutSummary[] = [
     notes: "Client wants light food and champagne guidance.",
     healthFlags: [],
     sentTemplateIds: ["t1", "t3", "t5"],
+    inquiryDate: "2026-03-01",
+    paymentTier: "standard",
+    rushFee: 0,
     workflowProgress: 63,
     workflow: buildWorkflow([
       "inquiry-reviewed",
@@ -102,6 +105,9 @@ export const mockBuyouts: BuyoutSummary[] = [
     notes: "Corporate team event. Instructor assignment is still open.",
     healthFlags: ["Instructor is still unassigned."],
     sentTemplateIds: ["t1", "t3"],
+    inquiryDate: "2026-03-10",
+    paymentTier: "full",
+    rushFee: 0,
     workflowProgress: 38,
     workflow: buildWorkflow([
       "inquiry-reviewed",
@@ -155,6 +161,9 @@ export const mockBuyouts: BuyoutSummary[] = [
     notes: "Fully paid and nearly complete. Final confirmation has been sent.",
     healthFlags: [],
     sentTemplateIds: ["t1", "t3", "t5", "t11"],
+    inquiryDate: "2026-02-15",
+    paymentTier: "standard",
+    rushFee: 0,
     workflowProgress: 75,
     workflow: buildWorkflow([
       "inquiry-reviewed",

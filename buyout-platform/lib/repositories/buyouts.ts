@@ -1,6 +1,6 @@
 import { BallInCourt, BuyoutStage, TrackingHealth, WorkflowGroup } from "@prisma/client";
 
-import { getBuyoutPhase } from "@/lib/buyout-phases";
+import { getBuyoutPhase, getPaymentTier, PAYMENT_RULES } from "@/lib/buyout-phases";
 import { deriveStageFromWorkflow } from "@/lib/lifecycle";
 import { mockBuyouts } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
@@ -503,6 +503,15 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     notes: buyout.notesInternal ?? "",
     healthFlags,
     sentTemplateIds,
+    inquiryDate: buyout.inquiry?.createdAt ? toIsoDay(buyout.inquiry.createdAt) : null,
+    paymentTier: getPaymentTier({
+      inquiryDate: buyout.inquiry?.createdAt ? toIsoDay(buyout.inquiry.createdAt) : null,
+      eventDate: toIsoDay(buyout.eventDate)
+    }),
+    rushFee: getPaymentTier({
+      inquiryDate: buyout.inquiry?.createdAt ? toIsoDay(buyout.inquiry.createdAt) : null,
+      eventDate: toIsoDay(buyout.eventDate)
+    }) === "rush" ? PAYMENT_RULES.rush.rushFee : 0,
     workflowProgress,
     workflow
     };
