@@ -372,16 +372,17 @@ function Drawer({
   }
 
   function loadActivity() {
-    if (activityLoaded) return;
-    setActivityLoaded(true);
+    fetch(`/api/buyouts/${buyout.id}/activity`)
+      .then((r) => r.json())
+      .then((data: { activity?: typeof activityLog }) => {
+        setActivityLog(data.activity ?? []);
+      })
+      .catch(() => {});
 
-    Promise.all([
-      fetch(`/api/buyouts/${buyout.id}/activity`).then((r) => r.json()),
-      fetch(`/api/buyouts/${buyout.id}/notes`).then((r) => r.json())
-    ])
-      .then(([actData, notesData]) => {
-        setActivityLog(actData.activity ?? []);
-        setNotesList(notesData.notes ?? []);
+    fetch(`/api/buyouts/${buyout.id}/notes`)
+      .then((r) => r.json())
+      .then((data: { notes?: typeof notesList }) => {
+        setNotesList(data.notes ?? []);
       })
       .catch(() => {});
   }
@@ -1129,7 +1130,12 @@ function Drawer({
             <div>
               {!activityLoaded ? (
                 <div style={{ textAlign: "center", padding: "16px 0" }}>
-                  <button className="ops-draft-preview" onClick={loadActivity} type="button">Load Activity</button>
+                  <button className="ops-draft-preview" onClick={() => { setActivityLoaded(true); loadActivity(); }} type="button">Load Activity</button>
+                </div>
+              ) : activityLog.length === 0 && notesList.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "16px 0" }}>
+                  <div className="ops-draft-loading">Loading...</div>
+                  <button className="ops-draft-preview" onClick={() => { setActivityLoaded(false); setTimeout(loadActivity, 100); }} type="button" style={{ marginTop: 8 }}>Retry</button>
                 </div>
               ) : (
                 <>
