@@ -140,9 +140,9 @@ export function deriveLifecycleState(state: WorkflowState): {
     };
   }
 
-  let derivedStage = currentStage;
-  let derivedNextAction = BUYOUT_PHASES[currentStage]?.nextAction ?? "Review record";
-  let derivedBallInCourt = BUYOUT_PHASES[currentStage]?.ballInCourt ?? "Team";
+  let derivedStage: StageKey = currentStage;
+  let derivedNextAction: string = BUYOUT_PHASES[currentStage]?.nextAction ?? "Review record";
+  let derivedBallInCourt: BallInCourtKey = BUYOUT_PHASES[currentStage]?.ballInCourt ?? "Team";
 
   for (const rule of STEP_STAGE_RULES) {
     if (rule.requires.every((key) => completedKeys.has(key))) {
