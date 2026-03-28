@@ -622,7 +622,7 @@ function Drawer({
             <button
               className={`ops-tab-btn${tab === key ? " active" : ""}`}
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => { setTab(key); if (key === "activity" && !activityLoaded) { setActivityLoaded(true); loadActivity(); } }}
             >
               {label}
             </button>
@@ -1129,14 +1129,9 @@ function Drawer({
           {tab === "activity" ? (
             <div>
               {!activityLoaded ? (
-                <div style={{ textAlign: "center", padding: "16px 0" }}>
-                  <button className="ops-draft-preview" onClick={() => { setActivityLoaded(true); loadActivity(); }} type="button">Load Activity</button>
-                </div>
+                <div className="ops-draft-loading">Tap Activity in the footer to load.</div>
               ) : activityLog.length === 0 && notesList.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "16px 0" }}>
-                  <div className="ops-draft-loading">Loading...</div>
-                  <button className="ops-draft-preview" onClick={() => { setActivityLoaded(false); setTimeout(loadActivity, 100); }} type="button" style={{ marginTop: 8 }}>Retry</button>
-                </div>
+                <div className="ops-draft-loading">Loading activity...</div>
               ) : (
                 <>
                   <div className="ops-section-label" style={{ marginTop: 0 }}>Add Note</div>
@@ -1241,6 +1236,18 @@ function Drawer({
                 Cancel
               </button>
             </>
+          ) : tab === "activity" ? (
+            <>
+              <button className="ops-footer-primary" onClick={() => { setActivityLoaded(false); setActivityLog([]); setNotesList([]); setTimeout(loadActivity, 50); setActivityLoaded(true); }} type="button">
+                Refresh
+              </button>
+              <button className="ops-footer-secondary" onClick={() => { setTab("emails"); setEditorMode(null); }} type="button">
+                Emails
+              </button>
+              <button className="ops-footer-tertiary" onClick={() => { setTab("overview"); setEditorMode(null); }} type="button">
+                Overview
+              </button>
+            </>
           ) : (
             <>
               <button className="ops-footer-primary" onClick={() => { setTab("emails"); setEditorMode(null); }} type="button">
@@ -1249,8 +1256,8 @@ function Drawer({
               <button className="ops-footer-secondary" onClick={() => { setTab("overview"); setEditorMode("details"); }} type="button">
                 Edit Details
               </button>
-              <button className="ops-footer-tertiary" onClick={() => { setTab("overview"); setEditorMode("notes"); }} type="button">
-                Notes
+              <button className="ops-footer-tertiary" onClick={() => { setTab("activity"); setActivityLoaded(true); loadActivity(); }} type="button">
+                Activity
               </button>
             </>
           )}
