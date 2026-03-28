@@ -216,7 +216,7 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
     effectConfig: {
       eventType: "stage_change",
       stageChange: "Sign-Ups",
-      workflowKeys: ["instructor-finalized", "momence-link-sign-up-sent"],
+      workflowKeys: ["instructor-finalized", "momence-class-created", "momence-link-sign-up-sent"],
       nextAction: "Monitor registrations and waivers",
       sendPolicy: "single"
     }

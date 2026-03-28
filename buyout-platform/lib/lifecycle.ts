@@ -44,7 +44,7 @@ const STEP_ADVANCEMENT_RULES: Array<{
     ballInCourt: "Team"
   },
   {
-    requires: ["front-desk-assigned"],
+    requires: ["front-desk-assigned", "front-desk-shift-extended"],
     advancesTo: "Ready",
     nextAction: "Send final confirmation email",
     ballInCourt: "Team"
