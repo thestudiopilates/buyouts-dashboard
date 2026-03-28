@@ -2269,6 +2269,13 @@ textarea {
   line-height: 1.5;
 }
 
+.ops-activity-subline {
+  font-size: 0.77rem;
+  color: var(--warmGrey);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
 .ops-activity-badge {
   display: inline-block;
   font-size: 0.65rem;
@@ -2660,4 +2667,3 @@ textarea {
   width: 100%;
   border: 0;
 }
-

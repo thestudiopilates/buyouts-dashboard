@@ -33,6 +33,50 @@ async function ensureInboxTable() {
   `);
 }
 
+function normalizeName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function firstName(value: string) {
+  return normalizeName(value).split(" ")[0] ?? "";
+}
+
+function matchPaymentToBuyout(
+  payment: { clientEmail: string; clientName: string },
+  buyouts: Awaited<ReturnType<typeof listBuyouts>>
+) {
+  const paymentEmail = payment.clientEmail.trim().toLowerCase();
+  const paymentName = normalizeName(payment.clientName);
+  const paymentFirstName = firstName(payment.clientName);
+
+  if (paymentEmail) {
+    const exactEmail = buyouts.find((buyout) => buyout.clientEmail.trim().toLowerCase() === paymentEmail);
+    if (exactEmail) {
+      return { buyout: exactEmail, matchedBy: "email" };
+    }
+  }
+
+  if (paymentName) {
+    const fullNameMatch = buyouts.find((buyout) => normalizeName(buyout.clientName || buyout.name) === paymentName);
+    if (fullNameMatch) {
+      return { buyout: fullNameMatch, matchedBy: "full-name" };
+    }
+  }
+
+  if (paymentFirstName) {
+    const firstNameMatches = buyouts.filter((buyout) => firstName(buyout.clientName || buyout.name) === paymentFirstName);
+    if (firstNameMatches.length === 1) {
+      return { buyout: firstNameMatches[0], matchedBy: "first-name" };
+    }
+  }
+
+  return { buyout: null, matchedBy: null };
+}
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
@@ -141,11 +185,7 @@ export async function GET(request: Request) {
 
       if ((alreadyProcessed[0]?.count ?? 0) > 0) continue;
 
-      const paymentNameLower = payment.clientName.toLowerCase();
-      const matchedBuyout = allBuyouts.find((b) => {
-        const buyoutName = (b.clientName || b.name).toLowerCase();
-        return buyoutName.includes(paymentNameLower) || paymentNameLower.includes(buyoutName.split(" ")[0]);
-      });
+      const { buyout: matchedBuyout, matchedBy } = matchPaymentToBuyout(payment, allBuyouts);
 
       if (!matchedBuyout) continue;
 
@@ -229,7 +269,14 @@ export async function GET(request: Request) {
           amount: payment.amount,
           paymentMethod: payment.paymentMethod,
           clientName: payment.clientName,
+          clientEmail: payment.clientEmail,
+          productName: payment.productName,
+          rawSubject: payment.rawSubject,
+          date: payment.date,
+          threadId: payment.threadId,
+          bodyText: payment.bodyText,
           matchedBuyoutName: matchedBuyout.name,
+          matchedBy,
           isFullPayment,
           isDeposit,
           previousPaid: currentPaid,

@@ -204,25 +204,29 @@ type GmailMessageResponse = {
   payload?: {
     headers?: Array<{ name: string; value: string }>;
     body?: { data?: string };
-    parts?: Array<{ mimeType?: string; body?: { data?: string } }>;
+    parts?: GmailMessagePart[];
   };
+};
+
+type GmailMessagePart = {
+  mimeType?: string;
+  body?: { data?: string };
+  parts?: GmailMessagePart[];
 };
 
 function decodeBase64Url(data: string) {
   return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8");
 }
 
-function findPartData(parts: GmailMessageResponse["payload"]["parts"], mimeType: string): string | undefined {
+function findPartData(parts: GmailMessagePart[] | undefined, mimeType: string): string | undefined {
   if (!parts) return undefined;
 
   for (const part of parts) {
     if (part.mimeType === mimeType && part.body?.data) {
       return part.body.data;
     }
-
-    const nested = (part as { parts?: typeof parts }).parts;
-    if (nested) {
-      const found = findPartData(nested, mimeType);
+    if (part.parts) {
+      const found = findPartData(part.parts, mimeType);
       if (found) return found;
     }
   }
@@ -286,6 +290,11 @@ const BUYOUT_PRODUCTS = [
 
 function getHeader(msg: GmailMessageResponse, name: string): string {
   return msg.payload?.headers?.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? "";
+}
+
+function extractEmailAddress(input: string) {
+  const match = input.match(/<([^>]+)>/) ?? input.match(/([^\s<]+@[^\s>]+)/);
+  return match?.[1]?.trim().toLowerCase() ?? "";
 }
 
 export async function searchGmailMessages(input: {
@@ -391,8 +400,7 @@ export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPaymen
     // Primary client identity from Reply-To header
     const replyToNameMatch = replyTo.match(/^([^<]+)/);
     const replyToName = replyToNameMatch?.[1]?.trim() ?? "";
-    const replyToEmailMatch = replyTo.match(/<([^>]+)>/) ?? replyTo.match(/([^\s<]+@[^\s>]+)/);
-    const replyToEmail = replyToEmailMatch?.[1]?.trim() ?? "";
+    const replyToEmail = extractEmailAddress(replyTo);
 
     // Fallback name from body
     const bodyNameMatch = body.match(/(?:order from|following order from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i);

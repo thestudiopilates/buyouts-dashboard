@@ -5,7 +5,7 @@ import { BuyoutDetailEditor } from "@/components/buyout-detail-editor";
 import { BuyoutEmailPanel } from "@/components/buyout-email-panel";
 import { PortalShell } from "@/components/portal-shell";
 import { getBuyout } from "@/lib/buyouts";
-import { getBuyoutEmailPanelData } from "@/lib/email-templates";
+import { getBuyoutEmailPanelData, listPaymentActivity } from "@/lib/email-templates";
 
 function formatCurrency(value: number) {
   return `$${value.toLocaleString()}`;
@@ -24,6 +24,7 @@ export default async function BuyoutDetailPage({
   }
 
   const emailPanel = await getBuyoutEmailPanelData(id);
+  const payments = await listPaymentActivity(id);
 
   return (
     <div className="shell">
@@ -199,7 +200,7 @@ export default async function BuyoutDetailPage({
 
               <section className="sidebar card">
                 <h2 className="section-title" style={{ fontSize: "1.45rem", marginTop: 0 }}>
-                  Financials
+                  Payments
                 </h2>
                 <div className="detail-progress-summary">
                   <span className="metric-label">Payment progress</span>
@@ -221,6 +222,28 @@ export default async function BuyoutDetailPage({
                     <span>Remaining</span>
                     <strong>{formatCurrency(buyout.outstanding)}</strong>
                   </div>
+                </div>
+                <div className="workflow-list" style={{ marginTop: "1rem" }}>
+                  {payments.length === 0 ? (
+                    <div className="workflow-meta">No matched payment emails yet.</div>
+                  ) : (
+                    payments.map((payment) => (
+                      <div className="workflow-item" key={payment.id}>
+                        <div>
+                          <div>{formatCurrency(payment.amount)} from {payment.clientName}</div>
+                          <div className="workflow-meta">
+                            {payment.clientEmail || "No reply-to email"} • {payment.processedAt || payment.createdAt}
+                          </div>
+                          <div className="workflow-meta">
+                            {payment.paymentMethod} • Order #{payment.orderNumber}
+                          </div>
+                        </div>
+                        <span className="pill neutral">
+                          {payment.matchedBy || "matched"}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </section>
             </aside>

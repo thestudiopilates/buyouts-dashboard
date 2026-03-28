@@ -7,7 +7,7 @@ import { renderEmailHtml } from "@/lib/email-renderer";
 import { getGmailReadiness, type GmailReadiness } from "@/lib/gmail";
 import { EMAIL_TEMPLATE_SEEDS, EmailEffectDefinition, EmailVariableDefinition } from "@/lib/email-workflows";
 import { hasDatabaseUrl, prisma } from "@/lib/prisma";
-import { BuyoutSummary } from "@/lib/types";
+import { BuyoutSummary, PaymentRecord } from "@/lib/types";
 
 export type EmailTemplateRecord = {
   id: string;
@@ -43,6 +43,12 @@ export type EmailActivityRecord = {
   stageAfter?: string;
   nextAction?: string;
   workflowKeys: string[];
+};
+
+type PaymentEventRecord = {
+  id: string;
+  createdAt: Date | string;
+  detail: unknown;
 };
 
 type TemplateRow = {
@@ -83,6 +89,14 @@ type SourceTemplateRecord = {
 
 function asObject(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function asString(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function asNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
 async function getSourceControlledTemplates() {
@@ -634,6 +648,26 @@ function toActivityRecord(row: EventRow): EmailActivityRecord {
   };
 }
 
+function toPaymentRecord(row: PaymentEventRecord): PaymentRecord {
+  const detail = asObject(row.detail) ?? {};
+
+  return {
+    id: typeof row.id === "string" ? row.id : randomUUID(),
+    createdAt:
+      row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+    processedAt: asString(detail.date) || null,
+    orderNumber: asString(detail.orderNumber),
+    clientName: asString(detail.clientName),
+    clientEmail: asString(detail.clientEmail),
+    amount: asNumber(detail.amount),
+    paymentMethod: asString(detail.paymentMethod) || "Unknown",
+    productName: asString(detail.productName),
+    rawSubject: asString(detail.rawSubject),
+    gmailMessageId: asString(detail.gmailMessageId),
+    matchedBy: asString(detail.matchedBy) || null
+  };
+}
+
 export async function listEmailTemplates(): Promise<EmailTemplateRecord[]> {
   if (!hasDatabaseUrl()) {
     const fallbackTemplates = await buildFallbackTemplates();
@@ -768,6 +802,31 @@ export async function listEmailActivity(buyoutId?: string | null): Promise<Email
   )) as EventRow[];
 
   return rows.map(toActivityRecord);
+}
+
+export async function listPaymentActivity(buyoutId?: string | null): Promise<PaymentRecord[]> {
+  if (!hasDatabaseUrl() || !buyoutId) {
+    return [];
+  }
+
+  await ensureEmailInfrastructure();
+
+  const rows = (await prisma.$queryRawUnsafe(
+    `
+      SELECT
+        "id",
+        "createdAt",
+        "detail"
+      FROM "BuyoutEvent"
+      WHERE "buyoutId" = $1
+        AND "eventType" = 'PAYMENT_DETECTED'
+      ORDER BY "createdAt" DESC
+      LIMIT 100
+    `,
+    buyoutId
+  )) as PaymentEventRecord[];
+
+  return rows.map(toPaymentRecord);
 }
 
 export async function getEmailWorkspaceData() {

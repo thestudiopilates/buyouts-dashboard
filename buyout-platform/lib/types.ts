@@ -26,6 +26,21 @@ export type WorkflowStep = {
   complete: boolean;
 };
 
+export type PaymentRecord = {
+  id: string;
+  createdAt: string;
+  processedAt: string | null;
+  orderNumber: string;
+  clientName: string;
+  clientEmail: string;
+  amount: number;
+  paymentMethod: string;
+  productName: string;
+  rawSubject: string;
+  gmailMessageId: string;
+  matchedBy: string | null;
+};
+
 export type BuyoutSummary = {
   id: string;
   name: string;

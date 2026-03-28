@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
-import { BuyoutSummary } from "@/lib/types";
+import { BuyoutSummary, PaymentRecord } from "@/lib/types";
 
 const COLORS = {
   coffee: "#28200E",
@@ -27,7 +27,7 @@ const TABS = [
   ["overview", "Overview"],
   ["checklist", "Checklist"],
   ["emails", "Emails"],
-  ["financials", "Financials"],
+  ["financials", "Payments"],
   ["activity", "Activity"]
 ] as const;
 
@@ -107,6 +107,25 @@ function formatDisplayDate(value: string) {
     day: "numeric",
     year: "numeric",
     timeZone: "America/New_York"
+  }).format(parsed);
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return "Unknown";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
   }).format(parsed);
 }
 
@@ -240,6 +259,8 @@ function Drawer({
   const [draftLoading, setDraftLoading] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [activityLog, setActivityLog] = useState<Array<{ id: string; createdAt: string; eventType: string; summary: string }>>([]);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [paymentsLoaded, setPaymentsLoaded] = useState(false);
   const [notesList, setNotesList] = useState<Array<{ id: string; createdAt: string; text: string; author: string }>>([]);
   const [newNoteText, setNewNoteText] = useState("");
   const [activityLoaded, setActivityLoaded] = useState(false);
@@ -280,6 +301,8 @@ function Drawer({
     setDraftLoading(false);
     setPreviewHtml(null);
     setActivityLog([]);
+    setPayments([]);
+    setPaymentsLoaded(false);
     setNotesList([]);
     setNewNoteText("");
     setActivityLoaded(false);
@@ -420,6 +443,18 @@ function Drawer({
       .then((r) => r.json())
       .then((data: { notes?: typeof notesList }) => {
         setNotesList(data.notes ?? []);
+      })
+      .catch(() => {});
+  }
+
+  function loadPayments(force?: boolean) {
+    if (paymentsLoaded && !force) return;
+    setPaymentsLoaded(true);
+
+    fetch(`/api/buyouts/${buyout.id}/payments`)
+      .then((r) => r.json())
+      .then((data: { payments?: PaymentRecord[] }) => {
+        setPayments(data.payments ?? []);
       })
       .catch(() => {});
   }
@@ -676,7 +711,16 @@ function Drawer({
             <button
               className={`ops-tab-btn${tab === key ? " active" : ""}`}
               key={key}
-              onClick={() => { setTab(key); if (key === "activity" && !activityLoaded) { setActivityLoaded(true); loadActivity(); } }}
+              onClick={() => {
+                setTab(key);
+                if (key === "activity" && !activityLoaded) {
+                  setActivityLoaded(true);
+                  loadActivity();
+                }
+                if (key === "financials" && !paymentsLoaded) {
+                  loadPayments();
+                }
+              }}
             >
               {label}
             </button>
@@ -1386,6 +1430,33 @@ function Drawer({
                     </div>
                   </a>
                 ))}
+              </div>
+              <div className="ops-section-label">Matched Payments</div>
+              <div className="ops-activity-list">
+                {!paymentsLoaded ? (
+                  <div className="ops-draft-loading">Loading payments...</div>
+                ) : payments.length === 0 ? (
+                  <div className="ops-draft-loading">No matched payment emails yet.</div>
+                ) : (
+                  payments.map((payment) => (
+                    <div className="ops-activity-item" key={payment.id}>
+                      <div className="ops-activity-date">
+                        {formatDateTime(payment.processedAt || payment.createdAt)}
+                      </div>
+                      <div className="ops-activity-text">
+                        <span className="ops-activity-badge payment">Payment</span>
+                        {formatMoney(payment.amount)} from {payment.clientName}
+                      </div>
+                      <div className="ops-activity-subline">
+                        {payment.clientEmail || "No reply-to email"} • {payment.paymentMethod} • Order #{payment.orderNumber}
+                      </div>
+                      <div className="ops-activity-subline">
+                        {payment.productName || payment.rawSubject}
+                        {payment.matchedBy ? ` • matched by ${payment.matchedBy}` : ""}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           ) : null}
