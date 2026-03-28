@@ -360,15 +360,15 @@ export async function searchGmailMessages(input: {
   return messages.filter((m): m is GmailMessageSummary => m !== null);
 }
 
-export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPayment[]> {
+export async function searchPaymentEmails(maxResults = 20, newerThanDays = 7): Promise<ParsedPayment[]> {
   const config = getGmailConfig();
   if (!config) return [];
 
   const accessToken = await getAccessToken(config);
 
-  // Search all mail, including archived/labeled mail, for WooCommerce order emails.
-  // In the real mailbox these messages reliably match the sender + "New order #" subject pattern.
-  const query = `in:anywhere from:${config.senderEmail} subject:"New order #"`;
+  // Search all mail for WooCommerce order emails. Subject:"New order #" + "Studio Pilates" catches
+  // archived/labeled mail. Do NOT use from:events@ — WooCommerce sends TO events@, not FROM.
+  const query = `in:anywhere subject:"New order #" "Studio Pilates" newer_than:${newerThanDays}d`;
 
   const listUrl = new URL(`https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages`);
   listUrl.searchParams.set("q", query);
