@@ -1946,6 +1946,78 @@ textarea {
   color: #b91c1c;
 }
 
+/* ── Dual-Column Checklist ─────────────────────────────── */
+
+.ops-dual-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+
+.ops-dual-col-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--warmGrey);
+  padding: 0 8px;
+}
+
+.ops-dual-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ops-dual-phase {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 4px;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--coffee);
+  border-top: 1px solid var(--divider);
+}
+
+.ops-dual-phase:first-child {
+  border-top: none;
+  margin-top: 0;
+}
+
+.ops-dual-phase span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ops-dual-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.ops-dual-cell {
+  min-height: 36px;
+}
+
+.ops-dual-cell .ops-check-row {
+  padding: 6px 8px;
+  font-size: 0.78rem;
+}
+
+.ops-dual-cell .ops-check-box {
+  width: 16px;
+  height: 16px;
+  font-size: 0.6rem;
+}
+
+.ops-dual-empty {
+  min-height: 36px;
+}
+
 /* ── Email Sub-Tabs & Timeline ─────────────────────────── */
 
 .ops-email-subtabs {

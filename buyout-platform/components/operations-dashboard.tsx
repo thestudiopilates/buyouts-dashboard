@@ -895,62 +895,115 @@ function Drawer({
             </div>
           ) : null}
 
-          {tab === "checklist" ? (
-            <div>
-              <div className="ops-tab-summary">
-                <div>
-                  <span className="ops-tab-big">{workflowDone(buyout)}</span>
-                  <span className="ops-tab-small">of {buyout.workflow.length} complete</span>
-                </div>
-                <span className="ops-percent-pill">{buyout.workflowProgress}%</span>
-              </div>
-              <div className="ops-mini-progress large workflow">
-                <span style={{ width: `${buyout.workflowProgress}%` }} />
-              </div>
-              <div className="ops-group-stack">
-                {GROUPS.map((group) => {
-                  const items = buyout.workflow.filter((step) => step.group === group);
-                  if (items.length === 0) return null;
-                  const done = items.filter((step) => step.complete).length;
+          {tab === "checklist" ? (() => {
+            const stepDone = (key: string) => buyout.workflow.some((s) => s.key === key && s.complete);
+            const LIFECYCLE_ROWS: Array<{
+              phase: string;
+              color: string;
+              client: { key: string; label: string } | null;
+              operator: { key: string; label: string } | null;
+            }> = [
+              { phase: "Intake", color: COLORS.seaglass, client: null, operator: { key: "inquiry-reviewed", label: "Review inquiry" } },
+              { phase: "Intake", color: COLORS.seaglass, client: null, operator: { key: "initial-inquiry-response-sent", label: "Send initial response (t1)" } },
+              { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds" }, operator: { key: "date-finalized", label: "Finalize date & details" } },
+              { phase: "Payment", color: COLORS.terracotta, client: null, operator: { key: "deposit-link-sent-and-terms-shared", label: "Send payment email (t3)" } },
+              { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: "Client pays & signs terms" }, operator: null },
+              { phase: "Payment", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: "Client pays remaining balance" }, operator: null },
+              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "instructor-finalized", label: "Secure instructor" } },
+              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "momence-class-created", label: "Create Momence class" } },
+              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details & signup (t5)" } },
+              { phase: "Registration", color: COLORS.sunshine, client: { key: "all-attendees-registered", label: "All guests registered" }, operator: null },
+              { phase: "Registration", color: COLORS.sunshine, client: { key: "all-waivers-signed", label: "All waivers signed" }, operator: null },
+              { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: { key: "front-desk-assigned", label: "Assign front desk" } },
+              { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: { key: "front-desk-shift-extended", label: "Extend desk shift if needed" } },
+              { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: { key: "final-confirmation-emails-sent", label: "Send final confirmation (t11)" } },
+              { phase: "Execution", color: COLORS.cherry, client: null, operator: { key: "event-completed", label: "Event delivered & follow-up (t12)" } }
+            ];
 
-                  return (
-                    <div key={group}>
-                      <div className="ops-group-head">
-                        <div className="ops-group-title">
-                          <span style={{ background: groupColors[group] }} />
-                          {group}
-                        </div>
-                        <div className="ops-group-count">
-                          {done}/{items.length}
+            let currentPhase = "";
+
+            return (
+              <div>
+                <div className="ops-tab-summary">
+                  <div>
+                    <span className="ops-tab-big">{workflowDone(buyout)}</span>
+                    <span className="ops-tab-small">of {buyout.workflow.length} complete</span>
+                  </div>
+                  <span className="ops-percent-pill">{buyout.workflowProgress}%</span>
+                </div>
+                <div className="ops-mini-progress large workflow">
+                  <span style={{ width: `${buyout.workflowProgress}%` }} />
+                </div>
+
+                <div className="ops-dual-header">
+                  <div className="ops-dual-col-label">Client</div>
+                  <div className="ops-dual-col-label">Operator</div>
+                </div>
+
+                <div className="ops-dual-list">
+                  {LIFECYCLE_ROWS.map((row, idx) => {
+                    const showPhase = row.phase !== currentPhase;
+                    if (showPhase) currentPhase = row.phase;
+
+                    return (
+                      <div key={idx}>
+                        {showPhase ? (
+                          <div className="ops-dual-phase" style={{ borderColor: row.color }}>
+                            <span style={{ background: row.color }} />
+                            {row.phase}
+                          </div>
+                        ) : null}
+                        <div className="ops-dual-row">
+                          <div className="ops-dual-cell">
+                            {row.client ? (
+                              <button
+                                className="ops-check-row"
+                                onClick={() => handleToggleStep(row.client!.key, stepDone(row.client!.key))}
+                                disabled={isPending}
+                                type="button"
+                              >
+                                <div
+                                  className="ops-check-box"
+                                  style={{
+                                    borderColor: stepDone(row.client.key) ? COLORS.terracotta : COLORS.divider,
+                                    background: stepDone(row.client.key) ? COLORS.terracotta : "transparent"
+                                  }}
+                                >
+                                  {stepDone(row.client.key) ? "✓" : ""}
+                                </div>
+                                <span>{row.client.label}</span>
+                              </button>
+                            ) : <div className="ops-dual-empty" />}
+                          </div>
+                          <div className="ops-dual-cell">
+                            {row.operator ? (
+                              <button
+                                className="ops-check-row"
+                                onClick={() => handleToggleStep(row.operator!.key, stepDone(row.operator!.key))}
+                                disabled={isPending}
+                                type="button"
+                              >
+                                <div
+                                  className="ops-check-box"
+                                  style={{
+                                    borderColor: stepDone(row.operator.key) ? COLORS.seaglass : COLORS.divider,
+                                    background: stepDone(row.operator.key) ? COLORS.seaglass : "transparent"
+                                  }}
+                                >
+                                  {stepDone(row.operator.key) ? "✓" : ""}
+                                </div>
+                                <span>{row.operator.label}</span>
+                              </button>
+                            ) : <div className="ops-dual-empty" />}
+                          </div>
                         </div>
                       </div>
-                      {items.map((step) => (
-                        <button
-                          className="ops-check-row"
-                          key={step.key}
-                          onClick={() => handleToggleStep(step.key, step.complete)}
-                          disabled={isPending}
-                          type="button"
-                          style={{ cursor: isPending ? "wait" : "pointer" }}
-                        >
-                          <div
-                            className="ops-check-box"
-                            style={{
-                              borderColor: step.complete ? COLORS.seaglass : COLORS.divider,
-                              background: step.complete ? COLORS.seaglass : "transparent"
-                            }}
-                          >
-                            {step.complete ? "✓" : ""}
-                          </div>
-                          <span>{step.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ) : null}
+            );
+          })() : null}
 
           {tab === "emails" ? (
             <div>
