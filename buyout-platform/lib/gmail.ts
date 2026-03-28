@@ -212,19 +212,47 @@ function decodeBase64Url(data: string) {
   return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8");
 }
 
+function findPartData(parts: GmailMessageResponse["payload"]["parts"], mimeType: string): string | undefined {
+  if (!parts) return undefined;
+
+  for (const part of parts) {
+    if (part.mimeType === mimeType && part.body?.data) {
+      return part.body.data;
+    }
+
+    const nested = (part as { parts?: typeof parts }).parts;
+    if (nested) {
+      const found = findPartData(nested, mimeType);
+      if (found) return found;
+    }
+  }
+
+  return undefined;
+}
+
 function extractBodyText(msg: GmailMessageResponse): string {
+  // Direct body (simple messages)
   if (msg.payload?.body?.data) {
     return decodeBase64Url(msg.payload.body.data);
   }
 
-  const textPart = msg.payload?.parts?.find((p) => p.mimeType === "text/plain");
-  if (textPart?.body?.data) {
-    return decodeBase64Url(textPart.body.data);
+  // Search all parts recursively for text/plain first
+  const textData = findPartData(msg.payload?.parts, "text/plain");
+  if (textData) {
+    return decodeBase64Url(textData);
   }
 
-  const htmlPart = msg.payload?.parts?.find((p) => p.mimeType === "text/html");
-  if (htmlPart?.body?.data) {
-    return decodeBase64Url(htmlPart.body.data).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  // Fall back to text/html stripped of tags
+  const htmlData = findPartData(msg.payload?.parts, "text/html");
+  if (htmlData) {
+    return decodeBase64Url(htmlData)
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&#\d+;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   return msg.snippet ?? "";
