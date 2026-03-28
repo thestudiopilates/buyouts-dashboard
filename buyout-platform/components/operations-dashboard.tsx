@@ -788,8 +788,11 @@ function Drawer({
                         value={draftBody}
                       />
                       <div className="ops-draft-actions">
+                        <button className="ops-draft-send" disabled={isPending} onClick={handleConfirmSend} type="button">
+                          {isPending ? "Sending..." : "Send Email"}
+                        </button>
                         <button className="ops-draft-preview" disabled={draftLoading} onClick={handlePreviewDraft} type="button">
-                          Preview Email
+                          Preview First
                         </button>
                         <button className="ops-draft-cancel" onClick={handleCloseDraft} type="button">Cancel</button>
                       </div>
