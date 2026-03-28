@@ -436,14 +436,16 @@ export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPaymen
     if (isDefinitelyNotBuyout) continue;
 
     // Extract total amount — look for Total: line first, then last dollar amount
-    const totalMatch = body.match(/Total:\s*\$([0-9,]+\.?\d{0,2})/i);
-    const subtotalMatch = body.match(/Subtotal:\s*\$([0-9,]+\.?\d{0,2})/i);
-    const anyAmountMatch = body.match(/\$([0-9,]+\.?\d{0,2})/);
+    const totalMatch = body.match(/Total:\s*\$\s*([0-9,]+\.?\d{0,2})/i);
+    const subtotalMatch = body.match(/Subtotal:\s*\$\s*([0-9,]+\.?\d{0,2})/i);
+    const anyAmountMatch = body.match(/\$\s*([0-9,]+\.?\d{0,2})/);
     const amountStr = totalMatch?.[1] ?? subtotalMatch?.[1] ?? anyAmountMatch?.[1];
     const amount = amountStr ? parseFloat(amountStr.replace(/,/g, "")) : 0;
 
     // Extract payment method
-    const methodMatch = body.match(/Payment method:\s*(.+?)(?:\n|$)/i);
+    const methodMatch =
+      body.match(/Payment method:\s*(.+?)(?:Total:|Billing address|$)/i) ??
+      body.match(/Payment method:\s*(.+?)(?:\n|$)/i);
     const paymentMethod = methodMatch?.[1]?.trim() ?? "Unknown";
 
     if (clientName && amount > 0) {
