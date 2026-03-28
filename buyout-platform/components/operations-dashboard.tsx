@@ -302,19 +302,24 @@ function Drawer({
     setPreviewHtml(null);
     setDraftTemplate(templateId);
     setDraftLoading(true);
+    setDraftCc("");
 
-    fetch(`/api/email-templates/${templateId}?buyoutId=${buyout.id}`)
-      .then((res) => res.json())
-      .then((data: { preview?: { renderedSubject?: string; renderedBody?: string } }) => {
-        const rawBody = data.preview?.renderedBody ?? "";
-        setDraftSubject(data.preview?.renderedSubject ?? "");
-        setDraftRawBody(rawBody);
-        setDraftBody(stripTagsForEdit(rawBody));
-        setDraftCc("");
+    fetch(`/api/email-templates/${templateId}?buyoutId=${encodeURIComponent(buyout.id)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`API returned ${res.status}`);
+        return res.json();
+      })
+      .then((data: { template?: { subjectTemplate?: string; bodyTemplate?: string }; preview?: { renderedSubject?: string; renderedBody?: string } }) => {
+        const subject = data.preview?.renderedSubject || data.template?.subjectTemplate || "";
+        const body = data.preview?.renderedBody || data.template?.bodyTemplate || "";
+        setDraftSubject(subject);
+        setDraftRawBody(body);
+        setDraftBody(stripTagsForEdit(body));
         setDraftLoading(false);
       })
-      .catch(() => {
-        setEmailMessage("Unable to load template preview.");
+      .catch((err) => {
+        console.error("Draft load failed:", err);
+        setEmailMessage(`Unable to load template: ${err instanceof Error ? err.message : "unknown error"}`);
         setDraftTemplate(null);
         setDraftLoading(false);
       });
