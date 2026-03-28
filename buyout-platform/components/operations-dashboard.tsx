@@ -594,7 +594,15 @@ function Drawer({
                         </label>
                         <label className="field">
                           <span>Event type</span>
-                          <input className="input" value={form.eventType} onChange={(event) => updateField("eventType", event.target.value)} />
+                          <select className="select" value={form.eventType} onChange={(event) => updateField("eventType", event.target.value)}>
+                            <option value="">Select type</option>
+                            <option value="Birthday">Birthday</option>
+                            <option value="Bachelorette">Bachelorette</option>
+                            <option value="Corporate">Corporate</option>
+                            <option value="Team Building">Team Building</option>
+                            <option value="Specialty Group">Specialty Group</option>
+                            <option value="Other">Other</option>
+                          </select>
                         </label>
                         <label className="field">
                           <span>Event date</span>
