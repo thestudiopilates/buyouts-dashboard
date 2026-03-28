@@ -70,31 +70,31 @@ const STEP_ADVANCEMENT_RULES: Array<{
   {
     requires: ["momence-class-created"],
     advancesTo: "Paid",
-    nextAction: "Send event details and signup link to client",
+    nextAction: "Send event details to client (t5)",
     ballInCourt: "Team"
   },
   {
     requires: ["instructor-finalized"],
     advancesTo: "Paid",
-    nextAction: "Create Momence class and signup link",
+    nextAction: "Create Momence event & update with signup URL",
     ballInCourt: "Team"
   },
   {
     requires: ["deposit-paid-and-terms-signed"],
     advancesTo: "Paid",
-    nextAction: "Finalize instructor and send event details",
+    nextAction: "Finalize instructor & update event details",
     ballInCourt: "Team"
   },
   {
     requires: ["deposit-link-sent-and-terms-shared"],
     advancesTo: "Quote",
-    nextAction: "Wait for deposit payment",
+    nextAction: "Wait for payment",
     ballInCourt: "Client"
   },
   {
     requires: ["date-finalized"],
     advancesTo: "Feasible",
-    nextAction: "Send payment link and buyout terms",
+    nextAction: "Update event details, then send payment link",
     ballInCourt: "Team"
   },
   {

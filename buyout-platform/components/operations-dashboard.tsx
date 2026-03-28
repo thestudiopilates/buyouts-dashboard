@@ -909,32 +909,68 @@ function Drawer({
 
           {tab === "checklist" ? (() => {
             const stepDone = (key: string) => buyout.workflow.some((s) => s.key === key && s.complete);
-            const LIFECYCLE_ROWS: Array<{
+            const balanceDueDate = buyout.eventDate && buyout.eventDate !== "TBD"
+              ? formatDisplayDate((() => { const d = new Date(buyout.eventDate + "T12:00:00"); d.setDate(d.getDate() - 14); return d.toISOString().slice(0, 10); })())
+              : "14 days before event";
+
+            type ChecklistRow = {
               phase: string;
               color: string;
               client: { key: string; label: string } | null;
-              operator: { key: string; label: string } | null;
-            }> = [
+              operator: { key: string; label: string; blocked?: string } | null;
+            };
+
+            const LIFECYCLE_ROWS: ChecklistRow[] = [
+              // ── Intake
               { phase: "Intake", color: COLORS.seaglass, client: { key: "inquiry-reviewed", label: "Client request received" }, operator: { key: "inquiry-reviewed", label: "Review inquiry" } },
               { phase: "Intake", color: COLORS.seaglass, client: null, operator: { key: "initial-inquiry-response-sent", label: "Send initial response (t1)" } },
+
+              // ── Discussion
               { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds" }, operator: null },
-              { phase: "Discussion", color: COLORS.sage, client: null, operator: { key: "date-finalized", label: "Date / time discussion" } },
-              { phase: "Discussion", color: COLORS.sage, client: { key: "date-finalized", label: "Client agrees to proposed date & time" }, operator: { key: "date-finalized", label: "Date finalized" } },
-              { phase: "Payment", color: COLORS.terracotta, client: null, operator: { key: "deposit-link-sent-and-terms-shared", label: buyout.paymentTier === "deposit" ? "Send deposit & terms email (t3)" : buyout.paymentTier === "rush" ? "Send rush payment email (t3b)" : "Send payment email (t3a)" } },
+              { phase: "Discussion", color: COLORS.sage, client: { key: "date-finalized", label: "Client agrees to proposed date & time" }, operator: { key: "date-finalized", label: "Date / time discussion" } },
+              { phase: "Discussion", color: COLORS.sage, client: null, operator: {
+                key: "date-finalized",
+                label: "Update event details (date, time, location)",
+                blocked: (!buyout.eventDate || buyout.eventDate === "TBD") ? "Event date must be set in Edit Details" : undefined
+              } },
+
+              // ── Payment
+              { phase: "Payment", color: COLORS.terracotta, client: null, operator: {
+                key: "deposit-link-sent-and-terms-shared",
+                label: buyout.paymentTier === "deposit" ? "Send deposit & terms email (t3)" : buyout.paymentTier === "rush" ? "Send rush payment email (t3b)" : "Send payment email (t3a)"
+              } },
               ...(buyout.paymentTier === "deposit" ? [
                 { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: "Client pays $250 deposit" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm deposit received" } },
-                { phase: "Payment", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Client pays remaining balance${buyout.eventDate && buyout.eventDate !== "TBD" ? ` (due by ${formatDisplayDate((() => { const d = new Date(buyout.eventDate + "T12:00:00"); d.setDate(d.getDate() - 14); return d.toISOString().slice(0, 10); })())})` : " (due 14 days before event)"}` }, operator: { key: "remaining-payment-received", label: "Confirm remaining balance received" } }
+                { phase: "Payment", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Client pays remaining balance (due by ${balanceDueDate})` }, operator: { key: "remaining-payment-received", label: "Confirm remaining balance received" } }
               ] : [
-                { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: buyout.paymentTier === "rush" ? `Client pays full amount + $100 rush fee` : "Client pays full amount" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm payment received" } }
-              ] as Array<{ phase: string; color: string; client: { key: string; label: string } | null; operator: { key: string; label: string } | null }>),
-              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "instructor-finalized", label: "Secure instructor" } },
-              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "momence-class-created", label: "Create Momence class" } },
-              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details & signup (t5)" } },
+                { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: buyout.paymentTier === "rush" ? "Client pays full amount + $100 rush fee" : "Client pays full amount" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm payment received" } }
+              ] as ChecklistRow[]),
+
+              // ── Event Setup (after payment, before sending to client)
+              { phase: "Event Setup", color: COLORS.sky, client: null, operator: {
+                key: "instructor-finalized",
+                label: "Finalize instructor & update event details",
+                blocked: !buyout.instructor || buyout.instructor === "Unassigned" ? "Instructor must be assigned in Edit Details" : undefined
+              } },
+              { phase: "Event Setup", color: COLORS.sky, client: null, operator: {
+                key: "momence-class-created",
+                label: "Create Momence event & update with URL",
+                blocked: !buyout.signupLink ? "Signup link must be added in Edit Details" : undefined
+              } },
+              { phase: "Event Setup", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details to client (t5)" } },
+
+              // ── Logistics
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-assigned", label: "Assign front desk" } },
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-shift-extended", label: "Extend desk shift if needed" } },
+
+              // ── Registration
               { phase: "Registration", color: COLORS.sunshine, client: { key: "all-attendees-registered", label: "All guests registered" }, operator: { key: "all-attendees-registered", label: "Confirm registrations or send reminder (t10)" } },
               { phase: "Registration", color: COLORS.sunshine, client: null, operator: { key: "all-waivers-signed", label: "Confirm all waivers signed" } },
+
+              // ── Pre-Event
               { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: { key: "final-confirmation-emails-sent", label: "Send final confirmation (t11)" } },
+
+              // ── Execution
               { phase: "Execution", color: COLORS.cherry, client: null, operator: { key: "event-completed", label: "Event delivered & follow-up (t12)" } }
             ];
 
@@ -994,25 +1030,33 @@ function Drawer({
                             ) : <div className="ops-dual-empty" />}
                           </div>
                           <div className="ops-dual-cell">
-                            {row.operator ? (
-                              <button
-                                className="ops-check-row"
-                                onClick={() => handleToggleStep(row.operator!.key, stepDone(row.operator!.key))}
-                                disabled={isPending}
-                                type="button"
-                              >
-                                <div
-                                  className="ops-check-box"
-                                  style={{
-                                    borderColor: stepDone(row.operator.key) ? COLORS.seaglass : COLORS.divider,
-                                    background: stepDone(row.operator.key) ? COLORS.seaglass : "transparent"
+                            {row.operator ? (() => {
+                              const done = stepDone(row.operator!.key);
+                              const isBlocked = !done && row.operator!.blocked;
+                              return (
+                                <button
+                                  className={`ops-check-row${isBlocked ? " blocked" : ""}`}
+                                  onClick={() => {
+                                    if (isBlocked) { setMessage(row.operator!.blocked!); return; }
+                                    handleToggleStep(row.operator!.key, done);
                                   }}
+                                  disabled={isPending}
+                                  type="button"
+                                  title={isBlocked ? row.operator!.blocked : undefined}
                                 >
-                                  {stepDone(row.operator.key) ? "✓" : ""}
-                                </div>
-                                <span>{row.operator.label}</span>
-                              </button>
-                            ) : <div className="ops-dual-empty" />}
+                                  <div
+                                    className="ops-check-box"
+                                    style={{
+                                      borderColor: done ? COLORS.seaglass : isBlocked ? COLORS.cherry : COLORS.divider,
+                                      background: done ? COLORS.seaglass : "transparent"
+                                    }}
+                                  >
+                                    {done ? "✓" : isBlocked ? "!" : ""}
+                                  </div>
+                                  <span style={{ opacity: isBlocked ? 0.5 : 1 }}>{row.operator!.label}</span>
+                                </button>
+                              );
+                            })() : <div className="ops-dual-empty" />}
                           </div>
                         </div>
                       </div>

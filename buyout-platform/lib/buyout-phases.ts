@@ -32,8 +32,8 @@ export const BUYOUT_PHASES: Record<StageKey, BuyoutPhaseConfig> = {
   },
   Feasible: {
     stage: "Feasible",
-    statusLabel: "Date Agreed — Send Payment Email",
-    nextAction: "Send payment link and buyout terms",
+    statusLabel: "Date Agreed — Update Details & Send Payment",
+    nextAction: "Update event details, then send payment link",
     ballInCourt: "Team",
     templateKeys: ["t0", "t3", "t13"]
   },
@@ -54,7 +54,7 @@ export const BUYOUT_PHASES: Record<StageKey, BuyoutPhaseConfig> = {
   Paid: {
     stage: "Paid",
     statusLabel: "Payment Received",
-    nextAction: "Finalize instructor and send event details",
+    nextAction: "Finalize instructor & update event details",
     ballInCourt: "Team",
     templateKeys: ["t0", "t5", "t6", "t13"]
   },
