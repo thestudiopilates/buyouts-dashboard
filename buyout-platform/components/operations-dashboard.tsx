@@ -908,9 +908,13 @@ function Drawer({
               { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds" }, operator: null },
               { phase: "Discussion", color: COLORS.sage, client: null, operator: { key: "date-finalized", label: "Date / time discussion" } },
               { phase: "Discussion", color: COLORS.sage, client: { key: "date-finalized", label: "Client agrees to proposed date & time" }, operator: { key: "date-finalized", label: "Date finalized" } },
-              { phase: "Payment", color: COLORS.terracotta, client: null, operator: { key: "deposit-link-sent-and-terms-shared", label: "Send payment email (t3)" } },
-              { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: "Client pays & signs terms" }, operator: null },
-              { phase: "Payment", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: "Client pays remaining balance" }, operator: null },
+              { phase: "Payment", color: COLORS.terracotta, client: null, operator: { key: "deposit-link-sent-and-terms-shared", label: buyout.paymentTier === "standard" ? "Send deposit & terms email (t3)" : buyout.paymentTier === "rush" ? "Send rush payment email (t3b)" : "Send full payment email (t3a)" } },
+              ...(buyout.paymentTier === "standard" ? [
+                { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: "Client pays $250 deposit" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm deposit received" } },
+                { phase: "Payment", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Client pays remaining balance${buyout.eventDate && buyout.eventDate !== "TBD" ? ` (due by ${formatDisplayDate((() => { const d = new Date(buyout.eventDate + "T12:00:00"); d.setDate(d.getDate() - 14); return d.toISOString().slice(0, 10); })())})` : " (due 14 days before event)"}` }, operator: { key: "remaining-payment-received", label: "Confirm remaining balance received" } }
+              ] : [
+                { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: buyout.paymentTier === "rush" ? `Client pays full amount + $100 rush fee` : "Client pays full amount" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm payment received" } }
+              ] as Array<{ phase: string; color: string; client: { key: string; label: string } | null; operator: { key: string; label: string } | null }>),
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "instructor-finalized", label: "Secure instructor" } },
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "momence-class-created", label: "Create Momence class" } },
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details & signup (t5)" } },
