@@ -916,8 +916,8 @@ function Drawer({
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details & signup (t5)" } },
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-assigned", label: "Assign front desk" } },
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-shift-extended", label: "Extend desk shift if needed" } },
-              { phase: "Registration", color: COLORS.sunshine, client: { key: "all-attendees-registered", label: "All guests registered" }, operator: null },
-              { phase: "Registration", color: COLORS.sunshine, client: { key: "all-waivers-signed", label: "All waivers signed" }, operator: null },
+              { phase: "Registration", color: COLORS.sunshine, client: { key: "all-attendees-registered", label: "All guests registered" }, operator: { key: "all-attendees-registered", label: "Confirm registrations or send reminder (t10)" } },
+              { phase: "Registration", color: COLORS.sunshine, client: null, operator: { key: "all-waivers-signed", label: "Confirm all waivers signed" } },
               { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: { key: "final-confirmation-emails-sent", label: "Send final confirmation (t11)" } },
               { phase: "Execution", color: COLORS.cherry, client: null, operator: { key: "event-completed", label: "Event delivered & follow-up (t12)" } }
             ];
