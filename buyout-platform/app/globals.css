@@ -1946,6 +1946,82 @@ textarea {
   color: #b91c1c;
 }
 
+/* ── Activity Timeline ──────────────────────────────────── */
+
+.ops-note-input-row {
+  margin-bottom: 20px;
+}
+
+.ops-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 20px;
+}
+
+.ops-activity-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.ops-activity-item:last-child {
+  border-bottom: 0;
+}
+
+.ops-note-item {
+  background: var(--oat-light);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  border-bottom: 0;
+}
+
+.ops-activity-date {
+  font-size: 0.72rem;
+  color: var(--warmGrey);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-activity-author {
+  font-weight: 600;
+  color: var(--terracotta);
+}
+
+.ops-activity-text {
+  font-size: 0.85rem;
+  color: var(--coffee);
+  line-height: 1.5;
+}
+
+.ops-activity-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-right: 6px;
+}
+
+.ops-activity-badge.email {
+  background: rgba(0, 105, 118, 0.1);
+  color: var(--seaglass);
+}
+
+.ops-activity-badge.note {
+  background: rgba(242, 164, 8, 0.12);
+  color: var(--sunshine);
+}
+
+.ops-activity-badge.status {
+  background: rgba(159, 84, 63, 0.1);
+  color: var(--terracotta);
+}
+
 .ops-stage-select {
   display: block;
   margin-top: 6px;

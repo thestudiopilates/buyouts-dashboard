@@ -27,7 +27,8 @@ const TABS = [
   ["overview", "Overview"],
   ["checklist", "Checklist"],
   ["emails", "Emails"],
-  ["financials", "Financials"]
+  ["financials", "Financials"],
+  ["activity", "Activity"]
 ] as const;
 
 const GROUPS = ["Intake", "Planning", "Payment", "Logistics", "Pre-Event", "Execution"] as const;
@@ -222,6 +223,10 @@ function Drawer({
   const [draftCc, setDraftCc] = useState("");
   const [draftLoading, setDraftLoading] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [activityLog, setActivityLog] = useState<Array<{ id: string; createdAt: string; eventType: string; summary: string }>>([]);
+  const [notesList, setNotesList] = useState<Array<{ id: string; createdAt: string; text: string; author: string }>>([]);
+  const [newNoteText, setNewNoteText] = useState("");
+  const [activityLoaded, setActivityLoaded] = useState(false);
   const [form, setForm] = useState({
     clientName: buyout.clientName,
     clientEmail: buyout.clientEmail,
@@ -254,6 +259,10 @@ function Drawer({
     setDraftCc("");
     setDraftLoading(false);
     setPreviewHtml(null);
+    setActivityLog([]);
+    setNotesList([]);
+    setNewNoteText("");
+    setActivityLoaded(false);
     setForm({
       clientName: buyout.clientName,
       clientEmail: buyout.clientEmail,
@@ -342,6 +351,43 @@ function Drawer({
         setDraftTemplate(null);
         setDraftLoading(false);
       });
+  }
+
+  function loadActivity() {
+    if (activityLoaded) return;
+    setActivityLoaded(true);
+
+    Promise.all([
+      fetch(`/api/buyouts/${buyout.id}/activity`).then((r) => r.json()),
+      fetch(`/api/buyouts/${buyout.id}/notes`).then((r) => r.json())
+    ])
+      .then(([actData, notesData]) => {
+        setActivityLog(actData.activity ?? []);
+        setNotesList(notesData.notes ?? []);
+      })
+      .catch(() => {});
+  }
+
+  function handleAddNote() {
+    if (!newNoteText.trim()) return;
+
+    startTransition(async () => {
+      const response = await fetch(`/api/buyouts/${buyout.id}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: newNoteText, author: "Team" })
+      });
+
+      const payload = (await response.json()) as {
+        notes?: Array<{ id: string; createdAt: string; text: string; author: string }>;
+        buyout?: BuyoutSummary;
+      };
+
+      if (payload.notes) setNotesList(payload.notes);
+      if (payload.buyout) onBuyoutUpdated(payload.buyout);
+      setNewNoteText("");
+      setActivityLoaded(false);
+    });
   }
 
   function handleStageChange(newStage: string) {
@@ -1003,6 +1049,78 @@ function Drawer({
                   </a>
                 ))}
               </div>
+            </div>
+          ) : null}
+
+          {tab === "activity" ? (
+            <div>
+              {!activityLoaded ? (
+                <div style={{ textAlign: "center", padding: "16px 0" }}>
+                  <button className="ops-draft-preview" onClick={loadActivity} type="button">Load Activity</button>
+                </div>
+              ) : (
+                <>
+                  <div className="ops-section-label" style={{ marginTop: 0 }}>Add Note</div>
+                  <div className="ops-note-input-row">
+                    <textarea
+                      className="ops-draft-textarea"
+                      onChange={(e) => setNewNoteText(e.target.value)}
+                      placeholder="Type a note..."
+                      rows={3}
+                      value={newNoteText}
+                    />
+                    <button
+                      className="ops-draft-send"
+                      disabled={isPending || !newNoteText.trim()}
+                      onClick={handleAddNote}
+                      type="button"
+                      style={{ marginTop: 8, width: "100%" }}
+                    >
+                      {isPending ? "Saving..." : "Add Note"}
+                    </button>
+                  </div>
+
+                  {notesList.length > 0 ? (
+                    <>
+                      <div className="ops-section-label">Notes</div>
+                      <div className="ops-activity-list">
+                        {notesList.map((note) => (
+                          <div className="ops-activity-item ops-note-item" key={note.id}>
+                            <div className="ops-activity-date">
+                              {new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              <span className="ops-activity-author">{note.author}</span>
+                            </div>
+                            <div className="ops-activity-text">{note.text}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+
+                  {activityLog.length > 0 ? (
+                    <>
+                      <div className="ops-section-label">Timeline</div>
+                      <div className="ops-activity-list">
+                        {activityLog.map((event) => (
+                          <div className="ops-activity-item" key={event.id}>
+                            <div className="ops-activity-date">
+                              {new Date(event.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                            </div>
+                            <div className="ops-activity-text">
+                              <span className={`ops-activity-badge ${event.eventType === "EMAIL_TEST_SENT" ? "email" : event.eventType === "NOTE_ADDED" ? "note" : "status"}`}>
+                                {event.eventType === "EMAIL_TEST_SENT" ? "Email" : event.eventType === "NOTE_ADDED" ? "Note" : "Event"}
+                              </span>
+                              {event.summary}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="ops-draft-loading">No activity recorded yet.</div>
+                  )}
+                </>
+              )}
             </div>
           ) : null}
         </div>
