@@ -177,6 +177,44 @@ export function renderEmailBodyHtml(body: string) {
       continue;
     }
 
+    const inlineHrMatch = trimmed.match(/^<hr\s*\/?>\s*<b>([^<]+)<\/b>$/i);
+    if (inlineHrMatch) {
+      const title = inlineHrMatch[1].trim();
+      const titleLower = title.toLowerCase();
+      const afterHeader = skipEmpty(lines, i + 1);
+      const { kvLines, endIndex } = collectKeyValueLines(lines, afterHeader);
+
+      if (kvLines.length >= 2 && EVENT_SECTION_TITLES.has(titleLower)) {
+        html.push(
+          renderKeyValueCard(
+            title, kvLines,
+            EMAIL_BRAND.seaglass, EMAIL_BRAND.seaglassBorder,
+            EMAIL_BRAND.seaglassLabel, EMAIL_BRAND.oat, EMAIL_BRAND.seaglassLabel
+          )
+        );
+        i = endIndex;
+        continue;
+      }
+
+      if (kvLines.length >= 2 && PAYMENT_SECTION_TITLES.has(titleLower)) {
+        html.push(
+          renderKeyValueCard(
+            title, kvLines,
+            EMAIL_BRAND.coffee, "#3d321f",
+            EMAIL_BRAND.terracotta, EMAIL_BRAND.oat, EMAIL_BRAND.terracotta
+          )
+        );
+        i = endIndex;
+        continue;
+      }
+
+      const barColor = SECTION_BAR_COLORS[sectionColorIndex % SECTION_BAR_COLORS.length];
+      sectionColorIndex++;
+      html.push(renderSectionHeader(title, barColor));
+      i++;
+      continue;
+    }
+
     if (/^<hr\s*\/?>$/i.test(trimmed)) {
       const next = skipEmpty(lines, i + 1);
 

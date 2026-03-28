@@ -288,13 +288,16 @@ function Drawer({
 
   function stripTagsForEdit(raw: string) {
     return raw
+      .replace(/<hr\s*\/?>\s*<b>([^<]+)<\/b>/gi, "———  $1")
       .replace(/<hr\s*\/?>/gi, "———")
       .replace(/<b>/gi, "")
       .replace(/<\/b>/gi, "");
   }
 
   function restoreTagsForSend(clean: string) {
-    return clean.replace(/———/g, "<hr>");
+    return clean
+      .replace(/———\s{2}(.+)/g, "<hr> <b>$1</b>")
+      .replace(/———/g, "<hr>");
   }
 
   function handleOpenDraft(templateId: string) {
