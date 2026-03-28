@@ -79,6 +79,8 @@ This repo now includes `vercel.json` for a straightforward Vercel deployment pat
 - `GMAIL_REFRESH_TOKEN`
 - `GMAIL_SENDER_EMAIL`
 
+The live `buyout-platform` Vercel project is intended to build from GitHub `main` with the `buyout-platform` root directory.
+
 ## Supabase Connection Setup
 
 Use the Supabase pooler for application traffic and the direct database connection for Prisma schema operations.
