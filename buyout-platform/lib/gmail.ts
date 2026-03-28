@@ -317,8 +317,9 @@ export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPaymen
 
   const accessToken = await getAccessToken(config);
 
-  // Search broadly: all mail including archived/labeled, from our store, with order in subject
-  const query = `in:anywhere from:${config.senderEmail} subject:"New order #"`;
+  // Search broadly: all mail including archived/labeled, with order in subject
+  // WooCommerce sends TO events@, not FROM events@ — so search by subject only
+  const query = 'in:anywhere subject:"New order #" "Studio Pilates"';
 
   const listUrl = new URL(`https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages`);
   listUrl.searchParams.set("q", query);
