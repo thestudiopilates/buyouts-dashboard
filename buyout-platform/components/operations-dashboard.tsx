@@ -46,7 +46,9 @@ const EMAIL_TEMPLATES = [
   { id: "t0", label: "Custom / One-Off Message", requiredFields: ["clientEmail"] },
   { id: "t1", label: "First Inquiry Email", requiredFields: ["clientEmail"] },
   { id: "t2", label: "Food & Beverage Policy", requiredFields: ["clientEmail"] },
-  { id: "t3", label: "Deposit & Date", requiredFields: ["eventDate", "depositLink"] },
+  { id: "t3", label: "Payment — Deposit (30+ days)", requiredFields: ["eventDate", "depositLink"], paymentTier: "standard" as const },
+  { id: "t3a", label: "Payment — Full (14–30 days)", requiredFields: ["eventDate", "depositLink"], paymentTier: "full" as const },
+  { id: "t3b", label: "Payment — Rush (under 14 days)", requiredFields: ["eventDate", "depositLink"], paymentTier: "rush" as const },
   { id: "t4", label: "Deposit Reminder", requiredFields: ["depositLink"] },
   { id: "t5", label: "Event Details & Sign Up", requiredFields: ["eventDate", "startTime", "endTime", "signupLink"] },
   { id: "t6", label: "Remaining Payment", requiredFields: ["balanceLink"] },
@@ -64,7 +66,9 @@ const TEMPLATE_HINTS: Record<string, string> = {
   t0: "Custom message sent",
   t1: "Initial intake response",
   t2: "Food & beverage policy clarification",
-  t3: "Date confirmation and payment request",
+  t3: "Deposit payment — 30+ days from inquiry",
+  t3a: "Full payment — 14–30 days from inquiry",
+  t3b: "Rush payment — under 14 days from inquiry",
   t4: "Deposit follow-up reminder",
   t5: "Locked event details and signup link",
   t6: "Remaining balance request",
@@ -78,7 +82,7 @@ const TEMPLATE_HINTS: Record<string, string> = {
   t14: "Urgent 48-hour signup reminder"
 };
 
-const SINGLE_SEND_TEMPLATE_IDS = new Set(["t1", "t3", "t5", "t8", "t9", "t11", "t12"]);
+const SINGLE_SEND_TEMPLATE_IDS = new Set(["t1", "t3", "t3a", "t3b", "t5", "t8", "t9", "t11", "t12"]);
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -1067,7 +1071,12 @@ function Drawer({
                             </button>
                           ) : null}
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div className="ops-email-title">{template.label}</div>
+                            <div className="ops-email-title">
+                              {template.label}
+                              {"paymentTier" in template && template.paymentTier === buyout.paymentTier ? (
+                                <span className="ops-recommended-badge">Recommended</span>
+                              ) : null}
+                            </div>
                             <div className="ops-email-meta">
                               {sent
                                 ? TEMPLATE_HINTS[template.id]

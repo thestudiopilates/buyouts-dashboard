@@ -2221,6 +2221,20 @@ textarea {
 
 /* ── Inbox Alert Bar ───────────────────────────────────── */
 
+.ops-recommended-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(0, 105, 118, 0.12);
+  color: var(--seaglass);
+  vertical-align: middle;
+}
+
 .ops-rush-pill {
   display: inline-block;
   font-size: 0.6rem;

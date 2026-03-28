@@ -100,19 +100,18 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
   },
   {
     key: "t3",
-    name: "Deposit & Date",
+    name: "Payment — Deposit Required (30+ days)",
     triggerLabel: "Deposit & Date Email",
     category: "Planning",
     legacyColumnId: "long_text_mkzjwxsh",
     subjectTemplate: "The Studio Pilates Buyout: {{Client Name}} | {{Event Date}}",
     fallbackBodyTemplate:
-      "Hi {{Client First Name}},\n\nYour event is available on {{Event Date}} at {{Location}}. Total is {{Total Price}} and the deposit is {{Deposit Amount}}.\n\nComplete payment here: {{Deposit Link}}\n\nWarmly,\nThe Studio Pilates Team",
+      "Hi {{Client First Name}},\n\nGreat news! Your Studio Buyout is available.\n\n<hr> <b>Your Buyout Details</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Payment Summary</b>\n<b>Studio Buyout Rate:</b> $450/hour\n<b>Number of Hours:</b> {{Number of Hours}}\n<b>Total:</b> {{Total Price}}\n<b>Deposit to Hold Date:</b> $250\n<b>Remaining Balance Due:</b> 14 days before event\n\n<hr> <b>Next Steps | Action Required</b>\n\nTo reserve your date, please submit the $250 deposit:\n\n<b>Deposit Payment:</b> {{Deposit Link}}\n\nOnce your deposit is received, you can pay the remaining balance anytime before the 14-day deadline:\n\n<b>Remaining Balance:</b> {{Remaining Balance Link}}\n\nPrefer to pay in full now? Use this link:\n\n<b>Pay in Full:</b> {{Deposit Link}}\n\nBefore submitting payment, please review our buyout terms:\n<b>Buyout Terms:</b> https://thestudiopilates.com/product/private-events/\n\nSubmitting payment confirms you've reviewed and agreed to all terms.\n\n<hr> <b>What Happens After Payment</b>\n\n1. Your buyout is locked into our schedule\n2. An instructor will be assigned\n3. You'll receive a signup link for your guests\n4. We'll check in as your event approaches\n\nQuestions? Just reply here.\n\nWarmly,\nAutumn\nThe Studio Pilates Team",
     requiredVariables: [
       { key: "clientFirstName", label: "Client First Name" },
       { key: "eventDate", label: "Event Date" },
       { key: "location", label: "Location" },
       { key: "totalPrice", label: "Total Price" },
-      { key: "depositAmount", label: "Deposit Amount" },
       { key: "depositLink", label: "Deposit Link" }
     ],
     allowedStages: ["Discuss", "Feasible", "Quote", "Deposit"],
@@ -121,6 +120,56 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
       stageChange: "Deposit",
       workflowKeys: ["deposit-link-sent-and-terms-shared"],
       nextAction: "Wait for deposit payment",
+      sendPolicy: "single"
+    }
+  },
+  {
+    key: "t3a",
+    name: "Payment — Full Amount (14–30 days)",
+    triggerLabel: "Full Payment Email",
+    category: "Planning",
+    legacyColumnId: "",
+    subjectTemplate: "The Studio Pilates Buyout: {{Client Name}} | {{Event Date}}",
+    fallbackBodyTemplate:
+      "Hi {{Client First Name}},\n\nGreat news! Your Studio Buyout is available.\n\n<hr> <b>Your Buyout Details</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Payment Summary</b>\n<b>Studio Buyout Rate:</b> $450/hour\n<b>Number of Hours:</b> {{Number of Hours}}\n<b>Total Due:</b> {{Total Price}}\n\nBecause your event is within 30 days, full payment is required to confirm your reservation. No deposit — just one payment.\n\n<hr> <b>Next Steps | Action Required</b>\n\n<b>Complete Payment:</b> {{Deposit Link}}\n\nBefore submitting payment, please review our buyout terms:\n<b>Buyout Terms:</b> https://thestudiopilates.com/product/private-events/\n\nSubmitting payment confirms you've reviewed and agreed to all terms.\n\n<hr> <b>What Happens After Payment</b>\n\n1. Your buyout is locked into our schedule\n2. An instructor will be assigned\n3. You'll receive a signup link for your guests\n4. We'll check in as your event approaches\n\nQuestions? Just reply here.\n\nWarmly,\nAutumn\nThe Studio Pilates Team",
+    requiredVariables: [
+      { key: "clientFirstName", label: "Client First Name" },
+      { key: "eventDate", label: "Event Date" },
+      { key: "location", label: "Location" },
+      { key: "totalPrice", label: "Total Price" },
+      { key: "depositLink", label: "Deposit Link" }
+    ],
+    allowedStages: ["Discuss", "Feasible", "Quote", "Deposit"],
+    effectConfig: {
+      eventType: "stage_change",
+      stageChange: "Deposit",
+      workflowKeys: ["deposit-link-sent-and-terms-shared"],
+      nextAction: "Wait for payment",
+      sendPolicy: "single"
+    }
+  },
+  {
+    key: "t3b",
+    name: "Payment — Rush Event (under 14 days)",
+    triggerLabel: "Rush Payment Email",
+    category: "Planning",
+    legacyColumnId: "",
+    subjectTemplate: "The Studio Pilates Buyout: {{Client Name}} | {{Event Date}} — Rush Booking",
+    fallbackBodyTemplate:
+      "Hi {{Client First Name}},\n\nGreat news! We can make your Studio Buyout happen on short notice.\n\nBecause your event is less than 14 days from your inquiry, this is considered a Rush Buyout and includes a $100 rush coordination fee.\n\n<hr> <b>Your Buyout Details</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Payment Summary</b>\n<b>Studio Buyout Rate:</b> $450/hour\n<b>Number of Hours:</b> {{Number of Hours}}\n<b>Buyout Total:</b> {{Total Price}}\n<b>Rush Coordination Fee:</b> $100\n<b>Total Due Now:</b> {{Total With Rush}}\n\n<hr> <b>Important — 48 Hour Payment Deadline</b>\n\nPayment must be received within 48 hours of this email to secure your date and time. If payment is not received, the date and time will not be held and may be released.\n\n<b>Complete Payment Now:</b> {{Deposit Link}}\n\nBefore submitting, please review our buyout terms:\n<b>Buyout Terms:</b> https://thestudiopilates.com/product/private-events/\n\n<hr> <b>What Happens After Payment</b>\n\n1. Your buyout is locked into our schedule\n2. An instructor will be assigned\n3. You'll receive a signup link for your guests\n4. We'll be in touch quickly given the short timeline\n\nQuestions? Reply here immediately — we're prioritizing your event.\n\nWarmly,\nAutumn\nThe Studio Pilates Team",
+    requiredVariables: [
+      { key: "clientFirstName", label: "Client First Name" },
+      { key: "eventDate", label: "Event Date" },
+      { key: "location", label: "Location" },
+      { key: "totalPrice", label: "Total Price" },
+      { key: "depositLink", label: "Deposit Link" }
+    ],
+    allowedStages: ["Discuss", "Feasible", "Quote", "Deposit"],
+    effectConfig: {
+      eventType: "stage_change",
+      stageChange: "Deposit",
+      workflowKeys: ["deposit-link-sent-and-terms-shared"],
+      nextAction: "Wait for rush payment (48 hours)",
       sendPolicy: "single"
     }
   },
