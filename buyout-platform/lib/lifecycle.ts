@@ -8,6 +8,11 @@ const STAGE_ORDER: StageKey[] = [
 
 const TERMINAL_STAGES = new Set<StageKey>(["Complete", "Cancelled", "DOA", "Not Possible"]);
 
+function stageRank(stage: StageKey) {
+  const index = STAGE_ORDER.indexOf(stage);
+  return index >= 0 ? index : -1;
+}
+
 type WorkflowState = {
   completedKeys: Set<string>;
   sentTemplateIds: string[];
@@ -20,13 +25,105 @@ type WorkflowState = {
   capacity: number;
 };
 
+const STEP_ADVANCEMENT_RULES: Array<{
+  requires: string[];
+  advancesTo: StageKey;
+  nextAction: string;
+  ballInCourt: BallInCourtKey;
+}> = [
+  {
+    requires: ["event-completed"],
+    advancesTo: "Complete",
+    nextAction: "Closed",
+    ballInCourt: "Team"
+  },
+  {
+    requires: ["final-confirmation-emails-sent"],
+    advancesTo: "Final",
+    nextAction: "Prepare final event logistics",
+    ballInCourt: "Team"
+  },
+  {
+    requires: ["front-desk-assigned"],
+    advancesTo: "Ready",
+    nextAction: "Send final confirmation email",
+    ballInCourt: "Team"
+  },
+  {
+    requires: ["all-attendees-registered", "all-waivers-signed"],
+    advancesTo: "Confirmed",
+    nextAction: "Assign front desk and confirm remaining balance",
+    ballInCourt: "Team"
+  },
+  {
+    requires: ["remaining-payment-received"],
+    advancesTo: "Confirmed",
+    nextAction: "Monitor signups and waivers",
+    ballInCourt: "Client"
+  },
+  {
+    requires: ["momence-link-sign-up-sent"],
+    advancesTo: "Sign-Ups",
+    nextAction: "Monitor registrations and waivers",
+    ballInCourt: "Client"
+  },
+  {
+    requires: ["momence-class-created"],
+    advancesTo: "Paid",
+    nextAction: "Send event details and signup link to client",
+    ballInCourt: "Team"
+  },
+  {
+    requires: ["instructor-finalized"],
+    advancesTo: "Paid",
+    nextAction: "Create Momence class and signup link",
+    ballInCourt: "Team"
+  },
+  {
+    requires: ["deposit-paid-and-terms-signed"],
+    advancesTo: "Paid",
+    nextAction: "Finalize instructor and send event details",
+    ballInCourt: "Team"
+  },
+  {
+    requires: ["deposit-link-sent-and-terms-shared"],
+    advancesTo: "Quote",
+    nextAction: "Wait for deposit payment",
+    ballInCourt: "Client"
+  },
+  {
+    requires: ["date-finalized"],
+    advancesTo: "Feasible",
+    nextAction: "Prepare quote and send deposit link",
+    ballInCourt: "Team"
+  },
+  {
+    requires: ["customer-responded"],
+    advancesTo: "Discuss",
+    nextAction: "Confirm dates, location, and event details",
+    ballInCourt: "Both"
+  },
+  {
+    requires: ["initial-inquiry-response-sent"],
+    advancesTo: "Respond",
+    nextAction: "Wait for client response",
+    ballInCourt: "Client"
+  },
+  {
+    requires: ["inquiry-reviewed"],
+    advancesTo: "Inquiry",
+    nextAction: "Send initial inquiry response",
+    ballInCourt: "Team"
+  }
+];
+
 export function deriveLifecycleState(state: WorkflowState): {
   lifecycleStage: StageKey;
   nextAction: string;
   ballInCourt: BallInCourtKey;
   trackingHealth: TrackingKey;
 } {
-  const { currentStage } = state;
+  const { completedKeys, currentStage } = state;
 
   if (TERMINAL_STAGES.has(currentStage)) {
     const phase = BUYOUT_PHASES[currentStage];
@@ -47,16 +144,30 @@ export function deriveLifecycleState(state: WorkflowState): {
     };
   }
 
-  const phase = BUYOUT_PHASES[currentStage];
-  const nextAction = phase?.nextAction ?? "Review record";
-  const ballInCourt = phase?.ballInCourt ?? "Team";
+  let derivedStage: StageKey = currentStage;
+  let derivedNextAction: string = BUYOUT_PHASES[currentStage]?.nextAction ?? "Review record";
+  let derivedBallInCourt: BallInCourtKey = BUYOUT_PHASES[currentStage]?.ballInCourt ?? "Team";
 
-  const trackingHealth = deriveTrackingHealth(state);
+  for (const rule of STEP_ADVANCEMENT_RULES) {
+    if (rule.requires.every((key) => completedKeys.has(key))) {
+      if (stageRank(rule.advancesTo) > stageRank(derivedStage)) {
+        derivedStage = rule.advancesTo;
+        derivedNextAction = rule.nextAction;
+        derivedBallInCourt = rule.ballInCourt;
+      }
+      break;
+    }
+  }
+
+  const trackingHealth = deriveTrackingHealth({
+    ...state,
+    currentStage: derivedStage
+  });
 
   return {
-    lifecycleStage: currentStage,
-    nextAction,
-    ballInCourt,
+    lifecycleStage: derivedStage,
+    nextAction: derivedNextAction,
+    ballInCourt: derivedBallInCourt,
     trackingHealth
   };
 }
