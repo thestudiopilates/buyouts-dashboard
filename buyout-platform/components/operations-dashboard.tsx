@@ -757,12 +757,6 @@ function Drawer({
                     <button className="ops-draft-close" onClick={() => setPreviewHtml(null)} type="button">Back to Editor</button>
                   </div>
                   <div className="ops-preview-frame" dangerouslySetInnerHTML={{ __html: previewHtml }} />
-                  <div className="ops-draft-actions">
-                    <button className="ops-draft-send" disabled={isPending} onClick={handleConfirmSend} type="button">
-                      {isPending ? "Sending..." : "Confirm & Send"}
-                    </button>
-                    <button className="ops-draft-cancel" onClick={() => setPreviewHtml(null)} type="button">Back</button>
-                  </div>
                 </div>
               ) : draftTemplate ? (
                 <div className="ops-draft-editor">
@@ -792,15 +786,6 @@ function Drawer({
                         rows={16}
                         value={draftBody}
                       />
-                      <div className="ops-draft-actions">
-                        <button className="ops-draft-send" disabled={isPending} onClick={handleConfirmSend} type="button">
-                          {isPending ? "Sending..." : "Send Email"}
-                        </button>
-                        <button className="ops-draft-preview" disabled={draftLoading} onClick={handlePreviewDraft} type="button">
-                          Preview First
-                        </button>
-                        <button className="ops-draft-cancel" onClick={handleCloseDraft} type="button">Cancel</button>
-                      </div>
                     </>
                   )}
                 </div>
@@ -924,15 +909,43 @@ function Drawer({
         </div>
 
         <div className="ops-drawer-footer">
-          <button className="ops-footer-primary" onClick={() => { setTab("emails"); setEditorMode(null); handleCloseDraft(); }} type="button">
-            Emails
-          </button>
-          <button className="ops-footer-secondary" onClick={() => { setTab("overview"); setEditorMode("details"); handleCloseDraft(); }} type="button">
-            Edit Details
-          </button>
-          <button className="ops-footer-tertiary" onClick={() => { setTab("overview"); setEditorMode("notes"); handleCloseDraft(); }} type="button">
-            Notes
-          </button>
+          {previewHtml ? (
+            <>
+              <button className="ops-footer-primary" disabled={isPending} onClick={handleConfirmSend} type="button">
+                {isPending ? "Sending..." : "Confirm & Send"}
+              </button>
+              <button className="ops-footer-secondary" onClick={() => setPreviewHtml(null)} type="button">
+                Back to Editor
+              </button>
+              <button className="ops-footer-tertiary" onClick={handleCloseDraft} type="button">
+                Cancel
+              </button>
+            </>
+          ) : draftTemplate ? (
+            <>
+              <button className="ops-footer-primary" disabled={isPending || draftLoading} onClick={handleConfirmSend} type="button">
+                {isPending ? "Sending..." : "Send Email"}
+              </button>
+              <button className="ops-footer-secondary" disabled={draftLoading} onClick={handlePreviewDraft} type="button">
+                Preview First
+              </button>
+              <button className="ops-footer-tertiary" onClick={handleCloseDraft} type="button">
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="ops-footer-primary" onClick={() => { setTab("emails"); setEditorMode(null); }} type="button">
+                Emails
+              </button>
+              <button className="ops-footer-secondary" onClick={() => { setTab("overview"); setEditorMode("details"); }} type="button">
+                Edit Details
+              </button>
+              <button className="ops-footer-tertiary" onClick={() => { setTab("overview"); setEditorMode("notes"); }} type="button">
+                Notes
+              </button>
+            </>
+          )}
         </div>
       </aside>
     </>

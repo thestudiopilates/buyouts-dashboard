@@ -1915,7 +1915,7 @@ textarea {
 /* ── Draft Editor ──────────────────────────────────────────── */
 
 .ops-draft-editor {
-  padding: 0 0 80px;
+  padding: 0 0 8px;
 }
 
 .ops-draft-header {
