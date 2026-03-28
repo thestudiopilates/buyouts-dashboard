@@ -4,87 +4,14 @@ import { NextResponse } from "next/server";
 
 import { listBuyouts } from "@/lib/buyouts";
 import { ensureEmailInfrastructure } from "@/lib/email-templates";
-import { getGmailReadiness, searchGmailMessages, searchPaymentEmails } from "@/lib/gmail";
+import { getGmailReadiness, searchPaymentEmails } from "@/lib/gmail";
 import { hasDatabaseUrl, prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-async function ensureInboxTable() {
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS "InboxAlert" (
-      "id" TEXT PRIMARY KEY,
-      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "buyoutId" TEXT NOT NULL,
-      "clientEmail" TEXT NOT NULL,
-      "gmailMessageId" TEXT NOT NULL UNIQUE,
-      "subject" TEXT,
-      "snippet" TEXT,
-      "receivedAt" TIMESTAMP(3) NOT NULL,
-      "respondedAt" TIMESTAMP(3),
-      "isRead" BOOLEAN NOT NULL DEFAULT FALSE,
-      "isDismissed" BOOLEAN NOT NULL DEFAULT FALSE
-    )
-  `);
-
-  await prisma.$executeRawUnsafe(`
-    CREATE INDEX IF NOT EXISTS "InboxAlert_buyoutId_idx"
-    ON "InboxAlert" ("buyoutId", "receivedAt" DESC)
-  `);
-}
-
 function normalizeName(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function firstName(value: string) {
-  return normalizeName(value).split(" ")[0] ?? "";
-}
-
-function matchPaymentToBuyout(
-  payment: { clientEmail: string; clientName: string },
-  buyouts: Awaited<ReturnType<typeof listBuyouts>>
-) {
-  const paymentEmail = payment.clientEmail.trim().toLowerCase();
-  const paymentName = normalizeName(payment.clientName);
-  const paymentFirstName = firstName(payment.clientName);
-
-  if (paymentEmail) {
-    const exactEmail = buyouts.find((buyout) => buyout.clientEmail.trim().toLowerCase() === paymentEmail);
-    if (exactEmail) {
-      return { buyout: exactEmail, matchedBy: "email" };
-    }
-  }
-
-  if (paymentName) {
-    const fullNameMatch = buyouts.find((buyout) => normalizeName(buyout.clientName || buyout.name) === paymentName);
-    if (fullNameMatch) {
-      return { buyout: fullNameMatch, matchedBy: "full-name" };
-    }
-  }
-
-  if (paymentName) {
-    const containsMatch = buyouts.find((buyout) => {
-      const bn = normalizeName(buyout.clientName || buyout.name);
-      return bn.includes(paymentName) || paymentName.includes(bn.split(" ").slice(0, 2).join(" "));
-    });
-    if (containsMatch) {
-      return { buyout: containsMatch, matchedBy: "name-contains" };
-    }
-  }
-
-  if (paymentFirstName) {
-    const firstNameMatches = buyouts.filter((buyout) => firstName(buyout.clientName || buyout.name) === paymentFirstName);
-    if (firstNameMatches.length === 1) {
-      return { buyout: firstNameMatches[0], matchedBy: "first-name" };
-    }
-  }
-
-  return { buyout: null, matchedBy: null };
+  return value.toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
 }
 
 export async function GET(request: Request) {
@@ -105,81 +32,10 @@ export async function GET(request: Request) {
   }
 
   await ensureEmailInfrastructure();
-  await ensureInboxTable();
 
-  const buyouts = await listBuyouts();
-  const activeBuyouts = buyouts.filter(
-    (b) => !["Complete", "Cancelled", "DOA", "Not Possible"].includes(b.lifecycleStage) && b.clientEmail
-  );
-
-  let newAlerts = 0;
-  let resolved = 0;
-  const errors: string[] = [];
-
-  for (const buyout of activeBuyouts) {
-    try {
-      const received = await searchGmailMessages({
-        clientEmail: buyout.clientEmail,
-        direction: "received",
-        maxResults: 5
-      });
-
-      if (received.length === 0) continue;
-
-      const sent = await searchGmailMessages({
-        clientEmail: buyout.clientEmail,
-        direction: "sent",
-        maxResults: 5
-      });
-
-      const latestSentTime = sent.length > 0
-        ? Math.max(...sent.map((m) => new Date(m.date).getTime()))
-        : 0;
-
-      for (const msg of received) {
-        const receivedTime = new Date(msg.date).getTime();
-        if (isNaN(receivedTime)) continue;
-
-        const wasRespondedTo = latestSentTime > receivedTime;
-
-        const existing = await prisma.$queryRawUnsafe(
-          `SELECT "id", "respondedAt" FROM "InboxAlert" WHERE "gmailMessageId" = $1 LIMIT 1`,
-          msg.id
-        ) as Array<{ id: string; respondedAt: Date | null }>;
-
-        if (existing.length > 0) {
-          if (wasRespondedTo && !existing[0].respondedAt) {
-            await prisma.$executeRawUnsafe(
-              `UPDATE "InboxAlert" SET "respondedAt" = $1 WHERE "id" = $2`,
-              new Date(latestSentTime),
-              existing[0].id
-            );
-            resolved++;
-          }
-          continue;
-        }
-
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO "InboxAlert" ("id", "buyoutId", "clientEmail", "gmailMessageId", "subject", "snippet", "receivedAt", "respondedAt")
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          randomUUID(),
-          buyout.id,
-          buyout.clientEmail,
-          msg.id,
-          msg.subject ?? "",
-          msg.snippet ?? "",
-          new Date(receivedTime),
-          wasRespondedTo ? new Date(latestSentTime) : null
-        );
-        newAlerts++;
-      }
-    } catch (err) {
-      errors.push(`${buyout.name}: ${err instanceof Error ? err.message : "unknown"}`);
-    }
-  }
-
-  // ── Payment Detection ────────────────────────────────────
+  // Only do payment matching — no inbox scans (those are done on-demand in the drawer)
   let paymentsMatched = 0;
+  const errors: string[] = [];
 
   try {
     const payments = await searchPaymentEmails(15);
@@ -195,7 +51,17 @@ export async function GET(request: Request) {
 
       if ((alreadyProcessed[0]?.count ?? 0) > 0) continue;
 
-      const { buyout: matchedBuyout, matchedBy } = matchPaymentToBuyout(payment, allBuyouts);
+      // Match by email first, then by name
+      const paymentEmail = payment.clientEmail.trim().toLowerCase();
+      const paymentName = normalizeName(payment.clientName);
+
+      const matchedBuyout =
+        (paymentEmail ? allBuyouts.find((b) => b.clientEmail.trim().toLowerCase() === paymentEmail) : null) ??
+        allBuyouts.find((b) => normalizeName(b.clientName || b.name) === paymentName) ??
+        allBuyouts.find((b) => {
+          const bn = normalizeName(b.clientName || b.name);
+          return bn.includes(paymentName) || paymentName.includes(bn.split(" ").slice(0, 2).join(" "));
+        });
 
       if (!matchedBuyout) continue;
 
@@ -210,51 +76,20 @@ export async function GET(request: Request) {
 
       await prisma.buyoutFinancial.upsert({
         where: { buyoutId: matchedBuyout.id },
-        update: {
-          amountPaid: newPaid,
-          remainingBalance: newRemaining
-        },
-        create: {
-          buyoutId: matchedBuyout.id,
-          quotedTotal,
-          amountPaid: newPaid,
-          remainingBalance: newRemaining
-        }
+        update: { amountPaid: newPaid, remainingBalance: newRemaining },
+        create: { buyoutId: matchedBuyout.id, quotedTotal, amountPaid: newPaid, remainingBalance: newRemaining }
       });
 
-      const depositThreshold = 200;
+      // Auto-check workflow steps based on payment amount
       const isFullPayment = payment.amount >= (quotedTotal * 0.9);
-      const isDeposit = !isFullPayment && payment.amount >= depositThreshold;
+      const isDeposit = !isFullPayment && payment.amount >= 200;
+      const stepsToComplete = isFullPayment
+        ? ["deposit-paid-and-terms-signed", "remaining-payment-received"]
+        : isDeposit
+          ? ["deposit-paid-and-terms-signed"]
+          : [];
 
-      if (isFullPayment) {
-        const steps = ["deposit-paid-and-terms-signed", "remaining-payment-received"];
-        for (const stepKey of steps) {
-          const existing = await prisma.buyoutWorkflowStep.findFirst({
-            where: { buyoutId: matchedBuyout.id, stepKey }
-          });
-
-          if (existing && !existing.isComplete) {
-            await prisma.buyoutWorkflowStep.update({
-              where: { id: existing.id },
-              data: { isComplete: true, completedAt: new Date(), completedBy: "payment-auto" }
-            });
-          } else if (!existing) {
-            await prisma.buyoutWorkflowStep.create({
-              data: {
-                id: `${matchedBuyout.id}_${stepKey}`,
-                buyoutId: matchedBuyout.id,
-                stepKey,
-                label: stepKey.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
-                stepGroup: "PAYMENT",
-                isComplete: true,
-                completedAt: new Date(),
-                completedBy: "payment-auto"
-              }
-            });
-          }
-        }
-      } else if (isDeposit) {
-        const stepKey = "deposit-paid-and-terms-signed";
+      for (const stepKey of stepsToComplete) {
         const existing = await prisma.buyoutWorkflowStep.findFirst({
           where: { buyoutId: matchedBuyout.id, stepKey }
         });
@@ -263,6 +98,19 @@ export async function GET(request: Request) {
           await prisma.buyoutWorkflowStep.update({
             where: { id: existing.id },
             data: { isComplete: true, completedAt: new Date(), completedBy: "payment-auto" }
+          });
+        } else if (!existing) {
+          await prisma.buyoutWorkflowStep.create({
+            data: {
+              id: `${matchedBuyout.id}_${stepKey}`,
+              buyoutId: matchedBuyout.id,
+              stepKey,
+              label: stepKey.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+              stepGroup: "PAYMENT",
+              isComplete: true,
+              completedAt: new Date(),
+              completedBy: "payment-auto"
+            }
           });
         }
       }
@@ -280,13 +128,7 @@ export async function GET(request: Request) {
           paymentMethod: payment.paymentMethod,
           clientName: payment.clientName,
           clientEmail: payment.clientEmail,
-          productName: payment.productName,
-          rawSubject: payment.rawSubject,
-          date: payment.date,
-          threadId: payment.threadId,
-          bodyText: payment.bodyText,
           matchedBuyoutName: matchedBuyout.name,
-          matchedBy,
           isFullPayment,
           isDeposit,
           previousPaid: currentPaid,
@@ -302,10 +144,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    message: `Checked ${activeBuyouts.length} buyouts. ${newAlerts} new alerts, ${resolved} resolved, ${paymentsMatched} payments matched.`,
-    checked: activeBuyouts.length,
-    newAlerts,
-    resolved,
+    message: `${paymentsMatched} payments matched.`,
     paymentsMatched,
     errors: errors.slice(0, 5)
   });
