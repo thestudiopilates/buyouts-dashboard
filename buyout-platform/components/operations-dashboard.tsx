@@ -287,6 +287,17 @@ function Drawer({
   const [isPending, startTransition] = useTransition();
   const countdown = countdownTone(buyout.countdownDays);
 
+  function syncFreshBuyout() {
+    fetch(`/api/buyouts/${buyout.id}`, { cache: "no-store" })
+      .then((response) => response.json())
+      .then((payload: { buyout?: BuyoutSummary }) => {
+        if (payload.buyout) {
+          onBuyoutUpdated(payload.buyout);
+        }
+      })
+      .catch(() => {});
+  }
+
   useEffect(() => {
     setTab("overview");
     setEditorMode(null);
@@ -327,6 +338,10 @@ function Drawer({
       signupLink: buyout.signupLink ?? ""
     });
   }, [buyout]);
+
+  useEffect(() => {
+    syncFreshBuyout();
+  }, [buyout.id]);
 
   function updateField(key: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -455,6 +470,7 @@ function Drawer({
       .then((r) => r.json())
       .then((data: { payments?: PaymentRecord[] }) => {
         setPayments(data.payments ?? []);
+        syncFreshBuyout();
       })
       .catch(() => {});
   }

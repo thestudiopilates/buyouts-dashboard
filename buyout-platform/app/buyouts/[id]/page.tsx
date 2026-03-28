@@ -7,6 +7,8 @@ import { PortalShell } from "@/components/portal-shell";
 import { getBuyout } from "@/lib/buyouts";
 import { getBuyoutEmailPanelData, listPaymentActivity } from "@/lib/email-templates";
 
+export const dynamic = "force-dynamic";
+
 function formatCurrency(value: number) {
   return `$${value.toLocaleString()}`;
 }

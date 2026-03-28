@@ -2,6 +2,8 @@ import { BuyoutTable } from "@/components/buyout-table";
 import { PortalShell } from "@/components/portal-shell";
 import { listBuyouts } from "@/lib/buyouts";
 
+export const dynamic = "force-dynamic";
+
 export default async function BuyoutsPage() {
   const buyouts = await listBuyouts();
 

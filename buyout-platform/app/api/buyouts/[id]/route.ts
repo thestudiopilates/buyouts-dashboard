@@ -1,7 +1,30 @@
 import { NextResponse } from "next/server";
 
-import { updateBuyout } from "@/lib/buyouts";
+import { getBuyout, updateBuyout } from "@/lib/buyouts";
 import { buyoutUpdateSchema, type BuyoutUpdateFormState } from "@/lib/validations";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+
+  try {
+    const buyout = await getBuyout(id);
+    if (!buyout) {
+      return NextResponse.json({ error: "Buyout not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({ buyout });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unable to load buyout." },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PATCH(
   request: Request,

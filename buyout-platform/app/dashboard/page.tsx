@@ -4,6 +4,8 @@ import { PortalShell } from "@/components/portal-shell";
 import { OperationsDashboard } from "@/components/operations-dashboard";
 import { listBuyouts } from "@/lib/buyouts";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const buyouts = await listBuyouts();
 
