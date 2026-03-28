@@ -1,6 +1,7 @@
 import { BallInCourt, BuyoutStage, TrackingHealth, WorkflowGroup } from "@prisma/client";
 
 import { getBuyoutPhase } from "@/lib/buyout-phases";
+import { deriveStageFromWorkflow } from "@/lib/lifecycle";
 import { mockBuyouts } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
 import { BuyoutInquiryInput, BuyoutSummary, BuyoutUpdateInput, WorkflowStep } from "@/lib/types";
@@ -385,30 +386,41 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       endTime: derivedEndTime,
       quotedTotal: buyout.financial?.quotedTotal
     });
+    const sentTemplateIds = Array.from(
+      new Set(
+        (isKellyTest ? TEST_SENT_TEMPLATES : [])
+          .concat(
+            buyout.emails
+              .filter((email) => email.status === "SENT")
+              .map((email) => email.templateKey)
+          )
+      )
+    );
     const sourceStatusLabel = buyout.sourceStatusLabel ?? lifecycleStage;
-    const sourceLifecycleStage = lifecycleStage;
     const sourceTrackingHealth = trackingLabelMap[buyout.trackingHealth];
     const sourceBallInCourt = ballInCourtLabelMap[buyout.ballInCourt];
     const sourceNextAction = buyout.sourceNextActionLabel ?? buyout.nextAction ?? "Review record";
-    const reconciledState = reconcileOperationalState({
+    const derivedState = deriveStageFromWorkflow(
       workflow,
-      countdown,
-      sourceLifecycleStage,
-      sourceTrackingHealth,
-      sourceBallInCourt,
-      sourceStatusLabel,
-      sourceNextAction,
-      amountPaid: buyout.financial?.amountPaid ?? 0,
-      isInternalTest: isKellyTest
-    });
-    const effectiveLifecycleStage = reconciledState.lifecycleStage;
-    const effectiveTrackingHealth = reconciledState.trackingHealth;
+      sentTemplateIds,
+      lifecycleStage,
+      {
+        countdownDays: countdown,
+        daysWaiting: waiting,
+        amountPaid: buyout.financial?.amountPaid ?? 0,
+        total: buyout.financial?.quotedTotal ?? 0,
+        signups: buyout.signupCount,
+        capacity: buyout.capacity ?? 0
+      }
+    );
+    const effectiveLifecycleStage = derivedState.lifecycleStage;
+    const effectiveTrackingHealth = derivedState.trackingHealth;
     const effectiveBallInCourt =
       isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
         ? "Team"
-        : reconciledState.ballInCourt;
-    const effectiveNextAction = reconciledState.nextAction;
-    const effectiveStatusLabel = reconciledState.statusLabel;
+        : derivedState.ballInCourt;
+    const effectiveNextAction = derivedState.nextAction;
+    const effectiveStatusLabel = getBuyoutPhase(derivedState.lifecycleStage)?.statusLabel ?? sourceStatusLabel;
     const healthFlags = [
       !isKellyTest && countdown !== null && countdown < 0 ? "Event date on the source board is in the past." : null,
       !isKellyTest &&
@@ -424,17 +436,6 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
         ? `Operationally this reads as "${effectiveStatusLabel}" even though Monday still shows "${sourceStatusLabel}".`
         : null
     ].filter((value): value is string => Boolean(value));
-
-    const sentTemplateIds = Array.from(
-      new Set(
-        (isKellyTest ? TEST_SENT_TEMPLATES : [])
-          .concat(
-            buyout.emails
-              .filter((email) => email.status === "SENT")
-              .map((email) => email.templateKey)
-          )
-      )
-    );
 
     return {
     id: buyout.id,
