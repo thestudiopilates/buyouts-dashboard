@@ -203,7 +203,41 @@ type GmailMessageResponse = {
   snippet: string;
   payload?: {
     headers?: Array<{ name: string; value: string }>;
+    body?: { data?: string };
+    parts?: Array<{ mimeType?: string; body?: { data?: string } }>;
   };
+};
+
+function decodeBase64Url(data: string) {
+  return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8");
+}
+
+function extractBodyText(msg: GmailMessageResponse): string {
+  if (msg.payload?.body?.data) {
+    return decodeBase64Url(msg.payload.body.data);
+  }
+
+  const textPart = msg.payload?.parts?.find((p) => p.mimeType === "text/plain");
+  if (textPart?.body?.data) {
+    return decodeBase64Url(textPart.body.data);
+  }
+
+  const htmlPart = msg.payload?.parts?.find((p) => p.mimeType === "text/html");
+  if (htmlPart?.body?.data) {
+    return decodeBase64Url(htmlPart.body.data).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  }
+
+  return msg.snippet ?? "";
+}
+
+export type ParsedPayment = {
+  gmailMessageId: string;
+  orderNumber: string;
+  clientName: string;
+  amount: number;
+  paymentMethod: string;
+  date: string;
+  rawSubject: string;
 };
 
 function getHeader(msg: GmailMessageResponse, name: string): string {
@@ -262,6 +296,73 @@ export async function searchGmailMessages(input: {
   );
 
   return messages.filter((m): m is GmailMessageSummary => m !== null);
+}
+
+export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPayment[]> {
+  const config = getGmailConfig();
+  if (!config) return [];
+
+  const accessToken = await getAccessToken(config);
+  const query = 'subject:"New order" from:thestudiopilates.com newer_than:30d';
+
+  const listUrl = new URL(`https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages`);
+  listUrl.searchParams.set("q", query);
+  listUrl.searchParams.set("maxResults", String(maxResults));
+
+  const listResponse = await fetch(listUrl.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+
+  if (!listResponse.ok) return [];
+
+  const listData = (await listResponse.json()) as GmailListResponse;
+  if (!listData.messages?.length) return [];
+
+  const payments: ParsedPayment[] = [];
+
+  for (const ref of listData.messages.slice(0, maxResults)) {
+    const msgUrl = `https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages/${ref.id}?format=full`;
+    const msgResponse = await fetch(msgUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    if (!msgResponse.ok) continue;
+
+    const msg = (await msgResponse.json()) as GmailMessageResponse;
+    const subject = getHeader(msg, "Subject");
+    const date = getHeader(msg, "Date");
+    const body = extractBodyText(msg);
+
+    const orderMatch = subject.match(/New order #(\d+)/);
+    if (!orderMatch) continue;
+
+    const orderNumber = orderMatch[1];
+
+    const nameMatch = body.match(/(?:order from|Reply-To:\s*)([A-Z][a-z]+ [A-Z][a-z]+)/i)
+      ?? body.match(/(?:from\s+)([A-Z][a-z]+ [A-Z][a-z]+)/i);
+    const clientName = nameMatch?.[1]?.trim() ?? "";
+
+    const amountMatch = body.match(/\$([0-9,]+\.?\d{0,2})/);
+    const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, "")) : 0;
+
+    const methodMatch = body.match(/Payment method:\s*(.+?)(?:\n|$)/i)
+      ?? body.match(/via\s+([\w\s]+(?:\([\w\s]+\))?)/i);
+    const paymentMethod = methodMatch?.[1]?.trim() ?? "Unknown";
+
+    if (clientName && amount > 0) {
+      payments.push({
+        gmailMessageId: ref.id,
+        orderNumber,
+        clientName,
+        amount,
+        paymentMethod,
+        date,
+        rawSubject: subject
+      });
+    }
+  }
+
+  return payments;
 }
 
 export async function getEmailHistory(clientEmail: string): Promise<GmailMessageSummary[]> {

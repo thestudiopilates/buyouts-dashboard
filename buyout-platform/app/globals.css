@@ -2300,6 +2300,11 @@ textarea {
   color: #b87a00;
 }
 
+.ops-activity-badge.payment {
+  background: rgba(0, 200, 117, 0.12);
+  color: #0a6b3a;
+}
+
 .ops-activity-badge.checklist {
   background: rgba(121, 127, 93, 0.12);
   color: var(--sage);

@@ -1449,6 +1449,7 @@ function Drawer({
                                 event.eventType.includes("EMAIL") ? "email"
                                 : event.eventType === "NOTE_ADDED" ? "note"
                                 : event.eventType === "INQUIRY_RECEIVED" ? "inquiry"
+                                : event.eventType === "PAYMENT_DETECTED" ? "payment"
                                 : event.eventType.includes("WORKFLOW") ? "checklist"
                                 : "status"
                               }`}>
@@ -1457,6 +1458,7 @@ function Drawer({
                                   : event.eventType === "INQUIRY_RECEIVED" ? "Inquiry"
                                   : event.eventType === "BUYOUT_CREATED" ? "Created"
                                   : event.eventType === "WORKFLOW_STEP_COMPLETED" ? "Checklist"
+                                  : event.eventType === "PAYMENT_DETECTED" ? "Payment"
                                   : event.eventType === "LAST_ACTION_RECORDED" ? "Action"
                                   : "Event"}
                               </span>

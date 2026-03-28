@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 import { listBuyouts } from "@/lib/buyouts";
 import { ensureEmailInfrastructure } from "@/lib/email-templates";
-import { getGmailReadiness, searchGmailMessages } from "@/lib/gmail";
+import { getGmailReadiness, searchGmailMessages, searchPaymentEmails } from "@/lib/gmail";
 import { hasDatabaseUrl, prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -124,11 +124,132 @@ export async function GET(request: Request) {
     }
   }
 
+  // ── Payment Detection ────────────────────────────────────
+  let paymentsMatched = 0;
+
+  try {
+    const payments = await searchPaymentEmails(15);
+    const allBuyouts = await listBuyouts();
+
+    for (const payment of payments) {
+      const alreadyProcessed = await prisma.$queryRawUnsafe(
+        `SELECT COUNT(*)::int AS "count" FROM "BuyoutEvent"
+         WHERE "eventType" = 'PAYMENT_DETECTED'
+         AND "detail"::text LIKE $1`,
+        `%${payment.gmailMessageId}%`
+      ) as Array<{ count: number }>;
+
+      if ((alreadyProcessed[0]?.count ?? 0) > 0) continue;
+
+      const paymentNameLower = payment.clientName.toLowerCase();
+      const matchedBuyout = allBuyouts.find((b) => {
+        const buyoutName = (b.clientName || b.name).toLowerCase();
+        return buyoutName.includes(paymentNameLower) || paymentNameLower.includes(buyoutName.split(" ")[0]);
+      });
+
+      if (!matchedBuyout) continue;
+
+      const financial = await prisma.buyoutFinancial.findUnique({
+        where: { buyoutId: matchedBuyout.id }
+      });
+
+      const currentPaid = financial?.amountPaid ?? 0;
+      const newPaid = currentPaid + Math.round(payment.amount);
+      const quotedTotal = financial?.quotedTotal ?? 0;
+      const newRemaining = Math.max(0, quotedTotal - newPaid);
+
+      await prisma.buyoutFinancial.upsert({
+        where: { buyoutId: matchedBuyout.id },
+        update: {
+          amountPaid: newPaid,
+          remainingBalance: newRemaining
+        },
+        create: {
+          buyoutId: matchedBuyout.id,
+          quotedTotal,
+          amountPaid: newPaid,
+          remainingBalance: newRemaining
+        }
+      });
+
+      const depositThreshold = 200;
+      const isFullPayment = payment.amount >= (quotedTotal * 0.9);
+      const isDeposit = !isFullPayment && payment.amount >= depositThreshold;
+
+      if (isFullPayment) {
+        const steps = ["deposit-paid-and-terms-signed", "remaining-payment-received"];
+        for (const stepKey of steps) {
+          const existing = await prisma.buyoutWorkflowStep.findFirst({
+            where: { buyoutId: matchedBuyout.id, stepKey }
+          });
+
+          if (existing && !existing.isComplete) {
+            await prisma.buyoutWorkflowStep.update({
+              where: { id: existing.id },
+              data: { isComplete: true, completedAt: new Date(), completedBy: "payment-auto" }
+            });
+          } else if (!existing) {
+            await prisma.buyoutWorkflowStep.create({
+              data: {
+                id: `${matchedBuyout.id}_${stepKey}`,
+                buyoutId: matchedBuyout.id,
+                stepKey,
+                label: stepKey.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
+                stepGroup: "PAYMENT",
+                isComplete: true,
+                completedAt: new Date(),
+                completedBy: "payment-auto"
+              }
+            });
+          }
+        }
+      } else if (isDeposit) {
+        const stepKey = "deposit-paid-and-terms-signed";
+        const existing = await prisma.buyoutWorkflowStep.findFirst({
+          where: { buyoutId: matchedBuyout.id, stepKey }
+        });
+
+        if (existing && !existing.isComplete) {
+          await prisma.buyoutWorkflowStep.update({
+            where: { id: existing.id },
+            data: { isComplete: true, completedAt: new Date(), completedBy: "payment-auto" }
+          });
+        }
+      }
+
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "BuyoutEvent" ("id", "buyoutId", "eventType", "summary", "detail", "createdBy")
+         VALUES ($1, $2, 'PAYMENT_DETECTED', $3, $4::jsonb, $5)`,
+        randomUUID(),
+        matchedBuyout.id,
+        `Payment $${payment.amount.toFixed(2)} received — Order #${payment.orderNumber} from ${payment.clientName} via ${payment.paymentMethod}`,
+        JSON.stringify({
+          gmailMessageId: payment.gmailMessageId,
+          orderNumber: payment.orderNumber,
+          amount: payment.amount,
+          paymentMethod: payment.paymentMethod,
+          clientName: payment.clientName,
+          matchedBuyoutName: matchedBuyout.name,
+          isFullPayment,
+          isDeposit,
+          previousPaid: currentPaid,
+          newTotal: newPaid
+        }),
+        "cron-payment-auto"
+      );
+
+      paymentsMatched++;
+    }
+  } catch (err) {
+    errors.push(`Payment scan: ${err instanceof Error ? err.message : "unknown"}`);
+  }
+
   return NextResponse.json({
-    message: `Checked ${activeBuyouts.length} buyouts. ${newAlerts} new alerts, ${resolved} resolved.`,
+    message: `Checked ${activeBuyouts.length} buyouts. ${newAlerts} new alerts, ${resolved} resolved, ${paymentsMatched} payments matched.`,
     checked: activeBuyouts.length,
     newAlerts,
     resolved,
+    paymentsMatched,
     errors: errors.slice(0, 5)
   });
 }
