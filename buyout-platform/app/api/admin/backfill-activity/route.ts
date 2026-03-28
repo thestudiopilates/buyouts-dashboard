@@ -15,21 +15,15 @@ export async function POST() {
   const buyouts = await prisma.buyout.findMany({
     include: {
       inquiry: true,
-      emails: { orderBy: { sentAt: "asc" } },
+      emails: { orderBy: { createdAt: "asc" } },
       workflowSteps: { orderBy: { createdAt: "asc" } }
     }
   });
 
   let created = 0;
+  const errors: string[] = [];
 
   for (const buyout of buyouts) {
-    const existingEvents = await prisma.$queryRawUnsafe(
-      `SELECT COUNT(*)::int AS "count" FROM "BuyoutEvent" WHERE "buyoutId" = $1`,
-      buyout.id
-    ) as Array<{ count: number }>;
-
-    if ((existingEvents[0]?.count ?? 0) > 0) continue;
-
     const events: Array<{
       id: string;
       buyoutId: string;
@@ -40,6 +34,8 @@ export async function POST() {
       createdBy: string | null;
       createdAt: Date;
     }> = [];
+
+    const fallbackDate = buyout.createdAt ?? new Date();
 
     if (buyout.inquiry) {
       events.push({
@@ -52,33 +48,30 @@ export async function POST() {
           source: buyout.inquiry.source,
           eventType: buyout.inquiry.eventType,
           preferredDates: buyout.inquiry.preferredDates,
-          preferredLocation: buyout.inquiry.preferredLocation,
-          guestCount: buyout.inquiry.guestCountEstimate
+          preferredLocation: buyout.inquiry.preferredLocation
         }),
         createdBy: null,
-        createdAt: buyout.inquiry.createdAt
+        createdAt: buyout.inquiry.createdAt ?? fallbackDate
       });
     }
 
-    if (buyout.createdAt && (!buyout.inquiry || buyout.createdAt.getTime() !== buyout.inquiry.createdAt.getTime())) {
-      events.push({
-        id: randomUUID(),
-        buyoutId: buyout.id,
-        emailId: null,
-        eventType: "BUYOUT_CREATED",
-        summary: `Buyout record created for ${buyout.displayName}`,
-        detail: JSON.stringify({
-          source: buyout.legacyMondayItemId ? "monday-import" : "platform",
-          lifecycleStage: buyout.lifecycleStage,
-          legacyItemId: buyout.legacyMondayItemId
-        }),
-        createdBy: null,
-        createdAt: buyout.createdAt
-      });
-    }
+    events.push({
+      id: randomUUID(),
+      buyoutId: buyout.id,
+      emailId: null,
+      eventType: "BUYOUT_CREATED",
+      summary: `Buyout record created for ${buyout.displayName}`,
+      detail: JSON.stringify({
+        source: buyout.legacyMondayItemId ? "monday-import" : "platform",
+        lifecycleStage: buyout.lifecycleStage,
+        legacyItemId: buyout.legacyMondayItemId
+      }),
+      createdBy: null,
+      createdAt: fallbackDate
+    });
 
     for (const step of buyout.workflowSteps) {
-      if (step.isComplete && step.completedAt) {
+      if (step.isComplete) {
         events.push({
           id: randomUUID(),
           buyoutId: buyout.id,
@@ -91,73 +84,85 @@ export async function POST() {
             completedBy: step.completedBy
           }),
           createdBy: step.completedBy,
-          createdAt: step.completedAt
+          createdAt: step.completedAt ?? step.updatedAt ?? fallbackDate
         });
       }
     }
 
     for (const email of buyout.emails) {
-      if (email.sentAt) {
-        events.push({
-          id: randomUUID(),
-          buyoutId: buyout.id,
-          emailId: email.id,
-          eventType: "EMAIL_SENT",
-          summary: `Email sent: ${email.subject}`,
-          detail: JSON.stringify({
-            templateKey: email.templateKey,
-            sentBy: email.sentBy,
-            status: email.status,
-            providerMessageId: email.providerMessageId
-          }),
-          createdBy: email.sentBy,
-          createdAt: email.sentAt
-        });
-      }
+      events.push({
+        id: randomUUID(),
+        buyoutId: buyout.id,
+        emailId: email.id,
+        eventType: "EMAIL_SENT",
+        summary: `Email sent: ${email.subject ?? email.templateKey}`,
+        detail: JSON.stringify({
+          templateKey: email.templateKey,
+          sentBy: email.sentBy,
+          status: email.status
+        }),
+        createdBy: email.sentBy,
+        createdAt: email.sentAt ?? email.createdAt ?? fallbackDate
+      });
     }
 
     if (buyout.lastActionAt) {
-      const hasMatchingEvent = events.some(
-        (e) => Math.abs(e.createdAt.getTime() - buyout.lastActionAt!.getTime()) < 60000
-      );
+      events.push({
+        id: randomUUID(),
+        buyoutId: buyout.id,
+        emailId: null,
+        eventType: "LAST_ACTION_RECORDED",
+        summary: "Last team action recorded (from Monday)",
+        detail: JSON.stringify({ source: "monday-import" }),
+        createdBy: null,
+        createdAt: buyout.lastActionAt
+      });
+    }
 
-      if (!hasMatchingEvent) {
-        events.push({
-          id: randomUUID(),
-          buyoutId: buyout.id,
-          emailId: null,
-          eventType: "LAST_ACTION_RECORDED",
-          summary: "Last team action recorded",
-          detail: JSON.stringify({ source: "monday-import" }),
-          createdBy: null,
-          createdAt: buyout.lastActionAt
-        });
-      }
+    if (buyout.eventDate) {
+      events.push({
+        id: randomUUID(),
+        buyoutId: buyout.id,
+        emailId: null,
+        eventType: "EVENT_DATE_SET",
+        summary: `Event date: ${buyout.eventDate.toISOString().slice(0, 10)}`,
+        detail: JSON.stringify({
+          eventDate: buyout.eventDate.toISOString(),
+          startTime: buyout.startTime,
+          endTime: buyout.endTime
+        }),
+        createdBy: null,
+        createdAt: buyout.eventDate
+      });
     }
 
     events.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
     for (const event of events) {
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "BuyoutEvent" ("id", "buyoutId", "emailId", "eventType", "summary", "detail", "createdBy", "createdAt")
-         VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)
-         ON CONFLICT DO NOTHING`,
-        event.id,
-        event.buyoutId,
-        event.emailId,
-        event.eventType,
-        event.summary,
-        event.detail,
-        event.createdBy,
-        event.createdAt
-      );
-      created++;
+      try {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "BuyoutEvent" ("id", "buyoutId", "emailId", "eventType", "summary", "detail", "createdBy", "createdAt")
+           VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)`,
+          event.id,
+          event.buyoutId,
+          event.emailId,
+          event.eventType,
+          event.summary,
+          event.detail,
+          event.createdBy,
+          event.createdAt
+        );
+        created++;
+      } catch (err) {
+        errors.push(`${buyout.displayName}: ${err instanceof Error ? err.message : "unknown"}`);
+      }
     }
   }
 
   return NextResponse.json({
     message: `Backfilled ${created} activity events across ${buyouts.length} buyouts.`,
     buyoutsProcessed: buyouts.length,
-    eventsCreated: created
+    eventsCreated: created,
+    errors: errors.slice(0, 10)
   });
 }
