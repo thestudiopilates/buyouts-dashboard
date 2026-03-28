@@ -142,9 +142,9 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
     allowedStages: ["Discuss", "Feasible", "Quote", "Deposit"],
     effectConfig: {
       eventType: "stage_change",
-      stageChange: "Deposit",
-      workflowKeys: ["deposit-link-sent-and-terms-shared"],
-      nextAction: "Wait for payment",
+      stageChange: "Paid",
+      workflowKeys: ["deposit-link-sent-and-terms-shared", "deposit-paid-and-terms-signed", "remaining-payment-received"],
+      nextAction: "Finalize instructor and send event details",
       sendPolicy: "single"
     }
   },
@@ -167,9 +167,9 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
     allowedStages: ["Discuss", "Feasible", "Quote", "Deposit"],
     effectConfig: {
       eventType: "stage_change",
-      stageChange: "Deposit",
-      workflowKeys: ["deposit-link-sent-and-terms-shared"],
-      nextAction: "Wait for rush payment (48 hours)",
+      stageChange: "Paid",
+      workflowKeys: ["deposit-link-sent-and-terms-shared", "deposit-paid-and-terms-signed", "remaining-payment-received"],
+      nextAction: "Finalize instructor and send event details",
       sendPolicy: "single"
     }
   },
