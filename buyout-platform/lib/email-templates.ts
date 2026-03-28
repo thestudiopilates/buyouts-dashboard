@@ -558,9 +558,9 @@ function buildEmailVariables(buyout: BuyoutSummary | null): Record<string, strin
   const totalWithRush = isRush && buyout.total ? formatCurrency(buyout.total + (buyout.rushFee ?? 100)) : "";
   const paymentDeadline = isRush
     ? "Within 48 hours of date confirmation"
-    : isFullPayment
-      ? "Due upon confirmation"
-      : "14 days before event";
+    : isDeposit
+      ? "14 days before event"
+      : "Due upon confirmation";
 
   return {
     clientName,
