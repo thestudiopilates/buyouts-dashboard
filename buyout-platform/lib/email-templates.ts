@@ -118,30 +118,34 @@ async function getSourceControlledTemplates() {
 }
 
 async function writeSourceControlledTemplates(templates: SourceTemplateRecord[]) {
-  await fs.mkdir(TEMPLATE_SOURCE_HTML_DIR, { recursive: true });
-  await fs.mkdir(TEMPLATE_SOURCE_TEXT_DIR, { recursive: true });
+  try {
+    await fs.mkdir(TEMPLATE_SOURCE_HTML_DIR, { recursive: true });
+    await fs.mkdir(TEMPLATE_SOURCE_TEXT_DIR, { recursive: true });
 
-  const normalizedTemplates = [...templates].sort((left, right) => left.key.localeCompare(right.key));
+    const normalizedTemplates = [...templates].sort((left, right) => left.key.localeCompare(right.key));
 
-  await fs.writeFile(TEMPLATE_SOURCE_MANIFEST_PATH, `${JSON.stringify(normalizedTemplates, null, 2)}\n`);
+    await fs.writeFile(TEMPLATE_SOURCE_MANIFEST_PATH, `${JSON.stringify(normalizedTemplates, null, 2)}\n`);
 
-  await Promise.all(
-    normalizedTemplates.map(async (template) => {
-      await fs.writeFile(
-        path.join(TEMPLATE_SOURCE_TEXT_DIR, `${template.key}.txt`),
-        `${template.subjectTemplate}\n\n${template.bodyTemplate}\n`
-      );
+    await Promise.all(
+      normalizedTemplates.map(async (template) => {
+        await fs.writeFile(
+          path.join(TEMPLATE_SOURCE_TEXT_DIR, `${template.key}.txt`),
+          `${template.subjectTemplate}\n\n${template.bodyTemplate}\n`
+        );
 
-      await fs.writeFile(
-        path.join(TEMPLATE_SOURCE_HTML_DIR, `${template.key}.html`),
-        renderEmailHtml({
-          subject: template.subjectTemplate,
-          body: template.bodyTemplate,
-          previewLabel: template.name
-        })
-      );
-    })
-  );
+        await fs.writeFile(
+          path.join(TEMPLATE_SOURCE_HTML_DIR, `${template.key}.html`),
+          renderEmailHtml({
+            subject: template.subjectTemplate,
+            body: template.bodyTemplate,
+            previewLabel: template.name
+          })
+        );
+      })
+    );
+  } catch {
+    // Filesystem writes are best-effort — they fail on read-only deployments
+  }
 }
 
 function buildSourceTemplateRecord(
