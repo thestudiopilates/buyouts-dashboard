@@ -143,6 +143,7 @@ export async function executeTemplateReviewSend(input: {
   buyoutId?: string;
   subjectOverride?: string;
   bodyOverride?: string;
+  cc?: string;
 }) {
   if (!hasDatabaseUrl()) {
     throw new Error("Database connection is required for test sends.");
@@ -199,6 +200,7 @@ export async function executeTemplateReviewSend(input: {
   const providerResult = gmail.ready
     ? await sendGmailMessage({
         to: INTERNAL_REVIEW_RECIPIENT,
+        cc: input.cc || undefined,
         subject: finalSubject,
         bodyText: finalBody,
         bodyHtml: renderedHtmlDocument

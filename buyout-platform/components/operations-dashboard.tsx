@@ -200,6 +200,8 @@ function Drawer({
   const [draftTemplate, setDraftTemplate] = useState<string | null>(null);
   const [draftSubject, setDraftSubject] = useState("");
   const [draftBody, setDraftBody] = useState("");
+  const [draftRawBody, setDraftRawBody] = useState("");
+  const [draftCc, setDraftCc] = useState("");
   const [draftLoading, setDraftLoading] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -231,6 +233,8 @@ function Drawer({
     setDraftTemplate(null);
     setDraftSubject("");
     setDraftBody("");
+    setDraftRawBody("");
+    setDraftCc("");
     setDraftLoading(false);
     setPreviewHtml(null);
     setForm({
@@ -282,6 +286,17 @@ function Drawer({
     });
   }
 
+  function stripTagsForEdit(raw: string) {
+    return raw
+      .replace(/<hr\s*\/?>/gi, "———")
+      .replace(/<b>/gi, "")
+      .replace(/<\/b>/gi, "");
+  }
+
+  function restoreTagsForSend(clean: string) {
+    return clean.replace(/———/g, "<hr>");
+  }
+
   function handleOpenDraft(templateId: string) {
     setEmailMessage("");
     setPreviewHtml(null);
@@ -291,8 +306,11 @@ function Drawer({
     fetch(`/api/email-templates/${templateId}?buyoutId=${buyout.id}`)
       .then((res) => res.json())
       .then((data: { preview?: { renderedSubject?: string; renderedBody?: string } }) => {
+        const rawBody = data.preview?.renderedBody ?? "";
         setDraftSubject(data.preview?.renderedSubject ?? "");
-        setDraftBody(data.preview?.renderedBody ?? "");
+        setDraftRawBody(rawBody);
+        setDraftBody(stripTagsForEdit(rawBody));
+        setDraftCc("");
         setDraftLoading(false);
       })
       .catch(() => {
@@ -306,19 +324,22 @@ function Drawer({
     setDraftTemplate(null);
     setDraftSubject("");
     setDraftBody("");
+    setDraftRawBody("");
+    setDraftCc("");
     setPreviewHtml(null);
   }
 
   function handlePreviewDraft() {
     if (!draftTemplate) return;
     setDraftLoading(true);
+    const sendBody = restoreTagsForSend(draftBody);
 
     fetch(`/api/email-templates/${draftTemplate}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         subject: draftSubject,
-        body: draftBody,
+        body: sendBody,
         previewLabel: EMAIL_TEMPLATES.find((t) => t.id === draftTemplate)?.label
       })
     })
@@ -337,6 +358,7 @@ function Drawer({
     if (!draftTemplate) return;
     setEmailMessage("");
     setPendingEmailId(draftTemplate);
+    const sendBody = restoreTagsForSend(draftBody);
 
     startTransition(async () => {
       const response = await fetch(`/api/email-templates/${draftTemplate}/test-send`, {
@@ -344,8 +366,8 @@ function Drawer({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           buyoutId: buyout.id,
-          subjectOverride: draftSubject,
-          bodyOverride: draftBody
+          bodyOverride: sendBody,
+          cc: draftCc || undefined
         })
       });
 
@@ -749,11 +771,14 @@ function Drawer({
                     <div className="ops-draft-loading">Loading template...</div>
                   ) : (
                     <>
-                      <label className="ops-draft-label">Subject</label>
+                      <label className="ops-draft-label">Subject (locked for threading)</label>
+                      <div className="ops-draft-subject-display">{draftSubject}</div>
+                      <label className="ops-draft-label">CC (optional)</label>
                       <input
                         className="ops-draft-input"
-                        onChange={(e) => setDraftSubject(e.target.value)}
-                        value={draftSubject}
+                        onChange={(e) => setDraftCc(e.target.value)}
+                        placeholder="additional@email.com, another@email.com"
+                        value={draftCc}
                       />
                       <label className="ops-draft-label">Body</label>
                       <textarea
@@ -762,9 +787,6 @@ function Drawer({
                         rows={16}
                         value={draftBody}
                       />
-                      <div className="ops-draft-hint">
-                        You can edit the copy above before sending. Formatting tags like &lt;b&gt; and &lt;hr&gt; will be styled automatically.
-                      </div>
                       <div className="ops-draft-actions">
                         <button className="ops-draft-preview" disabled={draftLoading} onClick={handlePreviewDraft} type="button">
                           Preview Email
@@ -894,13 +916,13 @@ function Drawer({
         </div>
 
         <div className="ops-drawer-footer">
-          <button className="ops-footer-primary" onClick={() => { setTab("emails"); setEditorMode(null); }} type="button">
-            Send Email
+          <button className="ops-footer-primary" onClick={() => { setTab("emails"); setEditorMode(null); handleCloseDraft(); }} type="button">
+            Emails
           </button>
-          <button className="ops-footer-secondary" onClick={() => { setTab("overview"); setEditorMode("details"); }} type="button">
+          <button className="ops-footer-secondary" onClick={() => { setTab("overview"); setEditorMode("details"); handleCloseDraft(); }} type="button">
             Edit Details
           </button>
-          <button className="ops-footer-tertiary" onClick={() => { setTab("overview"); setEditorMode("notes"); }} type="button">
+          <button className="ops-footer-tertiary" onClick={() => { setTab("overview"); setEditorMode("notes"); handleCloseDraft(); }} type="button">
             Notes
           </button>
         </div>

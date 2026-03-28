@@ -11,6 +11,7 @@ export async function POST(
     buyoutId?: string;
     subjectOverride?: string;
     bodyOverride?: string;
+    cc?: string;
   };
 
   try {
@@ -18,7 +19,8 @@ export async function POST(
       templateKey: key,
       buyoutId: body.buyoutId,
       subjectOverride: body.subjectOverride,
-      bodyOverride: body.bodyOverride
+      bodyOverride: body.bodyOverride,
+      cc: body.cc
     });
     return NextResponse.json(result);
   } catch (error) {

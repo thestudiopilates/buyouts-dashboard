@@ -91,18 +91,29 @@ function toBase64Url(input: string) {
 function buildMimeMessage(input: {
   from: string;
   to: string;
+  cc?: string;
   subject: string;
   bodyText: string;
   bodyHtml: string;
 }) {
   const boundary = `tsp-${Date.now().toString(16)}`;
-
-  return [
+  const headers = [
     `From: The Studio Pilates <${input.from}>`,
-    `To: ${input.to}`,
+    `To: ${input.to}`
+  ];
+
+  if (input.cc) {
+    headers.push(`Cc: ${input.cc}`);
+  }
+
+  headers.push(
     `Subject: ${input.subject}`,
     "MIME-Version: 1.0",
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`
+  );
+
+  return [
+    ...headers,
     "",
     `--${boundary}`,
     'Content-Type: text/plain; charset="UTF-8"',
@@ -120,6 +131,7 @@ function buildMimeMessage(input: {
 
 export async function sendGmailMessage(input: {
   to: string;
+  cc?: string;
   subject: string;
   bodyText: string;
   bodyHtml: string;
@@ -133,6 +145,7 @@ export async function sendGmailMessage(input: {
   const mime = buildMimeMessage({
     from: config.senderEmail,
     to: input.to,
+    cc: input.cc,
     subject: `${config.subjectPrefix} ${input.subject}`.trim(),
     bodyText: input.bodyText,
     bodyHtml: input.bodyHtml
