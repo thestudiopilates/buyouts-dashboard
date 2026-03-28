@@ -926,8 +926,8 @@ function Drawer({
               { phase: "Intake", color: COLORS.seaglass, client: null, operator: { key: "initial-inquiry-response-sent", label: "Send initial response (t1)" } },
 
               // ── Discussion
-              { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds" }, operator: null },
-              { phase: "Discussion", color: COLORS.sage, client: { key: "date-finalized", label: "Client agrees to proposed date & time" }, operator: { key: "date-finalized", label: "Date / time discussion" } },
+              { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds" }, operator: { key: "customer-responded", label: "Date / time discussion" } },
+              { phase: "Discussion", color: COLORS.sage, client: { key: "date-finalized", label: "Client agrees to proposed date & time" }, operator: null },
               { phase: "Discussion", color: COLORS.sage, client: null, operator: {
                 key: "date-finalized",
                 label: "Update event details (date, time, location)",
@@ -940,13 +940,12 @@ function Drawer({
                 label: buyout.paymentTier === "deposit" ? "Send deposit & terms email (t3)" : buyout.paymentTier === "rush" ? "Send rush payment email (t3b)" : "Send payment email (t3a)"
               } },
               ...(buyout.paymentTier === "deposit" ? [
-                { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: "Client pays $250 deposit" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm deposit received" } },
-                { phase: "Payment", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Client pays remaining balance (due by ${balanceDueDate})` }, operator: { key: "remaining-payment-received", label: "Confirm remaining balance received" } }
+                { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: "Client pays $250 deposit" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm deposit received" } }
               ] : [
                 { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: buyout.paymentTier === "rush" ? "Client pays full amount + $100 rush fee" : "Client pays full amount" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm payment received" } }
               ] as ChecklistRow[]),
 
-              // ── Event Setup (after payment, before sending to client)
+              // ── Event Setup
               { phase: "Event Setup", color: COLORS.sky, client: null, operator: {
                 key: "instructor-finalized",
                 label: "Finalize instructor & update event details",
@@ -958,6 +957,11 @@ function Drawer({
                 blocked: !buyout.signupLink ? "Signup link must be added in Edit Details" : undefined
               } },
               { phase: "Event Setup", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details to client (t5)" } },
+
+              // ── Remaining Balance (deposit tier only, after event details sent)
+              ...(buyout.paymentTier === "deposit" ? [
+                { phase: "Remaining Balance", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Client pays remaining balance (due by ${balanceDueDate})` }, operator: { key: "remaining-payment-received", label: "Confirm balance received or send reminder (t6)" } }
+              ] : [] as ChecklistRow[]),
 
               // ── Logistics
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-assigned", label: "Assign front desk" } },
