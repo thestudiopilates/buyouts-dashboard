@@ -46,8 +46,8 @@ const EMAIL_TEMPLATES = [
   { id: "t0", label: "Custom / One-Off Message", requiredFields: ["clientEmail"] },
   { id: "t1", label: "First Inquiry Email", requiredFields: ["clientEmail"] },
   { id: "t2", label: "Food & Beverage Policy", requiredFields: ["clientEmail"] },
-  { id: "t3", label: "Payment — Deposit (30+ days)", requiredFields: ["eventDate", "depositLink"], paymentTier: "standard" as const },
-  { id: "t3a", label: "Payment — Full (14–30 days)", requiredFields: ["eventDate", "depositLink"], paymentTier: "full" as const },
+  { id: "t3", label: "Payment — Deposit (30+ days)", requiredFields: ["eventDate", "depositLink"], paymentTier: "deposit" as const },
+  { id: "t3a", label: "Payment — Standard (14–30 days)", requiredFields: ["eventDate", "depositLink"], paymentTier: "standard" as const },
   { id: "t3b", label: "Payment — Rush (under 14 days)", requiredFields: ["eventDate", "depositLink"], paymentTier: "rush" as const },
   { id: "t4", label: "Deposit Reminder", requiredFields: ["depositLink"] },
   { id: "t5", label: "Event Details & Sign Up", requiredFields: ["eventDate", "startTime", "endTime", "signupLink"] },
@@ -66,8 +66,8 @@ const TEMPLATE_HINTS: Record<string, string> = {
   t0: "Custom message sent",
   t1: "Initial intake response",
   t2: "Food & beverage policy clarification",
-  t3: "Deposit payment — 30+ days from inquiry",
-  t3a: "Full payment — 14–30 days from inquiry",
+  t3: "Deposit payment — event 30+ days from inquiry",
+  t3a: "Standard full payment — event 14–30 days from inquiry",
   t3b: "Rush payment — under 14 days from inquiry",
   t4: "Deposit follow-up reminder",
   t5: "Locked event details and signup link",
@@ -862,7 +862,7 @@ function Drawer({
                   ["Location", buyout.location],
                   ["Instructor", buyout.instructor],
                   ["Front Desk", buyout.assignedTo],
-                  ["Payment Type", buyout.paymentTier === "rush" ? `Rush (+$${buyout.rushFee} fee)` : buyout.paymentTier === "full" ? "Full Payment Due" : "Standard (Deposit + Balance)"]
+                  ["Payment Type", buyout.paymentTier === "rush" ? `Rush (+$${buyout.rushFee} fee)` : buyout.paymentTier === "deposit" ? "Deposit Required ($250 + Balance)" : "Standard (Full Payment)"]
                 ].map(([label, value]) => (
                   <div className="ops-detail-line" key={label}>
                     <span>{label}</span>
@@ -908,8 +908,8 @@ function Drawer({
               { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds" }, operator: null },
               { phase: "Discussion", color: COLORS.sage, client: null, operator: { key: "date-finalized", label: "Date / time discussion" } },
               { phase: "Discussion", color: COLORS.sage, client: { key: "date-finalized", label: "Client agrees to proposed date & time" }, operator: { key: "date-finalized", label: "Date finalized" } },
-              { phase: "Payment", color: COLORS.terracotta, client: null, operator: { key: "deposit-link-sent-and-terms-shared", label: buyout.paymentTier === "standard" ? "Send deposit & terms email (t3)" : buyout.paymentTier === "rush" ? "Send rush payment email (t3b)" : "Send full payment email (t3a)" } },
-              ...(buyout.paymentTier === "standard" ? [
+              { phase: "Payment", color: COLORS.terracotta, client: null, operator: { key: "deposit-link-sent-and-terms-shared", label: buyout.paymentTier === "deposit" ? "Send deposit & terms email (t3)" : buyout.paymentTier === "rush" ? "Send rush payment email (t3b)" : "Send payment email (t3a)" } },
+              ...(buyout.paymentTier === "deposit" ? [
                 { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: "Client pays $250 deposit" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm deposit received" } },
                 { phase: "Payment", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Client pays remaining balance${buyout.eventDate && buyout.eventDate !== "TBD" ? ` (due by ${formatDisplayDate((() => { const d = new Date(buyout.eventDate + "T12:00:00"); d.setDate(d.getDate() - 14); return d.toISOString().slice(0, 10); })())})` : " (due 14 days before event)"}` }, operator: { key: "remaining-payment-received", label: "Confirm remaining balance received" } }
               ] : [

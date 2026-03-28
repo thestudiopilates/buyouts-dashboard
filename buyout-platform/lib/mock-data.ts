@@ -46,7 +46,7 @@ export const mockBuyouts: BuyoutSummary[] = [
     healthFlags: [],
     sentTemplateIds: ["t1", "t3", "t5"],
     inquiryDate: "2026-03-01",
-    paymentTier: "standard",
+    paymentTier: "deposit",
     rushFee: 0,
     workflowProgress: 63,
     workflow: buildWorkflow([
@@ -106,7 +106,7 @@ export const mockBuyouts: BuyoutSummary[] = [
     healthFlags: ["Instructor is still unassigned."],
     sentTemplateIds: ["t1", "t3"],
     inquiryDate: "2026-03-10",
-    paymentTier: "full",
+    paymentTier: "standard",
     rushFee: 0,
     workflowProgress: 38,
     workflow: buildWorkflow([
@@ -162,7 +162,7 @@ export const mockBuyouts: BuyoutSummary[] = [
     healthFlags: [],
     sentTemplateIds: ["t1", "t3", "t5", "t11"],
     inquiryDate: "2026-02-15",
-    paymentTier: "standard",
+    paymentTier: "deposit",
     rushFee: 0,
     workflowProgress: 75,
     workflow: buildWorkflow([

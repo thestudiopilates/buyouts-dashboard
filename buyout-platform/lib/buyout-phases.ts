@@ -127,7 +127,7 @@ export function getBuyoutPhase(stage: StageKey) {
   return BUYOUT_PHASES[stage];
 }
 
-export type PaymentTier = "standard" | "full" | "rush";
+export type PaymentTier = "deposit" | "standard" | "rush";
 
 export function getPaymentTier(input: {
   inquiryDate: string | null;
@@ -143,12 +143,12 @@ export function getPaymentTier(input: {
   const daysFromInquiryToEvent = Math.ceil((event.getTime() - inquiry.getTime()) / 86400000);
 
   if (daysFromInquiryToEvent < 14) return "rush";
-  if (daysFromInquiryToEvent < 30) return "full";
-  return "standard";
+  if (daysFromInquiryToEvent < 30) return "standard";
+  return "deposit";
 }
 
 export const PAYMENT_RULES = {
-  standard: {
+  deposit: {
     label: "Deposit Required (30+ days from inquiry)",
     depositRequired: true,
     depositAmount: 250,
@@ -159,8 +159,8 @@ export const PAYMENT_RULES = {
     links: ["deposit", "remaining", "full"],
     note: "$250 deposit required to hold date. Remaining balance due 14 days before event. Option to pay in full upfront."
   },
-  full: {
-    label: "Full Payment ($450, 14–30 days from inquiry)",
+  standard: {
+    label: "Standard (14–30 days from inquiry)",
     depositRequired: false,
     depositAmount: 0,
     depositDeadline: null,
@@ -168,7 +168,7 @@ export const PAYMENT_RULES = {
     fullPaymentOption: true,
     rushFee: 0,
     links: ["full"],
-    note: "Full payment of $450 due. No deposit required — event is within 30 days of inquiry."
+    note: "Full payment due. No deposit required — event is within 30 days of inquiry."
   },
   rush: {
     label: "Rush Event (under 14 days from inquiry)",

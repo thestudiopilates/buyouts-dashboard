@@ -552,8 +552,8 @@ function buildEmailVariables(buyout: BuyoutSummary | null): Record<string, strin
   const amountPaid = formatCurrency(buyout.amountPaid);
   const remainingBalance = formatCurrency(buyout.outstanding);
   const isRush = buyout.paymentTier === "rush";
-  const isFullPayment = buyout.paymentTier === "full";
-  const depositAmount = isRush || isFullPayment ? "" : formatCurrency(buyout.depositAmount ?? 250);
+  const isDeposit = buyout.paymentTier === "deposit";
+  const depositAmount = isDeposit ? formatCurrency(buyout.depositAmount ?? 250) : "";
   const rushFeeAmount = isRush ? formatCurrency(buyout.rushFee ?? 100) : "";
   const totalWithRush = isRush && buyout.total ? formatCurrency(buyout.total + (buyout.rushFee ?? 100)) : "";
   const paymentDeadline = isRush

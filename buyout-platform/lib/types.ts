@@ -71,7 +71,7 @@ export type BuyoutSummary = {
   healthFlags: string[];
   sentTemplateIds: string[];
   inquiryDate: string | null;
-  paymentTier: "standard" | "full" | "rush";
+  paymentTier: "deposit" | "standard" | "rush";
   rushFee: number;
   workflowProgress: number;
   workflow: WorkflowStep[];
