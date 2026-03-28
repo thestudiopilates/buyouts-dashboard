@@ -230,6 +230,7 @@ function Drawer({
   const [emailSubTab, setEmailSubTab] = useState<"templates" | "sent" | "received">("templates");
   const [emailHistory, setEmailHistory] = useState<Array<{ id: string; date: string; from: string; to: string; subject: string; snippet: string; direction: string }>>([]);
   const [emailHistoryLoaded, setEmailHistoryLoaded] = useState(false);
+  const [unrespondedHours, setUnrespondedHours] = useState<number | null>(null);
   const [form, setForm] = useState({
     clientName: buyout.clientName,
     clientEmail: buyout.clientEmail,
@@ -269,6 +270,7 @@ function Drawer({
     setEmailSubTab("templates");
     setEmailHistory([]);
     setEmailHistoryLoaded(false);
+    setUnrespondedHours(null);
     setForm({
       clientName: buyout.clientName,
       clientEmail: buyout.clientEmail,
@@ -359,14 +361,33 @@ function Drawer({
       });
   }
 
-  function loadEmailHistory() {
-    if (emailHistoryLoaded) return;
+  function loadEmailHistory(force?: boolean) {
+    if (emailHistoryLoaded && !force) return;
     setEmailHistoryLoaded(true);
 
     fetch(`/api/buyouts/${buyout.id}/email-history`)
       .then((r) => r.json())
-      .then((data: { all?: typeof emailHistory; gmailReady?: boolean }) => {
-        setEmailHistory(data.all ?? []);
+      .then((data: { all?: typeof emailHistory }) => {
+        const all = data.all ?? [];
+        setEmailHistory(all);
+
+        const sorted = [...all].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const lastReceived = sorted.find((m) => m.direction === "received");
+        const lastSent = sorted.find((m) => m.direction === "sent");
+
+        if (lastReceived) {
+          const receivedTime = new Date(lastReceived.date).getTime();
+          const sentAfter = lastSent && new Date(lastSent.date).getTime() > receivedTime;
+
+          if (!sentAfter) {
+            const hoursAgo = Math.floor((Date.now() - receivedTime) / 3600000);
+            setUnrespondedHours(hoursAgo);
+          } else {
+            setUnrespondedHours(null);
+          }
+        } else {
+          setUnrespondedHours(null);
+        }
       })
       .catch(() => {});
   }
@@ -913,18 +934,39 @@ function Drawer({
               {emailMessage ? <div className="ops-email-banner">{emailMessage}</div> : null}
 
               {!draftTemplate && !previewHtml ? (
-                <div className="ops-email-subtabs">
-                  {(["templates", "sent", "received"] as const).map((st) => (
-                    <button
-                      className={`ops-email-subtab${emailSubTab === st ? " active" : ""}`}
-                      key={st}
-                      onClick={() => { setEmailSubTab(st); if (st !== "templates") loadEmailHistory(); }}
-                      type="button"
-                    >
-                      {st === "templates" ? "Send" : st === "sent" ? "Sent" : "Received"}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="ops-email-subtabs">
+                    {(["templates", "sent", "received"] as const).map((st) => {
+                      const count = st === "templates" ? 0 : emailHistory.filter((m) => m.direction === st).length;
+                      return (
+                        <button
+                          className={`ops-email-subtab${emailSubTab === st ? " active" : ""}`}
+                          key={st}
+                          onClick={() => { setEmailSubTab(st); if (st !== "templates") loadEmailHistory(); }}
+                          type="button"
+                        >
+                          {st === "templates" ? "Send" : st === "sent" ? "Sent" : "Received"}
+                          {count > 0 ? <span className="ops-subtab-count">{count}</span> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {unrespondedHours !== null && unrespondedHours >= 0 ? (
+                    <div className={`ops-unresponded-alert${unrespondedHours >= 24 ? " overdue" : ""}`}>
+                      <div className="ops-unresponded-icon">{unrespondedHours >= 24 ? "!" : "●"}</div>
+                      <div>
+                        <div className="ops-unresponded-title">
+                          {unrespondedHours >= 24 ? "Response overdue" : "New message from client"}
+                        </div>
+                        <div className="ops-unresponded-detail">
+                          {unrespondedHours === 0
+                            ? "Received less than an hour ago"
+                            : `Received ${unrespondedHours} hour${unrespondedHours === 1 ? "" : "s"} ago — no response sent`}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
               ) : null}
 
               {previewHtml ? (
@@ -1072,6 +1114,9 @@ function Drawer({
                         })}
                     </div>
                   )}
+                  <div style={{ textAlign: "center", marginTop: 12 }}>
+                    <button className="ops-draft-cancel" onClick={() => loadEmailHistory(true)} type="button">Refresh</button>
+                  </div>
                 </div>
               )}
             </div>
