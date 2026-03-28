@@ -903,19 +903,21 @@ function Drawer({
               client: { key: string; label: string } | null;
               operator: { key: string; label: string } | null;
             }> = [
-              { phase: "Intake", color: COLORS.seaglass, client: null, operator: { key: "inquiry-reviewed", label: "Review inquiry" } },
+              { phase: "Intake", color: COLORS.seaglass, client: { key: "inquiry-reviewed", label: "Client request received" }, operator: { key: "inquiry-reviewed", label: "Review inquiry" } },
               { phase: "Intake", color: COLORS.seaglass, client: null, operator: { key: "initial-inquiry-response-sent", label: "Send initial response (t1)" } },
-              { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds" }, operator: { key: "date-finalized", label: "Finalize date & details" } },
+              { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds" }, operator: null },
+              { phase: "Discussion", color: COLORS.sage, client: null, operator: { key: "date-finalized", label: "Date / time discussion" } },
+              { phase: "Discussion", color: COLORS.sage, client: { key: "date-finalized", label: "Client agrees to proposed date & time" }, operator: { key: "date-finalized", label: "Date finalized" } },
               { phase: "Payment", color: COLORS.terracotta, client: null, operator: { key: "deposit-link-sent-and-terms-shared", label: "Send payment email (t3)" } },
               { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: "Client pays & signs terms" }, operator: null },
               { phase: "Payment", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: "Client pays remaining balance" }, operator: null },
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "instructor-finalized", label: "Secure instructor" } },
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "momence-class-created", label: "Create Momence class" } },
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details & signup (t5)" } },
+              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-assigned", label: "Assign front desk" } },
+              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-shift-extended", label: "Extend desk shift if needed" } },
               { phase: "Registration", color: COLORS.sunshine, client: { key: "all-attendees-registered", label: "All guests registered" }, operator: null },
               { phase: "Registration", color: COLORS.sunshine, client: { key: "all-waivers-signed", label: "All waivers signed" }, operator: null },
-              { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: { key: "front-desk-assigned", label: "Assign front desk" } },
-              { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: { key: "front-desk-shift-extended", label: "Extend desk shift if needed" } },
               { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: { key: "final-confirmation-emails-sent", label: "Send final confirmation (t11)" } },
               { phase: "Execution", color: COLORS.cherry, client: null, operator: { key: "event-completed", label: "Event delivered & follow-up (t12)" } }
             ];
