@@ -217,7 +217,6 @@ function Drawer({
     location: buyout.location,
     assignedTo: buyout.assignedTo,
     instructor: buyout.instructor,
-    nextAction: buyout.nextAction,
     notes: buyout.notes,
     depositLink: buyout.depositLink ?? "",
     balanceLink: buyout.balanceLink ?? "",
@@ -328,6 +327,25 @@ function Drawer({
         setDraftTemplate(null);
         setDraftLoading(false);
       });
+  }
+
+  function handleToggleStep(stepKey: string, currentlyComplete: boolean) {
+    startTransition(async () => {
+      const response = await fetch(`/api/buyouts/${buyout.id}/workflow`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stepKey, isComplete: !currentlyComplete })
+      });
+
+      const payload = (await response.json()) as { buyout?: BuyoutSummary; error?: string };
+
+      if (!response.ok || !payload.buyout) {
+        setMessage(payload.error ?? "Unable to update checklist.");
+        return;
+      }
+
+      onBuyoutUpdated(payload.buyout);
+    });
   }
 
   function handleCloseDraft() {
@@ -543,10 +561,10 @@ function Drawer({
                           <span>Instructor</span>
                           <input className="input" value={form.instructor} onChange={(event) => updateField("instructor", event.target.value)} />
                         </label>
-                        <label className="field-full">
-                          <span>Next action</span>
-                          <input className="input" value={form.nextAction} onChange={(event) => updateField("nextAction", event.target.value)} />
-                        </label>
+                        <div className="field-full" style={{ opacity: 0.7 }}>
+                          <span style={{ fontSize: "0.82rem", color: COLORS.warmGrey }}>Next action (auto-derived from checklist)</span>
+                          <div className="ops-draft-subject-display">{buyout.nextAction}</div>
+                        </div>
                         <label className="field-full">
                           <span>Deposit link</span>
                           <input className="input" value={form.depositLink} onChange={(event) => updateField("depositLink", event.target.value)} />
@@ -731,7 +749,14 @@ function Drawer({
                         </div>
                       </div>
                       {items.map((step) => (
-                        <div className="ops-check-row" key={step.key}>
+                        <button
+                          className="ops-check-row"
+                          key={step.key}
+                          onClick={() => handleToggleStep(step.key, step.complete)}
+                          disabled={isPending}
+                          type="button"
+                          style={{ cursor: isPending ? "wait" : "pointer" }}
+                        >
                           <div
                             className="ops-check-box"
                             style={{
@@ -742,7 +767,7 @@ function Drawer({
                             {step.complete ? "✓" : ""}
                           </div>
                           <span>{step.label}</span>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   );

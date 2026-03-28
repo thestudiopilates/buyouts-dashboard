@@ -94,7 +94,6 @@ export type BuyoutUpdateInput = {
   location?: string;
   assignedTo?: string;
   instructor?: string;
-  nextAction?: string;
   notes?: string;
   depositLink?: string;
   balanceLink?: string;

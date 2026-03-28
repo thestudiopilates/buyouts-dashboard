@@ -663,7 +663,6 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
       startTime: input.startTime,
       endTime: input.endTime,
       instructorName: input.instructor,
-      nextAction: input.nextAction,
       notesInternal: input.notes,
       locationId: location?.id ?? null,
       assignedManagerId: manager?.id ?? null

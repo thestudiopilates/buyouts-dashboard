@@ -51,7 +51,6 @@ export const buyoutUpdateSchema = z.object({
   location: optionalText,
   assignedTo: optionalText,
   instructor: optionalText,
-  nextAction: optionalText,
   notes: optionalText,
   depositLink: optionalText,
   balanceLink: optionalText,
