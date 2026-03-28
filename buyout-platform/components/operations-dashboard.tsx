@@ -249,7 +249,6 @@ function Drawer({
       location: buyout.location,
       assignedTo: buyout.assignedTo,
       instructor: buyout.instructor,
-      nextAction: buyout.nextAction,
       notes: buyout.notes,
       depositLink: buyout.depositLink ?? "",
       balanceLink: buyout.balanceLink ?? "",
