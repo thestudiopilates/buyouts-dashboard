@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
 
-import { listBuyouts } from "@/lib/buyouts";
+import { getBuyout, listBuyouts } from "@/lib/buyouts";
 import { renderEmailHtml } from "@/lib/email-renderer";
 import { getGmailReadiness, type GmailReadiness } from "@/lib/gmail";
 import { EMAIL_TEMPLATE_SEEDS, EmailEffectDefinition, EmailVariableDefinition } from "@/lib/email-workflows";
@@ -850,8 +850,7 @@ export async function getEmailWorkspaceData() {
 }
 
 export async function getBuyoutEmailPanelData(buyoutId: string) {
-  const [templates, buyouts] = await Promise.all([listEmailTemplates(), listBuyouts()]);
-  const buyout = buyouts.find((item) => item.id === buyoutId) ?? null;
+  const [templates, buyout] = await Promise.all([listEmailTemplates(), getBuyout(buyoutId)]);
   const previews = templates.map((template) => previewEmailTemplate(template, buyout));
   const activity = await listEmailActivity(buyout?.id);
   const gmail = getGmailReadiness();

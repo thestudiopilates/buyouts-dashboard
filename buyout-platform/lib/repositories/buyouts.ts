@@ -1,4 +1,4 @@
-import { BallInCourt, BuyoutStage, TrackingHealth, WorkflowGroup } from "@prisma/client";
+import { BallInCourt, BuyoutStage, Prisma, TrackingHealth, WorkflowGroup } from "@prisma/client";
 
 import { getBuyoutPhase, getPaymentTier, PAYMENT_RULES } from "@/lib/buyout-phases";
 import { deriveStageFromWorkflow } from "@/lib/lifecycle";
@@ -352,101 +352,89 @@ function toIsoDay(date: Date | null) {
   return date ? date.toISOString().slice(0, 10) : "TBD";
 }
 
-export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
-  const buyouts = await prisma.buyout.findMany({
-    include: {
-      inquiry: true,
-      location: true,
-      assignedManager: true,
-      financial: true,
-      emails: {
-        orderBy: { sentAt: "desc" }
-      },
-      workflowSteps: {
-        orderBy: { createdAt: "asc" }
-      }
-    },
-    orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }]
+const buyoutInclude = {
+  inquiry: true,
+  location: true,
+  assignedManager: true,
+  financial: true,
+  emails: {
+    orderBy: { sentAt: "desc" }
+  },
+  workflowSteps: {
+    orderBy: { createdAt: "asc" }
+  }
+} satisfies Prisma.BuyoutInclude;
+
+type BuyoutRecord = Prisma.BuyoutGetPayload<{ include: typeof buyoutInclude }>;
+
+function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
+  const isKellyTest = buyout.legacyMondayItemId === TEST_ITEM_ID;
+  const workflow = normalizeWorkflow(buyout.workflowSteps);
+  const lifecycleStage = stageLabelMap[buyout.lifecycleStage];
+  const countdown = differenceInDaysFromToday(buyout.eventDate);
+  const waiting = daysWaiting(buyout.lastActionAt, buyout.createdAt);
+  const outstanding = Math.max(0, (buyout.financial?.quotedTotal ?? 0) - (buyout.financial?.amountPaid ?? 0));
+  const signupFillPercent =
+    buyout.capacity && buyout.capacity > 0 ? Math.round((buyout.signupCount / buyout.capacity) * 100) : null;
+  const workflowProgress =
+    workflow.length > 0 ? Math.round((workflow.filter((step) => step.complete).length / workflow.length) * 100) : 0;
+  const paymentProgress =
+    buyout.financial?.quotedTotal && buyout.financial.quotedTotal > 0
+      ? Math.min(100, Math.round(((buyout.financial.amountPaid ?? 0) / buyout.financial.quotedTotal) * 100))
+      : 0;
+  const derivedStartTime =
+    !buyout.startTime && buyout.eventDate ? formatTime(buyout.eventDate) : buyout.startTime ?? undefined;
+  const derivedEndTime =
+    !buyout.endTime && buyout.eventDate
+      ? formatTime(new Date(buyout.eventDate.getTime() + 60 * 60 * 1000))
+      : buyout.endTime ?? undefined;
+  const numberOfHours = deriveNumberOfHours({
+    startTime: derivedStartTime,
+    endTime: derivedEndTime,
+    quotedTotal: buyout.financial?.quotedTotal
   });
-
-  return buyouts.map((buyout) => {
-    const isKellyTest = buyout.legacyMondayItemId === TEST_ITEM_ID;
-    const workflow = normalizeWorkflow(buyout.workflowSteps);
-    const lifecycleStage = stageLabelMap[buyout.lifecycleStage];
-    const countdown = differenceInDaysFromToday(buyout.eventDate);
-    const waiting = daysWaiting(buyout.lastActionAt, buyout.createdAt);
-    const outstanding = Math.max(0, (buyout.financial?.quotedTotal ?? 0) - (buyout.financial?.amountPaid ?? 0));
-    const signupFillPercent =
-      buyout.capacity && buyout.capacity > 0 ? Math.round((buyout.signupCount / buyout.capacity) * 100) : null;
-    const workflowProgress =
-      workflow.length > 0 ? Math.round((workflow.filter((step) => step.complete).length / workflow.length) * 100) : 0;
-    const paymentProgress =
-      buyout.financial?.quotedTotal && buyout.financial.quotedTotal > 0
-        ? Math.min(100, Math.round(((buyout.financial.amountPaid ?? 0) / buyout.financial.quotedTotal) * 100))
-        : 0;
-    const derivedStartTime =
-      !buyout.startTime && buyout.eventDate ? formatTime(buyout.eventDate) : buyout.startTime ?? undefined;
-    const derivedEndTime =
-      !buyout.endTime && buyout.eventDate
-        ? formatTime(new Date(buyout.eventDate.getTime() + 60 * 60 * 1000))
-        : buyout.endTime ?? undefined;
-    const numberOfHours = deriveNumberOfHours({
-      startTime: derivedStartTime,
-      endTime: derivedEndTime,
-      quotedTotal: buyout.financial?.quotedTotal
-    });
-    const sentTemplateIds = Array.from(
-      new Set(
-        (isKellyTest ? TEST_SENT_TEMPLATES : [])
-          .concat(
-            buyout.emails
-              .filter((email) => email.status === "SENT")
-              .map((email) => email.templateKey)
-          )
+  const sentTemplateIds = Array.from(
+    new Set(
+      (isKellyTest ? TEST_SENT_TEMPLATES : []).concat(
+        buyout.emails.filter((email) => email.status === "SENT").map((email) => email.templateKey)
       )
-    );
-    const sourceStatusLabel = buyout.sourceStatusLabel ?? lifecycleStage;
-    const sourceTrackingHealth = trackingLabelMap[buyout.trackingHealth];
-    const sourceBallInCourt = ballInCourtLabelMap[buyout.ballInCourt];
-    const sourceNextAction = buyout.sourceNextActionLabel ?? buyout.nextAction ?? "Review record";
-    const derivedState = deriveStageFromWorkflow(
-      workflow,
-      sentTemplateIds,
-      lifecycleStage,
-      {
-        countdownDays: countdown,
-        daysWaiting: waiting,
-        amountPaid: buyout.financial?.amountPaid ?? 0,
-        total: buyout.financial?.quotedTotal ?? 0,
-        signups: buyout.signupCount,
-        capacity: buyout.capacity ?? 0
-      }
-    );
-    const effectiveLifecycleStage = derivedState.lifecycleStage;
-    const effectiveTrackingHealth = derivedState.trackingHealth;
-    const effectiveBallInCourt =
-      isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
-        ? "Team"
-        : derivedState.ballInCourt;
-    const effectiveNextAction = derivedState.nextAction;
-    const effectiveStatusLabel = getBuyoutPhase(derivedState.lifecycleStage)?.statusLabel ?? sourceStatusLabel;
-    const healthFlags = [
-      !isKellyTest && countdown !== null && countdown < 0 ? "Event date on the source board is in the past." : null,
-      !isKellyTest &&
-      workflow.some((step) => step.key === "remaining-payment-received" && step.complete) &&
-      (buyout.financial?.amountPaid ?? 0) === 0
-        ? "Workflow shows payment completed, but financials still show $0 paid."
-        : null,
-      lifecycleStage === "Discuss" &&
-      workflow.some((step) => step.key === "date-finalized" && step.complete)
-        ? "Lifecycle status is behind the checklist state on the Monday board."
-        : null,
-      !isKellyTest && effectiveStatusLabel !== sourceStatusLabel
-        ? `Operationally this reads as "${effectiveStatusLabel}" even though Monday still shows "${sourceStatusLabel}".`
-        : null
-    ].filter((value): value is string => Boolean(value));
+    )
+  );
+  const sourceStatusLabel = buyout.sourceStatusLabel ?? lifecycleStage;
+  const sourceTrackingHealth = trackingLabelMap[buyout.trackingHealth];
+  const sourceBallInCourt = ballInCourtLabelMap[buyout.ballInCourt];
+  const sourceNextAction = buyout.sourceNextActionLabel ?? buyout.nextAction ?? "Review record";
+  const derivedState = deriveStageFromWorkflow(workflow, sentTemplateIds, lifecycleStage, {
+    countdownDays: countdown,
+    daysWaiting: waiting,
+    amountPaid: buyout.financial?.amountPaid ?? 0,
+    total: buyout.financial?.quotedTotal ?? 0,
+    signups: buyout.signupCount,
+    capacity: buyout.capacity ?? 0
+  });
+  const effectiveLifecycleStage = derivedState.lifecycleStage;
+  const effectiveTrackingHealth = derivedState.trackingHealth;
+  const effectiveBallInCourt =
+    isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL ? "Team" : derivedState.ballInCourt;
+  const effectiveNextAction = derivedState.nextAction;
+  const effectiveStatusLabel = getBuyoutPhase(derivedState.lifecycleStage)?.statusLabel ?? sourceStatusLabel;
+  const healthFlags = [
+    !isKellyTest && countdown !== null && countdown < 0 ? "Event date on the source board is in the past." : null,
+    !isKellyTest &&
+    workflow.some((step) => step.key === "remaining-payment-received" && step.complete) &&
+    (buyout.financial?.amountPaid ?? 0) === 0
+      ? "Workflow shows payment completed, but financials still show $0 paid."
+      : null,
+    lifecycleStage === "Discuss" &&
+    workflow.some((step) => step.key === "date-finalized" && step.complete)
+      ? "Lifecycle status is behind the checklist state on the Monday board."
+      : null,
+    !isKellyTest && effectiveStatusLabel !== sourceStatusLabel
+      ? `Operationally this reads as "${effectiveStatusLabel}" even though Monday still shows "${sourceStatusLabel}".`
+      : null
+  ].filter((value): value is string => Boolean(value));
 
-    return {
+  return {
     id: buyout.id,
     name: buyout.displayName,
     eventType: buyout.inquiry?.eventType ?? "Buyout",
@@ -455,10 +443,7 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     eventDate: toIsoDay(buyout.eventDate),
     countdownDays: countdown,
     location: buyout.location?.name ?? "Unassigned",
-    assignedTo:
-      isKellyTest
-        ? "Kelly"
-        : buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
+    assignedTo: isKellyTest ? "Kelly" : buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
     instructor: buyout.instructorName ?? "Unassigned",
     lifecycleStage: effectiveLifecycleStage,
     sourceLifecycleStage: lifecycleStage,
@@ -483,14 +468,8 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     outstanding,
     paymentProgress,
     numberOfHours,
-    clientName:
-      isKellyTest
-        ? "Kelly Jackson"
-        : buyout.inquiry?.clientName ?? buyout.displayName,
-    clientEmail:
-      isKellyTest
-        ? TEST_EMAIL
-        : buyout.inquiry?.clientEmail ?? "",
+    clientName: isKellyTest ? "Kelly Jackson" : buyout.inquiry?.clientName ?? buyout.displayName,
+    clientEmail: isKellyTest ? TEST_EMAIL : buyout.inquiry?.clientEmail ?? "",
     clientPhone: buyout.inquiry?.clientPhone ?? undefined,
     startTime: derivedStartTime,
     endTime: derivedEndTime,
@@ -508,14 +487,34 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       inquiryDate: buyout.inquiry?.createdAt ? toIsoDay(buyout.inquiry.createdAt) : null,
       eventDate: toIsoDay(buyout.eventDate)
     }),
-    rushFee: getPaymentTier({
-      inquiryDate: buyout.inquiry?.createdAt ? toIsoDay(buyout.inquiry.createdAt) : null,
-      eventDate: toIsoDay(buyout.eventDate)
-    }) === "rush" ? PAYMENT_RULES.rush.rushFee : 0,
+    rushFee:
+      getPaymentTier({
+        inquiryDate: buyout.inquiry?.createdAt ? toIsoDay(buyout.inquiry.createdAt) : null,
+        eventDate: toIsoDay(buyout.eventDate)
+      }) === "rush"
+        ? PAYMENT_RULES.rush.rushFee
+        : 0,
     workflowProgress,
     workflow
-    };
+  };
+}
+
+export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
+  const buyouts = await prisma.buyout.findMany({
+    include: buyoutInclude,
+    orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }]
   });
+
+  return buyouts.map(mapBuyoutRecord);
+}
+
+export async function getBuyoutFromDb(id: string): Promise<BuyoutSummary | null> {
+  const buyout = await prisma.buyout.findUnique({
+    where: { id },
+    include: buyoutInclude
+  });
+
+  return buyout ? mapBuyoutRecord(buyout) : null;
 }
 
 export async function seedMockBuyoutsToDb() {

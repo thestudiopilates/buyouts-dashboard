@@ -3,7 +3,7 @@ import { BallInCourt, BuyoutStage, TrackingHealth } from "@prisma/client";
 import { BUYOUT_PHASES } from "@/lib/buyout-phases";
 import { mockBuyouts } from "@/lib/mock-data";
 import { hasDatabaseUrl, prisma } from "@/lib/prisma";
-import { createInquiryInDb, listBuyoutsFromDb, updateBuyoutInDb } from "@/lib/repositories/buyouts";
+import { createInquiryInDb, getBuyoutFromDb, listBuyoutsFromDb, updateBuyoutInDb } from "@/lib/repositories/buyouts";
 import { BuyoutInquiryInput, BuyoutSummary, BuyoutUpdateInput, StageKey } from "@/lib/types";
 
 const STAGE_TO_ENUM: Record<StageKey, BuyoutStage> = {
@@ -39,6 +39,10 @@ export async function listBuyouts(): Promise<BuyoutSummary[]> {
 }
 
 export async function getBuyout(id: string): Promise<BuyoutSummary | null> {
+  if (hasDatabaseUrl()) {
+    return getBuyoutFromDb(id);
+  }
+
   const buyouts = await listBuyouts();
   return buyouts.find((buyout) => buyout.id === id) ?? null;
 }
