@@ -1946,6 +1946,128 @@ textarea {
   color: #b91c1c;
 }
 
+/* ── Email Sub-Tabs & Timeline ─────────────────────────── */
+
+.ops-email-subtabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ops-email-subtab {
+  flex: 1;
+  border: 0;
+  padding: 8px 0;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--warmGrey);
+  background: var(--card);
+  cursor: pointer;
+  text-align: center;
+}
+
+.ops-email-subtab:not(:last-child) {
+  border-right: 1px solid var(--divider);
+}
+
+.ops-email-subtab.active {
+  background: var(--coffee);
+  color: var(--oat);
+}
+
+.ops-email-subtab:hover:not(.active) {
+  background: var(--oat-light);
+}
+
+.ops-email-timeline {
+  position: relative;
+}
+
+.ops-timeline-item {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 20px;
+}
+
+.ops-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.ops-timeline-item:last-child .ops-timeline-line {
+  display: none;
+}
+
+.ops-timeline-dot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.ops-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.ops-timeline-dot.sent {
+  background: var(--seaglass);
+}
+
+.ops-timeline-dot.received {
+  background: var(--terracotta);
+}
+
+.ops-timeline-line {
+  width: 2px;
+  flex: 1;
+  background: var(--divider);
+  margin-top: 4px;
+}
+
+.ops-timeline-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ops-timeline-date {
+  font-size: 0.7rem;
+  color: var(--warmGrey);
+  margin-bottom: 2px;
+}
+
+.ops-timeline-subject {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--coffee);
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.ops-timeline-snippet {
+  font-size: 0.78rem;
+  color: var(--warmGrey);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ops-timeline-meta {
+  font-size: 0.68rem;
+  color: var(--warmGrey);
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
 /* ── Activity Timeline ──────────────────────────────────── */
 
 .ops-note-input-row {

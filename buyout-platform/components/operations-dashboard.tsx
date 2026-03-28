@@ -227,6 +227,9 @@ function Drawer({
   const [notesList, setNotesList] = useState<Array<{ id: string; createdAt: string; text: string; author: string }>>([]);
   const [newNoteText, setNewNoteText] = useState("");
   const [activityLoaded, setActivityLoaded] = useState(false);
+  const [emailSubTab, setEmailSubTab] = useState<"templates" | "sent" | "received">("templates");
+  const [emailHistory, setEmailHistory] = useState<Array<{ id: string; date: string; from: string; to: string; subject: string; snippet: string; direction: string }>>([]);
+  const [emailHistoryLoaded, setEmailHistoryLoaded] = useState(false);
   const [form, setForm] = useState({
     clientName: buyout.clientName,
     clientEmail: buyout.clientEmail,
@@ -263,6 +266,9 @@ function Drawer({
     setNotesList([]);
     setNewNoteText("");
     setActivityLoaded(false);
+    setEmailSubTab("templates");
+    setEmailHistory([]);
+    setEmailHistoryLoaded(false);
     setForm({
       clientName: buyout.clientName,
       clientEmail: buyout.clientEmail,
@@ -351,6 +357,18 @@ function Drawer({
         setDraftTemplate(null);
         setDraftLoading(false);
       });
+  }
+
+  function loadEmailHistory() {
+    if (emailHistoryLoaded) return;
+    setEmailHistoryLoaded(true);
+
+    fetch(`/api/buyouts/${buyout.id}/email-history`)
+      .then((r) => r.json())
+      .then((data: { all?: typeof emailHistory; gmailReady?: boolean }) => {
+        setEmailHistory(data.all ?? []);
+      })
+      .catch(() => {});
   }
 
   function loadActivity() {
@@ -893,6 +911,21 @@ function Drawer({
             <div>
               {emailMessage ? <div className="ops-email-banner">{emailMessage}</div> : null}
 
+              {!draftTemplate && !previewHtml ? (
+                <div className="ops-email-subtabs">
+                  {(["templates", "sent", "received"] as const).map((st) => (
+                    <button
+                      className={`ops-email-subtab${emailSubTab === st ? " active" : ""}`}
+                      key={st}
+                      onClick={() => { setEmailSubTab(st); if (st !== "templates") loadEmailHistory(); }}
+                      type="button"
+                    >
+                      {st === "templates" ? "Send" : st === "sent" ? "Sent" : "Received"}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
               {previewHtml ? (
                 <div className="ops-draft-editor">
                   <div className="ops-draft-header">
@@ -932,7 +965,7 @@ function Drawer({
                     </>
                   )}
                 </div>
-              ) : (
+              ) : emailSubTab === "templates" ? (
                 <>
                   <div className="ops-tab-summary">
                     <div>
@@ -999,6 +1032,46 @@ function Drawer({
                     })}
                   </div>
                 </>
+              ) : (
+                <div className="ops-email-history">
+                  {!emailHistoryLoaded ? (
+                    <div className="ops-draft-loading">Loading email history...</div>
+                  ) : emailHistory.filter((m) => m.direction === emailSubTab).length === 0 ? (
+                    <div className="ops-draft-loading">
+                      {emailSubTab === "sent" ? "No emails sent to this client yet." : "No emails received from this client yet."}
+                      {emailHistory.length === 0 ? " Gmail credentials may not be configured." : ""}
+                    </div>
+                  ) : (
+                    <div className="ops-email-timeline">
+                      {emailHistory
+                        .filter((m) => m.direction === emailSubTab)
+                        .map((msg) => {
+                          const date = new Date(msg.date);
+                          const isValid = !isNaN(date.getTime());
+                          return (
+                            <div className={`ops-timeline-item ${msg.direction}`} key={msg.id}>
+                              <div className="ops-timeline-dot-col">
+                                <div className={`ops-timeline-dot ${msg.direction}`} />
+                                <div className="ops-timeline-line" />
+                              </div>
+                              <div className="ops-timeline-content">
+                                <div className="ops-timeline-date">
+                                  {isValid
+                                    ? date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })
+                                    : msg.date}
+                                </div>
+                                <div className="ops-timeline-subject">{msg.subject || "(No subject)"}</div>
+                                <div className="ops-timeline-snippet">{msg.snippet}</div>
+                                <div className="ops-timeline-meta">
+                                  {msg.direction === "sent" ? `To: ${msg.to}` : `From: ${msg.from}`}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           ) : null}

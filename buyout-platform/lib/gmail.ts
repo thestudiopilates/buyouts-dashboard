@@ -180,3 +180,101 @@ export async function sendGmailMessage(input: {
     threadId: payload.threadId
   };
 }
+
+export type GmailMessageSummary = {
+  id: string;
+  threadId: string;
+  date: string;
+  from: string;
+  to: string;
+  subject: string;
+  snippet: string;
+  direction: "sent" | "received";
+};
+
+type GmailListResponse = {
+  messages?: Array<{ id: string; threadId: string }>;
+  resultSizeEstimate?: number;
+};
+
+type GmailMessageResponse = {
+  id: string;
+  threadId: string;
+  snippet: string;
+  payload?: {
+    headers?: Array<{ name: string; value: string }>;
+  };
+};
+
+function getHeader(msg: GmailMessageResponse, name: string): string {
+  return msg.payload?.headers?.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? "";
+}
+
+export async function searchGmailMessages(input: {
+  clientEmail: string;
+  direction: "sent" | "received";
+  maxResults?: number;
+}): Promise<GmailMessageSummary[]> {
+  const config = getGmailConfig();
+  if (!config) return [];
+
+  const accessToken = await getAccessToken(config);
+  const senderEmail = config.senderEmail;
+  const query =
+    input.direction === "sent"
+      ? `from:${senderEmail} to:${input.clientEmail}`
+      : `from:${input.clientEmail} to:${senderEmail}`;
+
+  const listUrl = new URL(`https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages`);
+  listUrl.searchParams.set("q", query);
+  listUrl.searchParams.set("maxResults", String(input.maxResults ?? 20));
+
+  const listResponse = await fetch(listUrl.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+
+  if (!listResponse.ok) return [];
+
+  const listData = (await listResponse.json()) as GmailListResponse;
+  if (!listData.messages?.length) return [];
+
+  const messages = await Promise.all(
+    listData.messages.slice(0, input.maxResults ?? 20).map(async (ref) => {
+      const msgUrl = `https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages/${ref.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`;
+      const msgResponse = await fetch(msgUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+
+      if (!msgResponse.ok) return null;
+
+      const msg = (await msgResponse.json()) as GmailMessageResponse;
+      return {
+        id: msg.id,
+        threadId: msg.threadId,
+        date: getHeader(msg, "Date"),
+        from: getHeader(msg, "From"),
+        to: getHeader(msg, "To"),
+        subject: getHeader(msg, "Subject"),
+        snippet: msg.snippet ?? "",
+        direction: input.direction
+      } satisfies GmailMessageSummary;
+    })
+  );
+
+  return messages.filter((m): m is GmailMessageSummary => m !== null);
+}
+
+export async function getEmailHistory(clientEmail: string): Promise<GmailMessageSummary[]> {
+  if (!getGmailConfig()) return [];
+
+  const [sent, received] = await Promise.all([
+    searchGmailMessages({ clientEmail, direction: "sent", maxResults: 30 }),
+    searchGmailMessages({ clientEmail, direction: "received", maxResults: 30 })
+  ]);
+
+  return [...sent, ...received].sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    return dateB - dateA;
+  });
+}
