@@ -1312,6 +1312,17 @@ function Drawer({
   );
 }
 
+type InboxAlert = {
+  id: string;
+  buyoutId: string;
+  clientEmail: string;
+  subject: string;
+  snippet: string;
+  receivedAt: string;
+  hoursWaiting: number;
+  isRead: boolean;
+};
+
 export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
   const [localBuyouts, setLocalBuyouts] = useState(buyouts);
   const [selected, setSelected] = useState<BuyoutSummary | null>(null);
@@ -1321,6 +1332,23 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("eventDate");
   const [showCompleted, setShowCompleted] = useState(false);
+  const [inboxAlerts, setInboxAlerts] = useState<InboxAlert[]>([]);
+
+  useEffect(() => {
+    fetch("/api/inbox-alerts")
+      .then((r) => r.json())
+      .then((data: { alerts?: InboxAlert[] }) => setInboxAlerts(data.alerts ?? []))
+      .catch(() => {});
+
+    const interval = setInterval(() => {
+      fetch("/api/inbox-alerts")
+        .then((r) => r.json())
+        .then((data: { alerts?: InboxAlert[] }) => setInboxAlerts(data.alerts ?? []))
+        .catch(() => {});
+    }, 300000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const locations = useMemo(
     () => ["All", ...new Set(localBuyouts.map((buyout) => buyout.location).filter(Boolean))],
@@ -1366,6 +1394,33 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
 
   return (
     <div className="ops-shell">
+      {inboxAlerts.length > 0 ? (
+        <div className="ops-inbox-alert-bar">
+          <div className="ops-inbox-alert-icon">{inboxAlerts.length}</div>
+          <div className="ops-inbox-alert-content">
+            <div className="ops-inbox-alert-title">
+              {inboxAlerts.length === 1 ? "1 client email needs a response" : `${inboxAlerts.length} client emails need responses`}
+            </div>
+            <div className="ops-inbox-alert-list">
+              {inboxAlerts.slice(0, 3).map((alert) => {
+                const buyout = localBuyouts.find((b) => b.id === alert.buyoutId);
+                return (
+                  <button
+                    className="ops-inbox-alert-item"
+                    key={alert.id}
+                    onClick={() => { const b = localBuyouts.find((x) => x.id === alert.buyoutId); if (b) setSelected(b); }}
+                    type="button"
+                  >
+                    <strong>{buyout?.name ?? alert.clientEmail}</strong>
+                    <span>{alert.hoursWaiting >= 24 ? `${Math.floor(alert.hoursWaiting / 24)}d overdue` : `${alert.hoursWaiting}h ago`}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="ops-mode-banner">
         <div>
           <div className="ops-mode-title">Live operations view</div>
@@ -1509,6 +1564,9 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                     ) : null}
                     {buyout.ballInCourt === "Client" && buyout.daysWaiting > 7 ? (
                       <span className="ops-cold-badge">Going Cold</span>
+                    ) : null}
+                    {inboxAlerts.some((a) => a.buyoutId === buyout.id) ? (
+                      <span className="ops-inbox-badge">Needs Response</span>
                     ) : null}
                   </div>
                 </div>
