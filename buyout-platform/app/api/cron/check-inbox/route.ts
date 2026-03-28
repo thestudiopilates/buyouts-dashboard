@@ -67,6 +67,16 @@ function matchPaymentToBuyout(
     }
   }
 
+  if (paymentName) {
+    const containsMatch = buyouts.find((buyout) => {
+      const bn = normalizeName(buyout.clientName || buyout.name);
+      return bn.includes(paymentName) || paymentName.includes(bn.split(" ").slice(0, 2).join(" "));
+    });
+    if (containsMatch) {
+      return { buyout: containsMatch, matchedBy: "name-contains" };
+    }
+  }
+
   if (paymentFirstName) {
     const firstNameMatches = buyouts.filter((buyout) => firstName(buyout.clientName || buyout.name) === paymentFirstName);
     if (firstNameMatches.length === 1) {

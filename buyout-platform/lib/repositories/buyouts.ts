@@ -7,10 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { BuyoutInquiryInput, BuyoutSummary, BuyoutUpdateInput, WorkflowStep } from "@/lib/types";
 import { buildWorkflow } from "@/lib/workflows";
 
-const TEST_ITEM_ID = "10989594648";
-const TEST_EMAIL = "kelly@thestudiopilates.com";
-const TEST_SIGNUP_LINK = "https://momence.com/l/4ZhnW48O";
-const TEST_SENT_TEMPLATES = ["t5"];
+// Database is now the primary source of truth — no test overrides
 
 const TRACKING_SOURCE_LABEL_MAP: Record<string, BuyoutSummary["trackingHealth"]> = {
   "So far so good": "On track",
@@ -368,7 +365,6 @@ const buyoutInclude = {
 type BuyoutRecord = Prisma.BuyoutGetPayload<{ include: typeof buyoutInclude }>;
 
 function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
-  const isKellyTest = buyout.legacyMondayItemId === TEST_ITEM_ID;
   const workflow = normalizeWorkflow(buyout.workflowSteps);
   const lifecycleStage = stageLabelMap[buyout.lifecycleStage];
   const countdown = differenceInDaysFromToday(buyout.eventDate);
@@ -394,11 +390,7 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
     quotedTotal: buyout.financial?.quotedTotal
   });
   const sentTemplateIds = Array.from(
-    new Set(
-      (isKellyTest ? TEST_SENT_TEMPLATES : []).concat(
-        buyout.emails.filter((email) => email.status === "SENT").map((email) => email.templateKey)
-      )
-    )
+    new Set(buyout.emails.filter((email) => email.status === "SENT").map((email) => email.templateKey))
   );
   const sourceStatusLabel = buyout.sourceStatusLabel ?? lifecycleStage;
   const sourceTrackingHealth = trackingLabelMap[buyout.trackingHealth];
@@ -414,23 +406,17 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
   });
   const effectiveLifecycleStage = derivedState.lifecycleStage;
   const effectiveTrackingHealth = derivedState.trackingHealth;
-  const effectiveBallInCourt =
-    isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL ? "Team" : derivedState.ballInCourt;
+  const effectiveBallInCourt = derivedState.ballInCourt;
   const effectiveNextAction = derivedState.nextAction;
   const effectiveStatusLabel = getBuyoutPhase(derivedState.lifecycleStage)?.statusLabel ?? sourceStatusLabel;
   const healthFlags = [
-    !isKellyTest && countdown !== null && countdown < 0 ? "Event date on the source board is in the past." : null,
-    !isKellyTest &&
+    countdown !== null && countdown < 0 ? "Event date is in the past." : null,
     workflow.some((step) => step.key === "remaining-payment-received" && step.complete) &&
     (buyout.financial?.amountPaid ?? 0) === 0
       ? "Workflow shows payment completed, but financials still show $0 paid."
       : null,
-    lifecycleStage === "Discuss" &&
-    workflow.some((step) => step.key === "date-finalized" && step.complete)
-      ? "Lifecycle status is behind the checklist state on the Monday board."
-      : null,
-    !isKellyTest && effectiveStatusLabel !== sourceStatusLabel
-      ? `Operationally this reads as "${effectiveStatusLabel}" even though Monday still shows "${sourceStatusLabel}".`
+    effectiveStatusLabel !== sourceStatusLabel
+      ? `Dashboard status: "${effectiveStatusLabel}" — source record: "${sourceStatusLabel}".`
       : null
   ].filter((value): value is string => Boolean(value));
 
@@ -443,7 +429,7 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
     eventDate: toIsoDay(buyout.eventDate),
     countdownDays: countdown,
     location: buyout.location?.name ?? "Unassigned",
-    assignedTo: isKellyTest ? "Kelly" : buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
+    assignedTo: buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
     instructor: buyout.instructorName ?? "Unassigned",
     lifecycleStage: effectiveLifecycleStage,
     sourceLifecycleStage: lifecycleStage,
@@ -468,8 +454,8 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
     outstanding,
     paymentProgress,
     numberOfHours,
-    clientName: isKellyTest ? "Kelly Jackson" : buyout.inquiry?.clientName ?? buyout.displayName,
-    clientEmail: isKellyTest ? TEST_EMAIL : buyout.inquiry?.clientEmail ?? "",
+    clientName: buyout.inquiry?.clientName ?? buyout.displayName,
+    clientEmail: buyout.inquiry?.clientEmail ?? "",
     clientPhone: buyout.inquiry?.clientPhone ?? undefined,
     startTime: derivedStartTime,
     endTime: derivedEndTime,
@@ -478,7 +464,7 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
     depositAmount: buyout.financial?.depositAmount ?? undefined,
     depositLink: buyout.financial?.depositLink ?? undefined,
     balanceLink: buyout.financial?.balanceLink ?? undefined,
-    signupLink: isKellyTest ? TEST_SIGNUP_LINK : getSignupLinkFromSnapshot(buyout.sourceSnapshot),
+    signupLink: getSignupLinkFromSnapshot(buyout.sourceSnapshot),
     notes: buyout.notesInternal ?? "",
     healthFlags,
     sentTemplateIds,
