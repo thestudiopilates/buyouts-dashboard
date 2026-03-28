@@ -7,10 +7,19 @@ export async function POST(
   context: { params: Promise<{ key: string }> }
 ) {
   const { key } = await context.params;
-  const body = (await request.json().catch(() => ({}))) as { buyoutId?: string };
+  const body = (await request.json().catch(() => ({}))) as {
+    buyoutId?: string;
+    subjectOverride?: string;
+    bodyOverride?: string;
+  };
 
   try {
-    const result = await executeTemplateReviewSend({ templateKey: key, buyoutId: body.buyoutId });
+    const result = await executeTemplateReviewSend({
+      templateKey: key,
+      buyoutId: body.buyoutId,
+      subjectOverride: body.subjectOverride,
+      bodyOverride: body.bodyOverride
+    });
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to run the internal review send.";

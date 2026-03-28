@@ -138,7 +138,12 @@ async function resolveBuyoutRecord(buyoutId?: string) {
   );
 }
 
-export async function executeTemplateReviewSend(input: { templateKey: string; buyoutId?: string }) {
+export async function executeTemplateReviewSend(input: {
+  templateKey: string;
+  buyoutId?: string;
+  subjectOverride?: string;
+  bodyOverride?: string;
+}) {
   if (!hasDatabaseUrl()) {
     throw new Error("Database connection is required for test sends.");
   }
@@ -173,9 +178,12 @@ export async function executeTemplateReviewSend(input: { templateKey: string; bu
   }
 
   const preview = previewEmailTemplate(template, buyoutSummary);
-  if (preview.missingVariables.length > 0) {
+  if (!input.bodyOverride && preview.missingVariables.length > 0) {
     throw new Error(`Missing required fields: ${preview.missingVariables.join(", ")}.`);
   }
+
+  const finalSubject = input.subjectOverride?.trim() || preview.renderedSubject;
+  const finalBody = input.bodyOverride?.trim() || preview.renderedBody;
 
   const workflowSeed = EMAIL_TEMPLATE_SEEDS.find((item) => item.key === input.templateKey);
   const workflowGroup = workflowGroupForCategory(workflowSeed?.category ?? template.category);
@@ -184,15 +192,15 @@ export async function executeTemplateReviewSend(input: { templateKey: string; bu
   const deliveryMode = gmail.ready ? "gmail_test" : "simulated_test";
   const senderEmail = gmail.senderEmail ?? "simulated@thestudiopilates.local";
   const renderedHtmlDocument = renderEmailHtml({
-    subject: preview.renderedSubject,
-    body: preview.renderedBody,
+    subject: finalSubject,
+    body: finalBody,
     previewLabel: template.name
   });
   const providerResult = gmail.ready
     ? await sendGmailMessage({
         to: INTERNAL_REVIEW_RECIPIENT,
-        subject: preview.renderedSubject,
-        bodyText: preview.renderedBody,
+        subject: finalSubject,
+        bodyText: finalBody,
         bodyHtml: renderedHtmlDocument
       })
     : {
@@ -205,8 +213,8 @@ export async function executeTemplateReviewSend(input: { templateKey: string; bu
       data: {
         buyoutId: buyoutRecord.id,
         templateKey: input.templateKey,
-        subject: preview.renderedSubject,
-        bodyText: preview.renderedBody,
+        subject: finalSubject,
+        bodyText: finalBody,
         bodyHtml: renderedHtmlDocument,
         status: EmailStatus.SENT,
         sentAt: now,

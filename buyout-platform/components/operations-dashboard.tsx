@@ -197,6 +197,11 @@ function Drawer({
   const [message, setMessage] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [pendingEmailId, setPendingEmailId] = useState("");
+  const [draftTemplate, setDraftTemplate] = useState<string | null>(null);
+  const [draftSubject, setDraftSubject] = useState("");
+  const [draftBody, setDraftBody] = useState("");
+  const [draftLoading, setDraftLoading] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [form, setForm] = useState({
     clientName: buyout.clientName,
     clientEmail: buyout.clientEmail,
@@ -223,6 +228,11 @@ function Drawer({
     setMessage("");
     setEmailMessage("");
     setPendingEmailId("");
+    setDraftTemplate(null);
+    setDraftSubject("");
+    setDraftBody("");
+    setDraftLoading(false);
+    setPreviewHtml(null);
     setForm({
       clientName: buyout.clientName,
       clientEmail: buyout.clientEmail,
@@ -272,15 +282,71 @@ function Drawer({
     });
   }
 
-  function handleEmailSend(templateId: string) {
+  function handleOpenDraft(templateId: string) {
     setEmailMessage("");
-    setPendingEmailId(templateId);
+    setPreviewHtml(null);
+    setDraftTemplate(templateId);
+    setDraftLoading(true);
+
+    fetch(`/api/email-templates/${templateId}?buyoutId=${buyout.id}`)
+      .then((res) => res.json())
+      .then((data: { preview?: { renderedSubject?: string; renderedBody?: string } }) => {
+        setDraftSubject(data.preview?.renderedSubject ?? "");
+        setDraftBody(data.preview?.renderedBody ?? "");
+        setDraftLoading(false);
+      })
+      .catch(() => {
+        setEmailMessage("Unable to load template preview.");
+        setDraftTemplate(null);
+        setDraftLoading(false);
+      });
+  }
+
+  function handleCloseDraft() {
+    setDraftTemplate(null);
+    setDraftSubject("");
+    setDraftBody("");
+    setPreviewHtml(null);
+  }
+
+  function handlePreviewDraft() {
+    if (!draftTemplate) return;
+    setDraftLoading(true);
+
+    fetch(`/api/email-templates/${draftTemplate}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: draftSubject,
+        body: draftBody,
+        previewLabel: EMAIL_TEMPLATES.find((t) => t.id === draftTemplate)?.label
+      })
+    })
+      .then((res) => res.json())
+      .then((data: { html?: string }) => {
+        setPreviewHtml(data.html ?? null);
+        setDraftLoading(false);
+      })
+      .catch(() => {
+        setEmailMessage("Unable to render preview.");
+        setDraftLoading(false);
+      });
+  }
+
+  function handleConfirmSend() {
+    if (!draftTemplate) return;
+    setEmailMessage("");
+    setPendingEmailId(draftTemplate);
 
     startTransition(async () => {
-      const response = await fetch(`/api/email-templates/${templateId}/test-send`, {
+      const response = await fetch(`/api/email-templates/${draftTemplate}/test-send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ buyoutId: buyout.id })
+        body: JSON.stringify({
+          buyoutId: buyout.id,
+          subjectOverride: draftSubject,
+          bodyOverride: draftBody
+        })
       });
 
       const payload = (await response.json()) as {
@@ -298,6 +364,7 @@ function Drawer({
       onBuyoutUpdated(payload.buyout);
       setEmailMessage(payload.message ?? "Internal review send completed.");
       setPendingEmailId("");
+      handleCloseDraft();
     });
   }
 
@@ -655,68 +722,124 @@ function Drawer({
           {tab === "emails" ? (
             <div>
               {emailMessage ? <div className="ops-email-banner">{emailMessage}</div> : null}
-              <div className="ops-tab-summary">
-                <div>
-                  <span className="ops-tab-big">
-                    {buyout.sentTemplateIds.length}
-                  </span>
-                  <span className="ops-tab-small">templates already sent</span>
+
+              {previewHtml ? (
+                <div className="ops-draft-editor">
+                  <div className="ops-draft-header">
+                    <span className="ops-draft-title">Final Preview</span>
+                    <button className="ops-draft-close" onClick={() => setPreviewHtml(null)} type="button">Back to Editor</button>
+                  </div>
+                  <div className="ops-preview-frame" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                  <div className="ops-draft-actions">
+                    <button className="ops-draft-send" disabled={isPending} onClick={handleConfirmSend} type="button">
+                      {isPending ? "Sending..." : "Confirm & Send"}
+                    </button>
+                    <button className="ops-draft-cancel" onClick={() => setPreviewHtml(null)} type="button">Back</button>
+                  </div>
                 </div>
-              </div>
-              <div className="ops-group-stack">
-                {EMAIL_TEMPLATES.map((template) => {
-                  const state = readiness(buyout, template.requiredFields);
-                  const sent = buyout.sentTemplateIds.includes(template.id);
-                  const singleSend = SINGLE_SEND_TEMPLATE_IDS.has(template.id);
-                  const blocked = !state.ready || (singleSend && sent);
-                  return (
-                    <div
-                      className="ops-email-row"
-                      key={template.id}
-                      style={{
-                        borderColor: sent
-                          ? `${COLORS.seaglass}33`
-                          : state.ready
-                            ? `${COLORS.sunshine}33`
-                            : `${COLORS.cherry}22`
-                      }}
-                    >
-                      <div>
-                        <div className="ops-email-title">{template.label}</div>
-                        <div className="ops-email-meta">
-                          {sent
-                            ? TEMPLATE_HINTS[template.id]
-                            : state.ready
-                              ? "Ready to send now"
-                              : `Missing ${state.total - state.filled} required field${state.total - state.filled === 1 ? "" : "s"}`}
-                        </div>
+              ) : draftTemplate ? (
+                <div className="ops-draft-editor">
+                  <div className="ops-draft-header">
+                    <span className="ops-draft-title">
+                      {EMAIL_TEMPLATES.find((t) => t.id === draftTemplate)?.label ?? "Email Draft"}
+                    </span>
+                    <button className="ops-draft-close" onClick={handleCloseDraft} type="button">Cancel</button>
+                  </div>
+                  {draftLoading ? (
+                    <div className="ops-draft-loading">Loading template...</div>
+                  ) : (
+                    <>
+                      <label className="ops-draft-label">Subject</label>
+                      <input
+                        className="ops-draft-input"
+                        onChange={(e) => setDraftSubject(e.target.value)}
+                        value={draftSubject}
+                      />
+                      <label className="ops-draft-label">Body</label>
+                      <textarea
+                        className="ops-draft-textarea"
+                        onChange={(e) => setDraftBody(e.target.value)}
+                        rows={16}
+                        value={draftBody}
+                      />
+                      <div className="ops-draft-hint">
+                        You can edit the copy above before sending. Formatting tags like &lt;b&gt; and &lt;hr&gt; will be styled automatically.
                       </div>
-                      <div className="ops-email-action-stack">
-                        <span
-                          className="ops-email-state"
+                      <div className="ops-draft-actions">
+                        <button className="ops-draft-preview" disabled={draftLoading} onClick={handlePreviewDraft} type="button">
+                          Preview Email
+                        </button>
+                        <button className="ops-draft-cancel" onClick={handleCloseDraft} type="button">Cancel</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="ops-tab-summary">
+                    <div>
+                      <span className="ops-tab-big">
+                        {buyout.sentTemplateIds.length}
+                      </span>
+                      <span className="ops-tab-small">templates already sent</span>
+                    </div>
+                  </div>
+                  <div className="ops-group-stack">
+                    {EMAIL_TEMPLATES.map((template) => {
+                      const state = readiness(buyout, template.requiredFields);
+                      const sent = buyout.sentTemplateIds.includes(template.id);
+                      const singleSend = SINGLE_SEND_TEMPLATE_IDS.has(template.id);
+                      const blocked = !state.ready || (singleSend && sent);
+                      return (
+                        <div
+                          className="ops-email-row"
+                          key={template.id}
                           style={{
-                            color: sent ? COLORS.seaglass : state.ready ? COLORS.apricot : COLORS.cherry
+                            borderColor: sent
+                              ? `${COLORS.seaglass}33`
+                              : state.ready
+                                ? `${COLORS.sunshine}33`
+                                : `${COLORS.cherry}22`
                           }}
                         >
-                          {sent ? "Sent" : state.ready ? "Ready" : "Blocked"}
-                        </span>
-                        <button
-                          className={`ops-email-send-btn${blocked ? " blocked" : ""}`}
-                          disabled={isPending || blocked}
-                          onClick={() => handleEmailSend(template.id)}
-                          type="button"
-                        >
-                          {pendingEmailId === template.id
-                            ? "Sending..."
-                            : singleSend && sent
-                              ? "Already Sent"
-                              : "Send Review"}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                          <div>
+                            <div className="ops-email-title">{template.label}</div>
+                            <div className="ops-email-meta">
+                              {sent
+                                ? TEMPLATE_HINTS[template.id]
+                                : state.ready
+                                  ? "Ready to send now"
+                                  : `Missing ${state.total - state.filled} required field${state.total - state.filled === 1 ? "" : "s"}`}
+                            </div>
+                          </div>
+                          <div className="ops-email-action-stack">
+                            <span
+                              className="ops-email-state"
+                              style={{
+                                color: sent ? COLORS.seaglass : state.ready ? COLORS.apricot : COLORS.cherry
+                              }}
+                            >
+                              {sent ? "Sent" : state.ready ? "Ready" : "Blocked"}
+                            </span>
+                            <button
+                              className={`ops-email-send-btn${blocked ? " blocked" : ""}`}
+                              disabled={isPending || blocked}
+                              onClick={() => handleOpenDraft(template.id)}
+                              type="button"
+                            >
+                              {pendingEmailId === template.id
+                                ? "Sending..."
+                                : singleSend && sent
+                                  ? "Already Sent"
+                                  : "Draft & Send"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           ) : null}
 
