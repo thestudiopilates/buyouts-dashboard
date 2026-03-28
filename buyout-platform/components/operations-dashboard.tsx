@@ -851,12 +851,14 @@ function Drawer({
               <div className="ops-section-label">Event Details</div>
               <div className="ops-detail-card">
                 {[
-                  ["Date", buyout.eventDate],
+                  ["Inquiry Date", buyout.inquiryDate ?? "Unknown"],
+                  ["Event Date", buyout.eventDate],
                   ["Preferred", buyout.preferredDates || "Not captured"],
                   ["Time", buyout.startTime && buyout.endTime ? `${buyout.startTime} - ${buyout.endTime}` : "TBD"],
                   ["Location", buyout.location],
                   ["Instructor", buyout.instructor],
-                  ["Front Desk", buyout.assignedTo]
+                  ["Front Desk", buyout.assignedTo],
+                  ["Payment Type", buyout.paymentTier === "rush" ? `Rush (+$${buyout.rushFee} fee)` : buyout.paymentTier === "full" ? "Full Payment Due" : "Standard (Deposit + Balance)"]
                 ].map(([label, value]) => (
                   <div className="ops-detail-line" key={label}>
                     <span>{label}</span>
@@ -1572,6 +1574,9 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       >
                         {buyout.eventType}
                       </span>
+                      {buyout.paymentTier === "rush" ? (
+                        <span className="ops-rush-pill">Rush</span>
+                      ) : null}
                       <span>{buyout.assignedTo}</span>
                     </div>
                     <div className="ops-client-meta">

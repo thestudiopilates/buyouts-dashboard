@@ -536,7 +536,12 @@ function buildEmailVariables(buyout: BuyoutSummary | null): Record<string, strin
       remainingBalance: "",
       remainingBalanceLink: "",
       signupLink: "",
-      clientEmail: ""
+      clientEmail: "",
+      rushFee: "",
+      totalWithRush: "",
+      paymentDeadline: "",
+      paymentTier: "",
+      inquiryDate: ""
     };
   }
 
@@ -546,7 +551,16 @@ function buildEmailVariables(buyout: BuyoutSummary | null): Record<string, strin
   const totalPrice = formatCurrency(buyout.total);
   const amountPaid = formatCurrency(buyout.amountPaid);
   const remainingBalance = formatCurrency(buyout.outstanding);
-  const depositAmount = formatCurrency(buyout.depositAmount ?? (buyout.total && buyout.amountPaid ? Math.min(buyout.total, buyout.amountPaid) : 0));
+  const isRush = buyout.paymentTier === "rush";
+  const isFullPayment = buyout.paymentTier === "full";
+  const depositAmount = isRush || isFullPayment ? "" : formatCurrency(buyout.depositAmount ?? 250);
+  const rushFeeAmount = isRush ? formatCurrency(buyout.rushFee ?? 100) : "";
+  const totalWithRush = isRush && buyout.total ? formatCurrency(buyout.total + (buyout.rushFee ?? 100)) : "";
+  const paymentDeadline = isRush
+    ? "Within 48 hours of date confirmation"
+    : isFullPayment
+      ? "Due upon confirmation"
+      : "14 days before event";
 
   return {
     clientName,
@@ -566,7 +580,12 @@ function buildEmailVariables(buyout: BuyoutSummary | null): Record<string, strin
     remainingBalance,
     remainingBalanceLink: normalizeTemplateField(buyout.balanceLink),
     signupLink: normalizeTemplateField(buyout.signupLink),
-    clientEmail: normalizeTemplateField(buyout.clientEmail) || KELLY_TEST_EMAIL
+    clientEmail: normalizeTemplateField(buyout.clientEmail) || KELLY_TEST_EMAIL,
+    rushFee: rushFeeAmount,
+    totalWithRush,
+    paymentDeadline,
+    paymentTier: buyout.paymentTier,
+    inquiryDate: buyout.inquiryDate ?? ""
   };
 }
 

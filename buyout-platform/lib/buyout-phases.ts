@@ -149,7 +149,7 @@ export function getPaymentTier(input: {
 
 export const PAYMENT_RULES = {
   standard: {
-    label: "Standard (30+ days out)",
+    label: "Deposit Required (30+ days from inquiry)",
     depositRequired: true,
     depositAmount: 250,
     depositDeadline: "To hold the date",
@@ -160,7 +160,7 @@ export const PAYMENT_RULES = {
     note: "$250 deposit required to hold date. Remaining balance due 14 days before event. Option to pay in full upfront."
   },
   full: {
-    label: "Full Payment (14–30 days out)",
+    label: "Full Payment ($450, 14–30 days from inquiry)",
     depositRequired: false,
     depositAmount: 0,
     depositDeadline: null,
@@ -168,10 +168,10 @@ export const PAYMENT_RULES = {
     fullPaymentOption: true,
     rushFee: 0,
     links: ["full"],
-    note: "Full payment due. No deposit — event is within 30 days."
+    note: "Full payment of $450 due. No deposit required — event is within 30 days of inquiry."
   },
   rush: {
-    label: "Rush Event (under 14 days out)",
+    label: "Rush Event (under 14 days from inquiry)",
     depositRequired: false,
     depositAmount: 0,
     depositDeadline: null,
@@ -179,6 +179,6 @@ export const PAYMENT_RULES = {
     fullPaymentOption: true,
     rushFee: 100,
     links: ["full-with-rush"],
-    note: "Full payment + $100 rush fee due within 48 hours of date confirmation. Date and time not held until payment received."
+    note: "Full payment + $100 rush coordination fee due within 48 hours of date/time confirmation. Date and time will NOT be held until payment is received."
   }
 } as const;
