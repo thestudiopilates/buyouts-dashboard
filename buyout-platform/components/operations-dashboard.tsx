@@ -44,24 +44,40 @@ const groupColors: Record<(typeof GROUPS)[number], string> = {
 const EMAIL_TEMPLATES = [
   { id: "t0", label: "Custom / One-Off Message", requiredFields: ["clientEmail"] },
   { id: "t1", label: "First Inquiry Email", requiredFields: ["clientEmail"] },
+  { id: "t2", label: "Food & Beverage Policy", requiredFields: ["clientEmail"] },
   { id: "t3", label: "Deposit & Date", requiredFields: ["eventDate", "depositLink"] },
+  { id: "t4", label: "Deposit Reminder", requiredFields: ["depositLink"] },
   { id: "t5", label: "Event Details & Sign Up", requiredFields: ["eventDate", "startTime", "endTime", "signupLink"] },
   { id: "t6", label: "Remaining Payment", requiredFields: ["balanceLink"] },
+  { id: "t7", label: "Balance Reminder", requiredFields: ["balanceLink"] },
+  { id: "t8", label: "Cancelled (No Refund)", requiredFields: ["clientEmail"] },
+  { id: "t9", label: "Cancelled (Refund)", requiredFields: ["clientEmail"] },
   { id: "t10", label: "Missing Signups", requiredFields: ["signupLink"] },
-  { id: "t11", label: "Final Confirmation", requiredFields: ["eventDate", "startTime", "endTime"] }
+  { id: "t11", label: "Final Confirmation", requiredFields: ["eventDate", "startTime", "endTime"] },
+  { id: "t12", label: "Post-Event Thank You", requiredFields: ["clientEmail"] },
+  { id: "t13", label: "Ongoing Discussion", requiredFields: ["clientEmail"] },
+  { id: "t14", label: "48-Hour Missing Signups", requiredFields: ["signupLink"] }
 ] as const;
 
 const TEMPLATE_HINTS: Record<string, string> = {
   t0: "Custom message sent",
   t1: "Initial intake response",
+  t2: "Food & beverage policy clarification",
   t3: "Date confirmation and payment request",
+  t4: "Deposit follow-up reminder",
   t5: "Locked event details and signup link",
-  t6: "Remaining balance follow-up",
+  t6: "Remaining balance request",
+  t7: "Balance follow-up reminder",
+  t8: "Cancellation — no refund",
+  t9: "Cancellation — refund issued",
   t10: "Missing attendee signups reminder",
-  t11: "Final event details"
+  t11: "Final event details confirmed",
+  t12: "Post-event thank you and feedback",
+  t13: "General follow-up / discussion",
+  t14: "Urgent 48-hour signup reminder"
 };
 
-const SINGLE_SEND_TEMPLATE_IDS = new Set(["t1", "t3", "t5", "t11"]);
+const SINGLE_SEND_TEMPLATE_IDS = new Set(["t1", "t3", "t5", "t8", "t9", "t11", "t12"]);
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("en-US", {
