@@ -227,7 +227,10 @@ const STAGE_ORDER: BuyoutSummary["lifecycleStage"][] = [
   "Final",
   "Ready",
   "Complete",
-  "Cancelled"
+  "Cancelled",
+  "DOA",
+  "Not Possible",
+  "On Hold"
 ];
 
 const stageLabelMap: Record<BuyoutStage, BuyoutSummary["lifecycleStage"]> = {
@@ -243,7 +246,10 @@ const stageLabelMap: Record<BuyoutStage, BuyoutSummary["lifecycleStage"]> = {
   FINAL: "Final",
   READY: "Ready",
   COMPLETE: "Complete",
-  CANCELLED: "Cancelled"
+  CANCELLED: "Cancelled",
+  DOA: "DOA",
+  NOT_POSSIBLE: "Not Possible",
+  ON_HOLD: "On Hold"
 };
 
 const trackingLabelMap: Record<TrackingHealth, BuyoutSummary["trackingHealth"]> = {
@@ -272,7 +278,10 @@ const stageEnumMap: Record<BuyoutSummary["lifecycleStage"], BuyoutStage> = {
   Final: BuyoutStage.FINAL,
   Ready: BuyoutStage.READY,
   Complete: BuyoutStage.COMPLETE,
-  Cancelled: BuyoutStage.CANCELLED
+  Cancelled: BuyoutStage.CANCELLED,
+  DOA: BuyoutStage.DOA,
+  "Not Possible": BuyoutStage.NOT_POSSIBLE,
+  "On Hold": BuyoutStage.ON_HOLD
 };
 
 const trackingEnumMap: Record<BuyoutSummary["trackingHealth"], TrackingHealth> = {
@@ -452,7 +461,7 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
         : buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
     instructor: buyout.instructorName ?? "Unassigned",
     lifecycleStage: effectiveLifecycleStage,
-    sourceLifecycleStage,
+    sourceLifecycleStage: lifecycleStage,
     lifecycleStep: Math.max(0, STAGE_ORDER.indexOf(effectiveLifecycleStage)),
     trackingHealth: effectiveTrackingHealth,
     sourceTrackingHealth: buyout.sourceTrackingLabel

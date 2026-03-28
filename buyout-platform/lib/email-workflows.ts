@@ -38,7 +38,8 @@ const ALL_ACTIVE_STAGES: StageKey[] = [
   "Sign-Ups",
   "Confirmed",
   "Final",
-  "Ready"
+  "Ready",
+  "On Hold"
 ];
 
 export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [

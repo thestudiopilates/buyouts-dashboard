@@ -328,6 +328,29 @@ function Drawer({
       });
   }
 
+  function handleStageChange(newStage: string) {
+    if (!newStage) return;
+    setMessage("");
+
+    startTransition(async () => {
+      const response = await fetch(`/api/buyouts/${buyout.id}/stage`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: newStage })
+      });
+
+      const payload = (await response.json()) as { buyout?: BuyoutSummary; error?: string };
+
+      if (!response.ok || !payload.buyout) {
+        setMessage(payload.error ?? "Unable to update stage.");
+        return;
+      }
+
+      onBuyoutUpdated(payload.buyout);
+      setMessage(`Stage updated to ${newStage}.`);
+    });
+  }
+
   function handleToggleStep(stepKey: string, currentlyComplete: boolean) {
     startTransition(async () => {
       const response = await fetch(`/api/buyouts/${buyout.id}/workflow`, {
@@ -473,6 +496,27 @@ function Drawer({
             <div>
               <div className="ops-status-label">Status</div>
               <div className="ops-status-value">{buyout.statusLabel}</div>
+              <select
+                className="ops-stage-select"
+                disabled={isPending}
+                onChange={(e) => handleStageChange(e.target.value)}
+                value=""
+              >
+                <option value="">Change status...</option>
+                <optgroup label="Advance">
+                  {["Inquiry", "Respond", "Discuss", "Feasible", "Quote", "Deposit", "Paid", "Sign-Ups", "Confirmed", "Final", "Ready", "Complete"]
+                    .filter((s) => s !== buyout.lifecycleStage)
+                    .map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                </optgroup>
+                <optgroup label="Terminal">
+                  <option value="On Hold">Put On Hold</option>
+                  <option value="DOA">DOA (No Response)</option>
+                  <option value="Not Possible">Not Possible</option>
+                  <option value="Cancelled">Cancelled</option>
+                </optgroup>
+              </select>
               {buyout.sourceStatusLabel && buyout.sourceStatusLabel !== buyout.statusLabel ? (
                 <div className="ops-source-note">Monday source: {buyout.sourceStatusLabel}</div>
               ) : null}
@@ -1005,7 +1049,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
   const visible = useMemo(() => {
     return [...localBuyouts]
       .filter((buyout) => {
-        if (!showCompleted && ["Complete", "Cancelled"].includes(buyout.lifecycleStage)) return false;
+        if (!showCompleted && ["Complete", "Cancelled", "DOA", "Not Possible"].includes(buyout.lifecycleStage)) return false;
         if (filterBic !== "All" && buyout.ballInCourt !== filterBic) return false;
         if (filterLocation !== "All" && buyout.location !== filterLocation) return false;
         if (filterStaff !== "All" && buyout.assignedTo !== filterStaff) return false;
@@ -1025,7 +1069,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
       });
   }, [localBuyouts, filterBic, filterLocation, filterStaff, search, sort, showCompleted]);
 
-  const active = localBuyouts.filter((buyout) => !["Complete", "Cancelled"].includes(buyout.lifecycleStage));
+  const active = localBuyouts.filter((buyout) => !["Complete", "Cancelled", "DOA", "Not Possible"].includes(buyout.lifecycleStage));
   const pipeline = active.reduce((sum, buyout) => sum + buyout.total, 0);
   const collected = active.reduce((sum, buyout) => sum + buyout.amountPaid, 0);
   const attention = active.filter(
@@ -1175,6 +1219,12 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       <span>•</span>
                       <span>{buyout.location}</span>
                     </div>
+                    {buyout.notes ? (
+                      <div className="ops-client-note">{buyout.notes.slice(0, 80)}{buyout.notes.length > 80 ? "..." : ""}</div>
+                    ) : null}
+                    {buyout.ballInCourt === "Client" && buyout.daysWaiting > 7 ? (
+                      <span className="ops-cold-badge">Going Cold</span>
+                    ) : null}
                   </div>
                 </div>
 

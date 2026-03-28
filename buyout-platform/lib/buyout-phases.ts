@@ -99,6 +99,27 @@ export const BUYOUT_PHASES: Record<StageKey, BuyoutPhaseConfig> = {
     nextAction: "Closed",
     ballInCourt: "Team",
     templateKeys: ["t8", "t9"]
+  },
+  DOA: {
+    stage: "DOA",
+    statusLabel: "Dead — No Response",
+    nextAction: "Closed",
+    ballInCourt: "Team",
+    templateKeys: []
+  },
+  "Not Possible": {
+    stage: "Not Possible",
+    statusLabel: "Not Possible",
+    nextAction: "Closed",
+    ballInCourt: "Team",
+    templateKeys: []
+  },
+  "On Hold": {
+    stage: "On Hold",
+    statusLabel: "On Hold",
+    nextAction: "Client to re-engage when ready",
+    ballInCourt: "Client",
+    templateKeys: ["t0", "t13"]
   }
 };
 

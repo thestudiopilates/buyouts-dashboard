@@ -29,6 +29,9 @@ enum BuyoutStage {
   READY
   COMPLETE
   CANCELLED
+  DOA
+  NOT_POSSIBLE
+  ON_HOLD
 }
 
 enum TrackingHealth {

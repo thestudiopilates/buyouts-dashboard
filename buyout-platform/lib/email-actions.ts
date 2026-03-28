@@ -32,7 +32,10 @@ const STAGE_ENUM_MAP: Record<StageKey, BuyoutStage> = {
   Final: BuyoutStage.FINAL,
   Ready: BuyoutStage.READY,
   Complete: BuyoutStage.COMPLETE,
-  Cancelled: BuyoutStage.CANCELLED
+  Cancelled: BuyoutStage.CANCELLED,
+  DOA: BuyoutStage.DOA,
+  "Not Possible": BuyoutStage.NOT_POSSIBLE,
+  "On Hold": BuyoutStage.ON_HOLD
 };
 
 const TRACKING_ENUM_MAP: Record<"On track" | "At risk" | "Major issue" | "Complete", TrackingHealth> = {

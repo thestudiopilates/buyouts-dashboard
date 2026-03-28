@@ -11,7 +11,10 @@ export type StageKey =
   | "Final"
   | "Ready"
   | "Complete"
-  | "Cancelled";
+  | "Cancelled"
+  | "DOA"
+  | "Not Possible"
+  | "On Hold";
 
 export type TrackingKey = "On track" | "At risk" | "Major issue" | "Complete";
 export type BallInCourtKey = "Team" | "Client" | "Both";

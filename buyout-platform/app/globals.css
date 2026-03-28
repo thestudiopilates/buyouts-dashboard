@@ -1925,6 +1925,45 @@ textarea {
 
 /* ── Draft Editor ──────────────────────────────────────────── */
 
+.ops-client-note {
+  font-size: 0.7rem;
+  color: var(--warmGrey);
+  line-height: 1.3;
+  margin-top: 3px;
+  font-style: italic;
+}
+
+.ops-cold-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #fde8e8;
+  color: #b91c1c;
+}
+
+.ops-stage-select {
+  display: block;
+  margin-top: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--warmGrey);
+  background: var(--card);
+  cursor: pointer;
+}
+
+.ops-stage-select:focus {
+  outline: none;
+  border-color: var(--seaglass);
+}
+
 .ops-draft-editor {
   padding: 0 0 8px;
 }

@@ -1,6 +1,6 @@
 import { BallInCourt, BuyoutStage, TrackingHealth } from "@prisma/client";
 
-import { deriveStageFromWorkflow } from "@/lib/lifecycle";
+import { BUYOUT_PHASES } from "@/lib/buyout-phases";
 import { mockBuyouts } from "@/lib/mock-data";
 import { hasDatabaseUrl, prisma } from "@/lib/prisma";
 import { createInquiryInDb, listBuyoutsFromDb, updateBuyoutInDb } from "@/lib/repositories/buyouts";
@@ -13,7 +13,9 @@ const STAGE_TO_ENUM: Record<StageKey, BuyoutStage> = {
   Paid: BuyoutStage.PAID, "Sign-Ups": BuyoutStage.SIGNUPS,
   Confirmed: BuyoutStage.CONFIRMED, Final: BuyoutStage.FINAL,
   Ready: BuyoutStage.READY, Complete: BuyoutStage.COMPLETE,
-  Cancelled: BuyoutStage.CANCELLED
+  Cancelled: BuyoutStage.CANCELLED,
+  DOA: BuyoutStage.DOA, "Not Possible": BuyoutStage.NOT_POSSIBLE,
+  "On Hold": BuyoutStage.ON_HOLD
 };
 
 const TRACKING_TO_ENUM: Record<string, TrackingHealth> = {
@@ -106,30 +108,8 @@ export async function toggleWorkflowStep(
     const step = buyout.workflow.find((s) => s.key === stepKey);
     if (step) step.complete = isComplete;
 
-    const derived = deriveStageFromWorkflow(
-      buyout.workflow,
-      buyout.sentTemplateIds,
-      buyout.lifecycleStage,
-      {
-        countdownDays: buyout.countdownDays,
-        daysWaiting: buyout.daysWaiting,
-        amountPaid: buyout.amountPaid,
-        total: buyout.total,
-        signups: buyout.signups,
-        capacity: buyout.capacity
-      }
-    );
-
-    const updated = {
-      ...buyout,
-      lifecycleStage: derived.lifecycleStage,
-      nextAction: derived.nextAction,
-      ballInCourt: derived.ballInCourt,
-      trackingHealth: derived.trackingHealth
-    };
-
-    localBuyoutOverrides.set(buyoutId, updated);
-    return updated;
+    localBuyoutOverrides.set(buyoutId, buyout);
+    return buyout;
   }
 
   const record = await prisma.buyout.findUnique({
@@ -166,31 +146,41 @@ export async function toggleWorkflowStep(
     });
   }
 
-  const buyout = await getBuyout(buyoutId);
-  if (!buyout) throw new Error("Buyout not found after update.");
+  return getBuyout(buyoutId);
+}
 
-  const derived = deriveStageFromWorkflow(
-    buyout.workflow,
-    buyout.sentTemplateIds,
-    buyout.lifecycleStage,
-    {
-      countdownDays: buyout.countdownDays,
-      daysWaiting: buyout.daysWaiting,
-      amountPaid: buyout.amountPaid,
-      total: buyout.total,
-      signups: buyout.signups,
-      capacity: buyout.capacity
-    }
-  );
+export async function setManualStage(
+  buyoutId: string,
+  newStage: StageKey
+): Promise<BuyoutSummary | null> {
+  if (!hasDatabaseUrl()) {
+    const buyout = await getBuyout(buyoutId);
+    if (!buyout) throw new Error("Buyout not found.");
+
+    const phase = BUYOUT_PHASES[newStage];
+    const updated = {
+      ...buyout,
+      lifecycleStage: newStage,
+      nextAction: phase?.nextAction ?? "Review record",
+      ballInCourt: phase?.ballInCourt ?? "Team"
+    };
+
+    localBuyoutOverrides.set(buyoutId, updated);
+    return updated;
+  }
+
+  const stageEnum = STAGE_TO_ENUM[newStage];
+  if (!stageEnum) throw new Error(`Invalid stage: ${newStage}`);
+
+  const phase = BUYOUT_PHASES[newStage];
 
   await prisma.buyout.update({
     where: { id: buyoutId },
     data: {
-      lifecycleStage: STAGE_TO_ENUM[derived.lifecycleStage],
-      trackingHealth: TRACKING_TO_ENUM[derived.trackingHealth],
-      ballInCourt: BIC_TO_ENUM[derived.ballInCourt],
-      nextAction: derived.nextAction,
-      lastActionAt: now
+      lifecycleStage: stageEnum,
+      ballInCourt: BIC_TO_ENUM[phase?.ballInCourt ?? "Team"],
+      nextAction: phase?.nextAction ?? "Review record",
+      lastActionAt: new Date()
     }
   });
 
