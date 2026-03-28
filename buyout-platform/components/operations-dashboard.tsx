@@ -921,6 +921,8 @@ function Drawer({
             };
 
             const eventDateObj = buyout.eventDate && buyout.eventDate !== "TBD" ? new Date(buyout.eventDate + "T12:00:00") : null;
+            const inquiryDateObj = buyout.inquiryDate ? new Date(buyout.inquiryDate + "T12:00:00") : null;
+
             function daysBeforeEvent(days: number) {
               if (!eventDateObj) return undefined;
               const d = new Date(eventDateObj); d.setDate(d.getDate() - days);
@@ -931,84 +933,112 @@ function Drawer({
               const d = new Date(eventDateObj); d.setDate(d.getDate() - days);
               return new Date() > d;
             }
+            function targetDate(percentOfTimeline: number) {
+              if (!inquiryDateObj || !eventDateObj) return undefined;
+              const totalMs = eventDateObj.getTime() - inquiryDateObj.getTime();
+              if (totalMs <= 0) return undefined;
+              const targetMs = inquiryDateObj.getTime() + (totalMs * percentOfTimeline);
+              return formatDisplayDate(new Date(targetMs).toISOString().slice(0, 10));
+            }
+            function isTargetPast(percentOfTimeline: number) {
+              if (!inquiryDateObj || !eventDateObj) return false;
+              const totalMs = eventDateObj.getTime() - inquiryDateObj.getTime();
+              if (totalMs <= 0) return false;
+              const targetMs = inquiryDateObj.getTime() + (totalMs * percentOfTimeline);
+              return Date.now() > targetMs;
+            }
+            function dueLine(pct: number, key: string, hardDaysBefore?: number) {
+              if (hardDaysBefore !== undefined) {
+                const label = daysBeforeEvent(hardDaysBefore);
+                const overdue = isDuePast(hardDaysBefore) && !stepDone(key);
+                return overdue ? "OVERDUE" : label ? `Due by ${label}` : undefined;
+              }
+              const label = targetDate(pct);
+              const overdue = isTargetPast(pct) && !stepDone(key);
+              return overdue ? "OVERDUE" : label ? `Target: ${label}` : undefined;
+            }
 
             const LIFECYCLE_ROWS: ChecklistRow[] = [
-              // ── Intake
-              { phase: "Intake", color: COLORS.seaglass, client: { key: "inquiry-reviewed", label: "Client request received" }, operator: { key: "inquiry-reviewed", label: "Review inquiry" } },
-              { phase: "Intake", color: COLORS.seaglass, client: null, operator: { key: "initial-inquiry-response-sent", label: "Send initial response (t1)" } },
+              // ── Intake (0-5% of timeline)
+              { phase: "Intake", color: COLORS.seaglass, client: { key: "inquiry-reviewed", label: "Client request received" }, operator: { key: "inquiry-reviewed", label: "Review inquiry", dueLabel: dueLine(0.02, "inquiry-reviewed") } },
+              { phase: "Intake", color: COLORS.seaglass, client: null, operator: { key: "initial-inquiry-response-sent", label: "Send initial response (t1)", dueLabel: dueLine(0.05, "initial-inquiry-response-sent") } },
 
-              // ── Discussion
-              { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds" }, operator: { key: "customer-responded", label: "Date / time discussion" } },
-              { phase: "Discussion", color: COLORS.sage, client: { key: "date-finalized", label: "Client agrees to proposed date & time" }, operator: null },
+              // ── Discussion (5-20% of timeline)
+              { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds", dueLabel: dueLine(0.15, "customer-responded") }, operator: { key: "customer-responded", label: "Date / time discussion" } },
+              { phase: "Discussion", color: COLORS.sage, client: { key: "date-finalized", label: "Client agrees to proposed date & time", dueLabel: dueLine(0.20, "date-finalized") }, operator: null },
               { phase: "Discussion", color: COLORS.sage, client: null, operator: {
                 key: "date-finalized",
                 label: "Update event details (date, time, location)",
-                blocked: (!buyout.eventDate || buyout.eventDate === "TBD") ? "Event date must be set in Edit Details" : undefined
+                blocked: (!buyout.eventDate || buyout.eventDate === "TBD") ? "Event date must be set in Edit Details" : undefined,
+                dueLabel: dueLine(0.22, "date-finalized")
               } },
 
-              // ── Payment
+              // ── Payment (20-35% of timeline)
               { phase: "Payment", color: COLORS.terracotta, client: null, operator: {
                 key: "deposit-link-sent-and-terms-shared",
-                label: buyout.paymentTier === "deposit" ? "Send deposit & terms email (t3)" : buyout.paymentTier === "rush" ? "Send rush payment email (t3b)" : "Send payment email (t3a)"
+                label: buyout.paymentTier === "deposit" ? "Send deposit & terms email (t3)" : buyout.paymentTier === "rush" ? "Send rush payment email (t3b)" : "Send payment email (t3a)",
+                dueLabel: dueLine(0.25, "deposit-link-sent-and-terms-shared")
               } },
               ...(buyout.paymentTier === "deposit" ? [
-                { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: "Client pays $250 deposit" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm deposit received" } }
+                { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: "Client pays $250 deposit", dueLabel: dueLine(0.35, "deposit-paid-and-terms-signed") }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm deposit received" } }
               ] : [
-                { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: buyout.paymentTier === "rush" ? "Client pays full amount + $100 rush fee" : "Client pays full amount" }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm payment received" } }
+                { phase: "Payment", color: COLORS.terracotta, client: { key: "deposit-paid-and-terms-signed", label: buyout.paymentTier === "rush" ? "Client pays full amount + $100 rush fee" : "Client pays full amount", dueLabel: buyout.paymentTier === "rush" ? dueLine(0.15, "deposit-paid-and-terms-signed") : dueLine(0.35, "deposit-paid-and-terms-signed") }, operator: { key: "deposit-paid-and-terms-signed", label: "Confirm payment received" } }
               ] as ChecklistRow[]),
 
-              // ── Event Setup
+              // ── Event Setup (35-55% of timeline)
               { phase: "Event Setup", color: COLORS.sky, client: null, operator: {
                 key: "instructor-finalized",
                 label: "Finalize instructor & update event details",
-                blocked: !buyout.instructor || buyout.instructor === "Unassigned" ? "Instructor must be assigned in Edit Details" : undefined
+                blocked: !buyout.instructor || buyout.instructor === "Unassigned" ? "Instructor must be assigned in Edit Details" : undefined,
+                dueLabel: dueLine(0.40, "instructor-finalized")
               } },
               { phase: "Event Setup", color: COLORS.sky, client: null, operator: {
                 key: "momence-class-created",
                 label: "Create Momence event & update with URL",
-                blocked: !buyout.signupLink ? "Signup link must be added in Edit Details" : undefined
+                blocked: !buyout.signupLink ? "Signup link must be added in Edit Details" : undefined,
+                dueLabel: dueLine(0.48, "momence-class-created")
               } },
-              { phase: "Event Setup", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details to client (t5)" } },
+              { phase: "Event Setup", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details to client (t5)", dueLabel: dueLine(0.55, "momence-link-sign-up-sent") } },
 
-              // ── Remaining Balance (deposit tier only, after event details sent)
+              // ── Remaining Balance (deposit tier only — hard deadline: 14 days before event)
               ...(buyout.paymentTier === "deposit" ? [
-                { phase: "Remaining Balance", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Client pays remaining balance (due by ${balanceDueDate})` }, operator: { key: "remaining-payment-received", label: "Confirm balance received or send reminder (t6)" } }
+                { phase: "Remaining Balance", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Client pays remaining balance`, dueLabel: dueLine(0, "remaining-payment-received", 14) }, operator: { key: "remaining-payment-received", label: "Confirm balance received or send reminder (t6)", dueLabel: dueLine(0, "remaining-payment-received", 14) } }
               ] : [] as ChecklistRow[]),
 
-              // ── Logistics
-              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-assigned", label: "Assign front desk" } },
-              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-shift-extended", label: "Extend desk shift if needed" } },
+              // ── Logistics (55-70% of timeline)
+              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-assigned", label: "Assign front desk", dueLabel: dueLine(0.60, "front-desk-assigned") } },
+              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-shift-extended", label: "Extend desk shift if needed", dueLabel: dueLine(0.65, "front-desk-shift-extended") } },
 
-              // ── Registration
+              // ── Registration (hard deadline: 48 hours before event)
               { phase: "Registration", color: COLORS.sunshine, client: {
                 key: "all-attendees-registered",
                 label: "All guests registered",
-                dueLabel: daysBeforeEvent(2) ? `Due by ${daysBeforeEvent(2)} (48hrs before)` : "Due 48 hours before event"
+                dueLabel: dueLine(0, "all-attendees-registered", 2)
               }, operator: {
                 key: "all-attendees-registered",
                 label: "Confirm registrations or send reminder (t10)",
-                dueLabel: isDuePast(2) && !stepDone("all-attendees-registered") ? "OVERDUE" : undefined
+                dueLabel: dueLine(0, "all-attendees-registered", 2)
               } },
               { phase: "Registration", color: COLORS.sunshine, client: null, operator: {
                 key: "all-waivers-signed",
                 label: "Confirm all waivers signed",
-                dueLabel: daysBeforeEvent(2) ? `Due by ${daysBeforeEvent(2)}` : "Due 48 hours before event"
+                dueLabel: dueLine(0, "all-waivers-signed", 2)
               } },
 
-              // ── Pre-Event
+              // ── Pre-Event (hard deadlines: 24hrs and day-of)
               { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: {
                 key: "final-confirmation-emails-sent",
                 label: "Send final confirmation (t11)",
-                dueLabel: daysBeforeEvent(1) ? `Due by ${daysBeforeEvent(1)} (24hrs before)` : "Due 24 hours before event"
+                dueLabel: dueLine(0, "final-confirmation-emails-sent", 1)
               } },
               { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: {
                 key: "final-confirmation-emails-sent",
                 label: "Send day-of confirmation (same details)",
-                dueLabel: eventDateObj ? `Due ${formatDisplayDate(buyout.eventDate)} (day of event)` : "Due day of event"
+                dueLabel: eventDateObj ? `Due ${formatDisplayDate(buyout.eventDate)}` : "Due day of event"
               } },
 
               // ── Execution
-              { phase: "Execution", color: COLORS.cherry, client: null, operator: { key: "event-completed", label: "Event delivered & follow-up (t12)" } }
+              { phase: "Execution", color: COLORS.cherry, client: null, operator: { key: "event-completed", label: "Event delivered & follow-up (t12)", dueLabel: eventDateObj ? formatDisplayDate(buyout.eventDate) : undefined } }
             ];
 
             let currentPhase = "";
