@@ -321,6 +321,9 @@ function Drawer({
     setEmailHistory([]);
     setEmailHistoryLoaded(false);
     setUnrespondedHours(null);
+  }, [buyout.id]);
+
+  useEffect(() => {
     setForm({
       clientName: buyout.clientName,
       clientEmail: buyout.clientEmail,
