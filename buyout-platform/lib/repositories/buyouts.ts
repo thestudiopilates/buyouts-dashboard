@@ -462,7 +462,7 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     instructor: buyout.instructorName ?? "Unassigned",
     lifecycleStage: effectiveLifecycleStage,
     sourceLifecycleStage: lifecycleStage,
-    lifecycleStep: Math.max(0, STAGE_ORDER.indexOf(effectiveLifecycleStage)),
+    lifecycleStep: Math.min(12, Math.max(0, STAGE_ORDER.indexOf(effectiveLifecycleStage))),
     trackingHealth: effectiveTrackingHealth,
     sourceTrackingHealth: buyout.sourceTrackingLabel
       ? TRACKING_SOURCE_LABEL_MAP[buyout.sourceTrackingLabel] ?? sourceTrackingHealth

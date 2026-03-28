@@ -150,7 +150,19 @@ function waitingColor(daysWaiting: number) {
   return COLORS.seaglass;
 }
 
-function lifecycleSegments(step: number) {
+function lifecycleSegments(step: number, stage: string) {
+  if (["Complete"].includes(stage)) {
+    return Array.from({ length: 12 }, () => COLORS.seaglass);
+  }
+
+  if (["Cancelled", "DOA", "Not Possible"].includes(stage)) {
+    return Array.from({ length: 12 }, () => COLORS.cherry);
+  }
+
+  if (stage === "On Hold") {
+    return Array.from({ length: 12 }, (_, index) => index < step ? COLORS.sunshine : COLORS.divider);
+  }
+
   return Array.from({ length: 12 }, (_, index) => {
     if (index < step) return COLORS.seaglass;
     if (index === Math.min(step, 11)) return COLORS.terracotta;
@@ -653,7 +665,7 @@ function Drawer({
             </div>
           </div>
           <div className="ops-lifecycle-bar">
-            {lifecycleSegments(buyout.lifecycleStep).map((color, index) => (
+            {lifecycleSegments(buyout.lifecycleStep, buyout.lifecycleStage).map((color, index) => (
               <span key={index} style={{ background: color }} />
             ))}
           </div>
@@ -1675,7 +1687,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       : ""}
                   </div>
                   <div className="ops-lifecycle-bar table">
-                    {lifecycleSegments(buyout.lifecycleStep).map((color, index) => (
+                    {lifecycleSegments(buyout.lifecycleStep, buyout.lifecycleStage).map((color, index) => (
                       <span key={index} style={{ background: color }} />
                     ))}
                   </div>
