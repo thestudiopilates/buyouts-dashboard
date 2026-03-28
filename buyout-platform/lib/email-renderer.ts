@@ -1,13 +1,19 @@
 const EMAIL_BRAND = {
-  shell: "#f4ede7",
-  card: "#fffaf6",
-  border: "#e0d6cc",
-  text: "#28200e",
-  muted: "#7a6f64",
-  brand: "#9f543f",
-  accent: "#006976",
-  wash: "#f5ebe7"
+  coffee: "#28200E",
+  oat: "#EEE2D9",
+  oatLight: "#F7F3EF",
+  card: "#FEFCFA",
+  border: "#E0D6CC",
+  text: "#28200E",
+  muted: "#7A6F64",
+  terracotta: "#9F543F",
+  seaglass: "#006976",
+  sage: "#797F5D",
+  wash: "#F5EBE7"
 } as const;
+
+const FONT_HEADING = "Georgia, 'Playfair Display', 'Times New Roman', serif";
+const FONT_BODY = "'DM Sans', 'Adelle Sans', Helvetica, Arial, sans-serif";
 
 function escapeHtml(input: string) {
   return input
@@ -19,12 +25,12 @@ function escapeHtml(input: string) {
 }
 
 export function renderEmailBodyHtml(body: string) {
-  const paragraphOpen = '<p style="margin:0 0 16px;line-height:1.7;">';
+  const paragraphOpen = `<p style="margin:0 0 16px;line-height:1.7;font-family:${FONT_BODY};font-size:15px;color:${EMAIL_BRAND.text};">`;
   const paragraphClose = "</p>";
 
   return `${paragraphOpen}${escapeHtml(body)
     .replace(/&lt;hr\s*\/?&gt;/gi, `${paragraphClose}<hr style="margin:24px 0;border:none;border-top:1px solid ${EMAIL_BRAND.border};" />${paragraphOpen}`)
-    .replace(/&lt;b&gt;/gi, "<strong>")
+    .replace(/&lt;b&gt;/gi, `<strong style="color:${EMAIL_BRAND.coffee};">`)
     .replace(/&lt;\/b&gt;/gi, "</strong>")
     .replace(/\n{2,}/g, `${paragraphClose}${paragraphOpen}`)
     .replace(/\n/g, "<br />")}${paragraphClose}`
@@ -46,30 +52,33 @@ export function renderEmailHtml(input: {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(input.subject)}</title>
   </head>
-  <body style="margin:0;background:${EMAIL_BRAND.shell};font-family:Georgia, 'Times New Roman', serif;color:${EMAIL_BRAND.text};">
-    <div style="padding:32px 16px;background:linear-gradient(180deg, #f7f1eb 0%, ${EMAIL_BRAND.shell} 100%);">
-      <div style="max-width:680px;margin:0 auto;">
-        <div style="margin-bottom:14px;padding:0 8px;color:${EMAIL_BRAND.brand};font-size:12px;font-family:'Arial',sans-serif;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;">
-          The Studio Pilates
+  <body style="margin:0;padding:0;background:${EMAIL_BRAND.oat};font-family:${FONT_BODY};color:${EMAIL_BRAND.text};">
+    <div style="padding:32px 16px;background:${EMAIL_BRAND.oat};">
+      <div style="max-width:600px;margin:0 auto;">
+        <div style="margin-bottom:16px;padding:0 4px;text-align:center;">
+          <span style="font-family:${FONT_HEADING};font-size:18px;font-weight:600;color:${EMAIL_BRAND.terracotta};letter-spacing:0.5px;">The Studio Pilates</span>
         </div>
-        <div style="background:${EMAIL_BRAND.card};border:1px solid ${EMAIL_BRAND.border};border-radius:24px;overflow:hidden;box-shadow:0 18px 42px rgba(40,32,14,0.08);">
-          <div style="padding:28px 32px;background:linear-gradient(135deg, ${EMAIL_BRAND.brand}, #c98d76);color:#fff7f2;">
-            <div style="font-size:12px;font-family:'Arial',sans-serif;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;opacity:0.9;">
+        <div style="background:${EMAIL_BRAND.card};border:1px solid ${EMAIL_BRAND.border};border-radius:12px;overflow:hidden;">
+          <div style="padding:28px 32px 24px;background:${EMAIL_BRAND.coffee};text-align:center;">
+            <div style="font-family:${FONT_BODY};font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:${EMAIL_BRAND.terracotta};opacity:0.85;">
               ${escapeHtml(previewLabel)}
             </div>
-            <div style="margin-top:10px;font-size:30px;line-height:1.05;font-weight:700;">
+            <div style="margin-top:12px;font-family:${FONT_HEADING};font-size:24px;line-height:1.2;font-weight:700;color:${EMAIL_BRAND.oat};">
               ${escapeHtml(input.subject)}
             </div>
           </div>
-          <div style="padding:32px;">
+          <div style="height:3px;background:${EMAIL_BRAND.terracotta};"></div>
+          <div style="padding:32px 32px 24px;">
             ${bodyHtml}
-            <div style="margin-top:28px;padding-top:22px;border-top:1px solid ${EMAIL_BRAND.border};font-family:'Arial',sans-serif;color:${EMAIL_BRAND.muted};font-size:13px;line-height:1.7;">
-              <strong style="display:block;color:${EMAIL_BRAND.text};margin-bottom:4px;">The Studio Pilates Team</strong>
-              Buyout operations and event coordination
-            </div>
           </div>
-          <div style="padding:18px 32px;background:${EMAIL_BRAND.wash};border-top:1px solid ${EMAIL_BRAND.border};font-family:'Arial',sans-serif;color:${EMAIL_BRAND.accent};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">
-            Internal preview
+          <div style="padding:0 32px;">
+            <div style="border-top:1px solid ${EMAIL_BRAND.border};"></div>
+          </div>
+          <div style="padding:20px 32px 24px;text-align:center;">
+            <div style="font-family:${FONT_HEADING};font-size:14px;font-weight:600;color:${EMAIL_BRAND.terracotta};">The Studio Pilates</div>
+            <div style="margin-top:4px;font-family:${FONT_BODY};font-size:12px;color:${EMAIL_BRAND.sage};line-height:1.5;">
+              thestudiopilates.com &middot; events@thestudiopilates.com
+            </div>
           </div>
         </div>
       </div>

@@ -242,7 +242,7 @@ function deriveHoursLabel(buyout: BuyoutSummary) {
 }
 
 function renderTemplateValue(input: string, variables: Record<string, string>) {
-  return input.replace(/\{\{([^}]+)\}\}/g, (_, token) => {
+  const rendered = input.replace(/\{\{([^}]+)\}\}/g, (original, token) => {
     const normalizedToken = token
       .trim()
       .replace(/[^\w\s]/g, "")
@@ -257,8 +257,19 @@ function renderTemplateValue(input: string, variables: Record<string, string>) {
       return normalizedKey === normalizedToken;
     });
 
-    return match?.[1] || `{{${token}}}`;
+    if (!match) {
+      return original;
+    }
+
+    return match[1];
   });
+
+  return rendered
+    .split("\n")
+    .filter((line) => !line.includes("{{"))
+    .filter((line) => !/^<b>[^<]+<\/b>[:.]?\s*$/i.test(line.trim()))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n");
 }
 
 function getLegacyTemplateBody(snapshot: unknown, legacyColumnId: string) {
