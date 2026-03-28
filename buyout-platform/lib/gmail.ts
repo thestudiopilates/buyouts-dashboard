@@ -256,8 +256,8 @@ export async function searchGmailMessages(input: {
   const senderEmail = config.senderEmail;
   const query =
     input.direction === "sent"
-      ? `from:${senderEmail} to:${input.clientEmail}`
-      : `from:${input.clientEmail} to:${senderEmail}`;
+      ? `in:anywhere from:${senderEmail} to:${input.clientEmail}`
+      : `in:anywhere from:${input.clientEmail} to:${senderEmail}`;
 
   const listUrl = new URL(`https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages`);
   listUrl.searchParams.set("q", query);
@@ -303,7 +303,7 @@ export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPaymen
   if (!config) return [];
 
   const accessToken = await getAccessToken(config);
-  const query = 'subject:"New order" from:thestudiopilates.com newer_than:30d';
+  const query = 'in:anywhere subject:"New order" (from:thestudiopilates.com OR from:wordpress OR from:woocommerce OR subject:"Studio Pilates") newer_than:90d';
 
   const listUrl = new URL(`https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages`);
   listUrl.searchParams.set("q", query);
@@ -338,9 +338,13 @@ export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPaymen
 
     const orderNumber = orderMatch[1];
 
-    const nameMatch = body.match(/(?:order from|Reply-To:\s*)([A-Z][a-z]+ [A-Z][a-z]+)/i)
+    const replyTo = getHeader(msg, "Reply-To");
+    const replyToName = replyTo.match(/^([^<@]+)/)?.[1]?.trim() ?? "";
+
+    const nameMatch = body.match(/(?:order from|received the following order from)\s*([A-Z][a-z]+ [A-Z][a-z]+)/i)
+      ?? body.match(/(?:Reply-To:\s*)([A-Z][a-z]+ [A-Z][a-z]+)/i)
       ?? body.match(/(?:from\s+)([A-Z][a-z]+ [A-Z][a-z]+)/i);
-    const clientName = nameMatch?.[1]?.trim() ?? "";
+    const clientName = replyToName || nameMatch?.[1]?.trim() || "";
 
     const amountMatch = body.match(/\$([0-9,]+\.?\d{0,2})/);
     const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, "")) : 0;
