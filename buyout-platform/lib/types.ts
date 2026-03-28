@@ -52,11 +52,15 @@ export type BuyoutSummary = {
   amountPaid: number;
   outstanding: number;
   paymentProgress: number;
+  numberOfHours?: number;
+  clientName: string;
   clientEmail: string;
   clientPhone?: string;
   startTime?: string;
   endTime?: string;
   preferredDates?: string;
+  preferredLocation?: string;
+  depositAmount?: number;
   depositLink?: string;
   balanceLink?: string;
   signupLink?: string;
@@ -77,4 +81,22 @@ export type BuyoutInquiryInput = {
   preferredLocation?: string;
   guestCountEstimate?: number;
   notes?: string;
+};
+
+export type BuyoutUpdateInput = {
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string;
+  eventType?: string;
+  eventDate?: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  assignedTo?: string;
+  instructor?: string;
+  nextAction?: string;
+  notes?: string;
+  depositLink?: string;
+  balanceLink?: string;
+  signupLink?: string;
 };

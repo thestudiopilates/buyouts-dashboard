@@ -1,0 +1,86 @@
+[
+  {
+    "key": "t1",
+    "name": "First Inquiry Email",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Initial Inquiry",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nThank you so much for reaching out about a Studio Buyout at The Studio Pilates! We'd love to host your group.\n\nWe've received your request for {{Preferred Date}} at our {{Preferred Location}} location. Our team is now reviewing studio availability, instructor scheduling, and front desk coverage to see if we can make it happen.\n\n<hr> <b>A Few Things to Know</b>\n\nOur standard booking window is a minimum of three (3) weeks before the event date. This gives us time to secure an instructor, arrange front desk coverage, and adjust studio scheduling as needed.\n\nIf your requested date is less than three weeks away, it would be considered a Rush Buyout, which includes a $100 rush coordination fee and a $250 initial deposit to prioritize your event.\n\n<hr> <b>What Happens Next</b>\n\nYou'll hear back from us within 1-2 business days with one of the following:\n\n• Confirmation of your date, time, and studio\n• Alternative dates if your first choice isn't available\n• Payment and deposit instructions to lock everything in\n\nIf you have any flexibility on dates, times, or location, or anything else we should know about your event, feel free to reply here.\n\nWe're excited about the possibility of hosting you!\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t10",
+    "name": "Missing Signups",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Missing Signups",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nWe're looking forward to your Studio Buyout and wanted to check in. It looks like not all of your guests have completed their sign-up and waiver yet.\n\n<hr> <b>Your Event</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Next Steps | Please Share with Your Guests</b>\n\nAll guests are required to sign up in advance so waivers are completed before arrival.\n\n<b>Guest Sign-Up Link:</b> {{Signup Link}}\n\nPlease note:\n• Sign-ups must be completed at least 24 hours before the event\n• Creating accounts and signing waivers on-site can significantly delay your start time\n• Any time spent on lobby check-ins will cut into your scheduled class\n\n<hr>\nTo keep things running smoothly, we recommend sharing the link with your guests as soon as possible.\n\nNeed help tracking who's signed up? Just reply here. Happy to help.\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t11",
+    "name": "Final Confirmation",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Final Confirmation",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nEverything is officially set for your Studio Buyout! We can't wait to host you.\n\nBelow is everything your guests need to know. Feel free to forward this to your group.\n\n<hr> <b>Your Event</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n<b>Instructor:</b> {{Instructor}}\n\n<hr> <b>What to Wear & Bring</b>\n\n• Grippy socks are required and are available for purchase at the studio if needed\n• Comfortable clothing that allows movement\n• No jewelry with catches or snags during class\n\n<hr> <b>Arrival & Check-In</b>\n\nPlease have guests arrive at least 5 minutes early to:\n• Check in at the front desk\n• Store personal items in lockers\n• Get settled on reformers\n\nArriving early helps ensure class starts on time.\n\n<hr> <b>Parking</b>\n\nFree parking is available in front of and behind the studio. During peak times, allow extra time to park and walk in.\n\n<hr> <b>Setup & Decor</b>\n\nIf applicable, setup may begin no earlier than 15 minutes before class unless arranged in advance. Any items brought into the studio must leave with the guest. Nothing can be left behind after the event.\n\n<hr>\nYou and your group are in great hands. Our instructor and front desk team are ready to make this an amazing experience.\n\nLast-minute questions? Reply here anytime.\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t12",
+    "name": "Event Complete",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Thank You",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nThank you for choosing The Studio Pilates for your Studio Buyout! We hope you and your guests had an incredible time.\n\nOur instructors and front desk team loved being part of your event, and we truly appreciate you trusting us with it.\n\n<hr> <b>Want to Come Back?</b>\n\nWhether it's another private event, a regular class, or introducing friends to Pilates, we'd love to see you again. Here are a few ways to stay connected:\n\n• <b>Book a class:</b> https://thestudiopilates.com/schedule/\n• <b>Plan another buyout:</b> Just reply to this email!\n• <b>Follow us:</b> @thestudiopilates on Instagram\n\nThank you again for celebrating with us. We hope to see you in the studio soon!\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t13",
+    "name": "Ongoing Discussion",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Follow Up",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nChecking in on your Studio Buyout and keeping this thread open in case you need anything from us.\n\n<hr> <b>Current Event Details</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Helpful Links</b>\n<b>Deposit / Payment Link:</b> {{Deposit Link}}\n<b>Remaining Balance Link:</b> {{Remaining Balance Link}}\n<b>Guest Sign-Up Link:</b> {{Signup Link}}\n\n<hr> <b>Next Steps</b>\nReply here with any updates, questions, or changes you need help with. We’ll keep guiding the buyout based on where things stand and let you know the next required step.\n\nWarmly,\nKelly Jackson\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t14",
+    "name": "48-Hour Missing Signups",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | 48-Hour Signup Reminder",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nYour Studio Buyout is in 48 hours! We're so excited, but we need your help with one final thing.\n\nIt looks like not all guests have completed their sign-up and waiver yet.\n\n<hr> <b>Your Event</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Urgent | Please Share with Your Guests</b>\n<b>Guest Sign-Up Link:</b> {{Signup Link}}\n\nAll guests must be signed up before arrival. Here's why this matters:\n\n• Creating accounts and signing waivers at the studio takes 5-10 minutes per person\n• This will delay your class start time\n• The class will still end at the scheduled time, so late starts mean less class time\n• Additional time beyond your reservation is billed at $450/hour\n\n<hr> <b>Next Steps</b>\n\nPlease send the sign-up link to any remaining guests today. If you believe everyone is already signed up, you're all set.\n\nWe're excited to host you and your group. See you soon.\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t2",
+    "name": "Food & Beverage Policy",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Food and Beverage Policy",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nGreat question! This comes up a lot, so we're happy to clarify.\n\nStudio Buyouts are private Pilates classes only. We're unable to accommodate food, beverages, or full event setups inside the studio. This policy protects our equipment and ensures the space is ready for classes before and after your event.\n\nThat said, we love helping you plan a great overall experience. Here are some nearby spots we recommend:\n\n<hr> <b>If You're at Our West Midtown Location</b>\n<b>The Grove</b> - a short stroll down Trabert to where it meets the Beltline, less than a quarter mile away. Great outdoor seating, food, and drinks on weekends.\n\n<b>If You're at Our Emory Location</b>\n<b>Double Zero</b> - right next door. They offer several private-ish seating areas and often do not require a buyout if you contact them in advance.\n\n<hr> <b>Next Steps</b>\n\nLet us know if you'd still like to move forward with reserving a date and we'll get the ball rolling from there.\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t3",
+    "name": "Deposit & Date",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | {{Event Date}}",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nGreat news! Your Studio Buyout is available. Here are the confirmed details:\n\n<hr> <b>Your Buyout Details</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Payment Summary</b>\n<b>Studio Buyout Rate:</b> $450/hour\n<b>Number of Hours:</b> {{Number of Hours}}\n<b>Total:</b> {{Total Price}}\n\n<hr> <b>Next Steps | Action Required</b>\n\nTo officially reserve your date, instructor, and front desk coverage, please complete payment using the link below:\n\n<b>Complete Payment:</b> {{Deposit Link}}\n\nBefore submitting payment, please review our full buyout terms, including capacity, guest sign-ups, waivers, decor guidelines, and timing policies:\n<b>Buyout Terms & Info:</b> https://thestudiopilates.com/product/private-events/\n\nSubmitting payment confirms that you've reviewed and agreed to all buyout terms and policies.\n\n<hr> <b>What Happens After Payment</b>\n\nOnce we receive your payment:\n\n1. Your buyout is locked into our schedule\n2. An instructor will be assigned\n3. You'll receive a signup link to share with your guests\n4. We'll check in as your event approaches to make sure everything is on track\n\nQuestions before completing payment? Just reply here. We're happy to help!\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t4",
+    "name": "Deposit Reminder",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Deposit Reminder",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nJust checking in! We're holding the following Studio Buyout details for you, but we haven't received payment yet:\n\n<hr> <b>Buyout on Hold</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Important</b>\nUntil payment is received, your date and time cannot be fully held and may be released to other requests.\n\n<b>Amount Due:</b> {{Total Price}}\n\n<b>Submit Payment:</b> {{Deposit Link}}\n\n<hr> <b>Next Steps</b>\n\nIf you'd like to move forward, please complete payment as soon as possible so we can officially lock your event into our schedule.\n\nIf your plans have changed or you need more time, just let us know. We're happy to work with you.\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t5",
+    "name": "Event Details & Sign Up",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Event Details",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nWe're all set! Your payment has been received and your Studio Buyout is officially booked.\n\n<hr> <b>Your Confirmed Event</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n<b>Instructor:</b> {{Instructor}}\n\n<hr> <b>Guest Sign-Ups & Waivers | Action Required</b>\n\nAll guests must sign up in advance so waivers are completed before arrival. Sign-ups are free.\n\n<b>Share this link with your guests:</b> {{Signup Link}}\n\n<b>Sign-up deadline:</b> 48 hours before the event. Guests who have not signed up will need to complete the process in the lobby, which may cut into your class time.\n\n<hr> <b>Good to Know</b>\n<b>Arrival:</b> Please have your group arrive on time and ready to go. If there is no class before yours, we may allow up to 15 minutes of early arrival for light setup. This is not guaranteed, and we will confirm closer to the date.\n\n<b>Late starts:</b> If the class starts late due to guest arrivals or setup delays, it will still end at the scheduled time unless additional time is purchased.\n\n<b>Time & overage:</b> Buyouts are billed at $450/hour. Any time beyond your reserved block will be calculated and charged on the day of the event.\n\n<b>Decor:</b> Decorations are welcome but must be minimal, easy to remove, and cannot be attached to reformers or equipment. All decor and personal items must be cleared by the end of your reserved time.\n\n<hr> <b>Next Steps</b>\n\nShare the signup link above with your guests as soon as possible, and we'll check in as your event date approaches.\n\nQuestions? Reply here anytime. We're excited to host you.\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t6",
+    "name": "Second Half Payment",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Remaining Balance",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nWe're looking forward to your upcoming Studio Buyout! This is a friendly reminder that the remaining balance is now due.\n\n<hr> <b>Your Event</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Payment Details</b>\n<b>Total Buyout Cost:</b> {{Total Price}}\n<b>Amount Paid:</b> {{Amount Paid}}\n<b>Remaining Balance Due:</b> {{Remaining Balance}}\n\n<hr> <b>Next Steps | Action Required</b>\n\nFor buyouts booked more than 21 days in advance, the remaining balance is due two (2) weeks before the event to keep everything fully confirmed.\n\n<b>Submit Remaining Balance:</b> {{Remaining Balance Link}}\n\nOnce received, everything is settled and we'll continue preparing for your event, including final instructor and front desk coordination.\n\nNeed help with payment? Just reply here.\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t7",
+    "name": "Balance Reminder",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Balance Reminder",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nWe're following up regarding the remaining balance for your upcoming Studio Buyout.\n\n<hr> <b>Your Event</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Payment Status</b>\n<b>Total Buyout Cost:</b> {{Total Price}}\n<b>Amount Paid:</b> {{Amount Paid}}\n<b>Remaining Balance Due:</b> {{Remaining Balance}}\n\n<hr> <b>Important</b>\nIf the remaining balance is not received by seven (7) days before the event, the buyout will be cancelled and the initial deposit will be non-refundable. This allows us to release the studio, instructor, and front desk coverage back into our schedule.\n\n<hr> <b>Next Steps | Action Required</b>\n<b>Submit Remaining Balance:</b> {{Remaining Balance Link}}\n\nIf you've already submitted payment, thank you! Please disregard this message. If you need to discuss timing or have questions, just reply here.\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t8",
+    "name": "Cancelled (No Refund)",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Cancellation",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nWe're writing to confirm that your Studio Buyout has been cancelled due to non-payment.\n\n<hr> <b>Cancelled Event</b> <b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Cancellation Details</b>\n\nPer our buyout terms, the remaining balance was due no later than two (2) weeks before the event. Because payment was not received by seven (7) days prior:\n\n• The studio, instructor, and front desk coverage have been released\n• The event is no longer on our schedule\n• The initial deposit is non-refundable\n\n<hr> <b>Looking Ahead</b>\n\nWe understand plans change, and we'd be happy to help you book a future event if you're interested. Any new request would be subject to current availability, pricing, and booking requirements.\n\nIf you believe this cancellation was made in error, please reply to this email and we'll review.\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
+    "key": "t9",
+    "name": "Cancelled (Refund)",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Cancellation and Refund",
+    "bodyTemplate": "Hi {{Client First Name}},\n\nThis email confirms that your Studio Buyout has been cancelled per your request.\n\n<hr> <b>Cancelled Event</b>\n<b>Date:</b> {{Event Date}}\n<b>Time:</b> {{Start Time}} - {{End Time}}\n<b>Location:</b> {{Location}}\n\n<hr> <b>Refund Details</b>\n\nBecause you cancelled two (2) weeks or more before the event, your deposit is eligible for a full refund.\n\n<b>Refund Amount:</b> {{Deposit Amount}}\n<b>Refund Method:</b> Original payment method\n<b>Refund Timing:</b> Please allow up to 10 business days\n\nThe studio, instructor, and front desk coverage have been released back into our schedule.\n\n<hr>\nWe appreciate you letting us know with advance notice. If you'd like to book a future buyout, we'd love to have you. Just reach out anytime.\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  }
+]

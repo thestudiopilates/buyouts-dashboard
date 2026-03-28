@@ -36,9 +36,10 @@ Monday migration scaffolding is now included as well:
 1. Install Node.js 20+ and npm.
 2. Copy `.env.example` to `.env.local`.
 3. Set valid `DATABASE_URL` and `DIRECT_URL` values.
-4. Run `npm install`.
-5. Run `npm run db:generate`.
-6. Run `npm run dev`.
+4. Add Gmail env vars when you are ready to send Kelly test emails from `events@thestudiopilates.com`.
+5. Run `npm install`.
+6. Run `npm run db:generate`.
+7. Run `npm run dev`.
 
 If Node was installed locally into `~/.local/bin`, make sure your shell can see it:
 
@@ -73,6 +74,10 @@ This repo now includes `vercel.json` for a straightforward Vercel deployment pat
 - `DATABASE_URL`
 - `DIRECT_URL`
 - `NEXT_PUBLIC_APP_NAME`
+- `GMAIL_CLIENT_ID`
+- `GMAIL_CLIENT_SECRET`
+- `GMAIL_REFRESH_TOKEN`
+- `GMAIL_SENDER_EMAIL`
 
 ## Supabase Connection Setup
 
@@ -95,6 +100,14 @@ DIRECT_URL="postgresql://postgres:PASSWORD@db.PROJECT_REF.supabase.co:5432/postg
 3. Add email templates, send history, and provider integration.
 4. Add assignment logic, tasks, and reminders.
 5. Replace demo seed data with imported Monday records and live website submissions only.
+
+## Gmail Test Sending
+
+The settings workspace now supports a guarded Kelly-only send path.
+
+- If Gmail credentials are configured, the `Send Kelly Test` action sends through the Gmail API.
+- If Gmail credentials are missing, the same action stays in simulated mode and still records audit history plus workflow effects.
+- The current implementation is intentionally limited to the Kelly test buyout until auth and permission controls are added.
 
 ## Verification Note
 

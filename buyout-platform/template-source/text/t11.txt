@@ -1,0 +1,45 @@
+The Studio Pilates Buyout: {{Client Name}} | Final Confirmation
+
+Hi {{Client First Name}},
+
+Everything is officially set for your Studio Buyout! We can't wait to host you.
+
+Below is everything your guests need to know. Feel free to forward this to your group.
+
+<hr> <b>Your Event</b>
+<b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+<b>Instructor:</b> {{Instructor}}
+
+<hr> <b>What to Wear & Bring</b>
+
+• Grippy socks are required and are available for purchase at the studio if needed
+• Comfortable clothing that allows movement
+• No jewelry with catches or snags during class
+
+<hr> <b>Arrival & Check-In</b>
+
+Please have guests arrive at least 5 minutes early to:
+• Check in at the front desk
+• Store personal items in lockers
+• Get settled on reformers
+
+Arriving early helps ensure class starts on time.
+
+<hr> <b>Parking</b>
+
+Free parking is available in front of and behind the studio. During peak times, allow extra time to park and walk in.
+
+<hr> <b>Setup & Decor</b>
+
+If applicable, setup may begin no earlier than 15 minutes before class unless arranged in advance. Any items brought into the studio must leave with the guest. Nothing can be left behind after the event.
+
+<hr>
+You and your group are in great hands. Our instructor and front desk team are ready to make this an amazing experience.
+
+Last-minute questions? Reply here anytime.
+
+Warmly,
+Autumn
+The Studio Pilates Team

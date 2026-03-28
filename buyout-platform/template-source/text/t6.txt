@@ -1,0 +1,29 @@
+The Studio Pilates Buyout: {{Client Name}} | Remaining Balance
+
+Hi {{Client First Name}},
+
+We're looking forward to your upcoming Studio Buyout! This is a friendly reminder that the remaining balance is now due.
+
+<hr> <b>Your Event</b>
+<b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+
+<hr> <b>Payment Details</b>
+<b>Total Buyout Cost:</b> {{Total Price}}
+<b>Amount Paid:</b> {{Amount Paid}}
+<b>Remaining Balance Due:</b> {{Remaining Balance}}
+
+<hr> <b>Next Steps | Action Required</b>
+
+For buyouts booked more than 21 days in advance, the remaining balance is due two (2) weeks before the event to keep everything fully confirmed.
+
+<b>Submit Remaining Balance:</b> {{Remaining Balance Link}}
+
+Once received, everything is settled and we'll continue preparing for your event, including final instructor and front desk coordination.
+
+Need help with payment? Just reply here.
+
+Warmly,
+Autumn
+The Studio Pilates Team

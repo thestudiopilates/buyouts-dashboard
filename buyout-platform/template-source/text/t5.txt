@@ -1,0 +1,38 @@
+The Studio Pilates Buyout: {{Client Name}} | Event Details
+
+Hi {{Client First Name}},
+
+We're all set! Your payment has been received and your Studio Buyout is officially booked.
+
+<hr> <b>Your Confirmed Event</b>
+<b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+<b>Instructor:</b> {{Instructor}}
+
+<hr> <b>Guest Sign-Ups & Waivers | Action Required</b>
+
+All guests must sign up in advance so waivers are completed before arrival. Sign-ups are free.
+
+<b>Share this link with your guests:</b> {{Signup Link}}
+
+<b>Sign-up deadline:</b> 48 hours before the event. Guests who have not signed up will need to complete the process in the lobby, which may cut into your class time.
+
+<hr> <b>Good to Know</b>
+<b>Arrival:</b> Please have your group arrive on time and ready to go. If there is no class before yours, we may allow up to 15 minutes of early arrival for light setup. This is not guaranteed, and we will confirm closer to the date.
+
+<b>Late starts:</b> If the class starts late due to guest arrivals or setup delays, it will still end at the scheduled time unless additional time is purchased.
+
+<b>Time & overage:</b> Buyouts are billed at $450/hour. Any time beyond your reserved block will be calculated and charged on the day of the event.
+
+<b>Decor:</b> Decorations are welcome but must be minimal, easy to remove, and cannot be attached to reformers or equipment. All decor and personal items must be cleared by the end of your reserved time.
+
+<hr> <b>Next Steps</b>
+
+Share the signup link above with your guests as soon as possible, and we'll check in as your event date approaches.
+
+Questions? Reply here anytime. We're excited to host you.
+
+Warmly,
+Autumn
+The Studio Pilates Team

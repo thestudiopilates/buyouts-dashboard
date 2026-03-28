@@ -1,13 +1,13 @@
 import { BallInCourt, BuyoutStage, TrackingHealth, WorkflowGroup } from "@prisma/client";
 
+import { getBuyoutPhase } from "@/lib/buyout-phases";
 import { mockBuyouts } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
-import { BuyoutInquiryInput, BuyoutSummary, WorkflowStep } from "@/lib/types";
+import { BuyoutInquiryInput, BuyoutSummary, BuyoutUpdateInput, WorkflowStep } from "@/lib/types";
 import { buildWorkflow } from "@/lib/workflows";
 
-const TEST_EMAIL = "kelly@thestudiopilates.com";
 const TEST_ITEM_ID = "10989594648";
-const TEST_NAMES = new Set(["Kelly Jackson Test Event", "TEST — Email Threading Test"]);
+const TEST_EMAIL = "kelly@thestudiopilates.com";
 const TEST_SIGNUP_LINK = "https://momence.com/l/4ZhnW48O";
 const TEST_SENT_TEMPLATES = ["t5"];
 
@@ -53,7 +53,8 @@ function reconcileOperationalState({
   sourceBallInCourt,
   sourceStatusLabel,
   sourceNextAction,
-  amountPaid
+  amountPaid,
+  isInternalTest
 }: {
   workflow: WorkflowStep[];
   countdown: number | null;
@@ -63,10 +64,71 @@ function reconcileOperationalState({
   sourceStatusLabel: string;
   sourceNextAction: string;
   amountPaid: number;
+  isInternalTest: boolean;
 }) {
   const completed = new Set(workflow.filter((step) => step.complete).map((step) => step.key));
 
+  if (completed.has("momence-link-sign-up-sent") && stageRank(sourceLifecycleStage) < stageRank("Sign-Ups")) {
+    const phase = getBuyoutPhase("Sign-Ups");
+    return {
+      statusLabel: phase.statusLabel,
+      lifecycleStage: "Sign-Ups" as const,
+      trackingHealth: sourceTrackingHealth === "Major issue" ? sourceTrackingHealth : "At risk" as const,
+      ballInCourt: phase.ballInCourt,
+      nextAction: phase.nextAction
+    };
+  }
+
+  if (completed.has("deposit-paid-and-terms-signed") && stageRank(sourceLifecycleStage) < stageRank("Deposit")) {
+    const phase = getBuyoutPhase("Paid");
+    return {
+      statusLabel: phase.statusLabel,
+      lifecycleStage: "Paid" as const,
+      trackingHealth: "On track" as const,
+      ballInCourt: phase.ballInCourt,
+      nextAction: phase.nextAction
+    };
+  }
+
   if (
+    completed.has("all-attendees-registered") &&
+    completed.has("all-waivers-signed") &&
+    stageRank(sourceLifecycleStage) < stageRank("Confirmed")
+  ) {
+    const phase = getBuyoutPhase("Confirmed");
+    return {
+      statusLabel: phase.statusLabel,
+      lifecycleStage: "Confirmed" as const,
+      trackingHealth: "On track" as const,
+      ballInCourt: phase.ballInCourt,
+      nextAction: phase.nextAction
+    };
+  }
+
+  if (completed.has("final-confirmation-emails-sent") && stageRank(sourceLifecycleStage) < stageRank("Final")) {
+    const phase = getBuyoutPhase("Final");
+    return {
+      statusLabel: phase.statusLabel,
+      lifecycleStage: "Final" as const,
+      trackingHealth: sourceTrackingHealth,
+      ballInCourt: phase.ballInCourt,
+      nextAction: phase.nextAction
+    };
+  }
+
+  if (completed.has("event-completed")) {
+    const phase = getBuyoutPhase("Complete");
+    return {
+      statusLabel: phase.statusLabel,
+      lifecycleStage: "Complete" as const,
+      trackingHealth: "Complete" as const,
+      ballInCourt: phase.ballInCourt,
+      nextAction: phase.nextAction
+    };
+  }
+
+  if (
+    !isInternalTest &&
     countdown !== null &&
     countdown < 0 &&
     !["Complete", "Cancelled"].includes(sourceLifecycleStage)
@@ -80,33 +142,13 @@ function reconcileOperationalState({
     };
   }
 
-  if (completed.has("remaining-payment-received") && amountPaid === 0) {
+  if (!isInternalTest && completed.has("remaining-payment-received") && amountPaid === 0) {
     return {
       statusLabel: "Source Cleanup Required",
       lifecycleStage: sourceLifecycleStage,
       trackingHealth: "Major issue" as const,
       ballInCourt: "Team" as const,
       nextAction: "Resolve payment mismatch from Monday"
-    };
-  }
-
-  if (completed.has("momence-link-sign-up-sent") && stageRank(sourceLifecycleStage) < stageRank("Sign-Ups")) {
-    return {
-      statusLabel: "Awaiting Guest Sign-Ups",
-      lifecycleStage: "Sign-Ups" as const,
-      trackingHealth: sourceTrackingHealth === "Major issue" ? sourceTrackingHealth : "At risk" as const,
-      ballInCourt: "Client" as const,
-      nextAction: "Monitor registrations and waivers"
-    };
-  }
-
-  if (completed.has("deposit-paid-and-terms-signed") && stageRank(sourceLifecycleStage) < stageRank("Deposit")) {
-    return {
-      statusLabel: "Deposit Received",
-      lifecycleStage: "Deposit" as const,
-      trackingHealth: "On track" as const,
-      ballInCourt: "Team" as const,
-      nextAction: "Send event details and signup link"
     };
   }
 
@@ -126,6 +168,49 @@ function formatTime(date: Date) {
     hour12: true,
     timeZone: "America/New_York"
   }).format(date);
+}
+
+function parseClockTime(input: string) {
+  const match = input.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const meridiem = match[3].toUpperCase();
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+    return null;
+  }
+
+  const normalizedHours = hours % 12 + (meridiem === "PM" ? 12 : 0);
+  return normalizedHours * 60 + minutes;
+}
+
+function deriveNumberOfHours(input: {
+  startTime?: string;
+  endTime?: string;
+  quotedTotal?: number | null;
+}) {
+  const startMinutes = input.startTime ? parseClockTime(input.startTime) : null;
+  const endMinutes = input.endTime ? parseClockTime(input.endTime) : null;
+
+  if (startMinutes !== null && endMinutes !== null) {
+    const sameDayDuration = endMinutes - startMinutes;
+    const overnightDuration = endMinutes + 24 * 60 - startMinutes;
+    const durationMinutes = sameDayDuration > 0 ? sameDayDuration : overnightDuration;
+
+    if (durationMinutes > 0) {
+      return Number((durationMinutes / 60).toFixed(2));
+    }
+  }
+
+  if (input.quotedTotal && input.quotedTotal > 0) {
+    return Number((input.quotedTotal / 450).toFixed(2));
+  }
+
+  return undefined;
 }
 
 const STAGE_ORDER: BuyoutSummary["lifecycleStage"][] = [
@@ -264,6 +349,9 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       location: true,
       assignedManager: true,
       financial: true,
+      emails: {
+        orderBy: { sentAt: "desc" }
+      },
       workflowSteps: {
         orderBy: { createdAt: "asc" }
       }
@@ -271,14 +359,7 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }]
   });
 
-  return buyouts
-    .filter(
-      (buyout) =>
-        (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL ||
-        TEST_NAMES.has(buyout.displayName)
-    )
-    .filter((buyout) => buyout.displayName === "Kelly Jackson Test Event")
-    .map((buyout) => {
+  return buyouts.map((buyout) => {
     const isKellyTest = buyout.legacyMondayItemId === TEST_ITEM_ID;
     const workflow = normalizeWorkflow(buyout.workflowSteps);
     const lifecycleStage = stageLabelMap[buyout.lifecycleStage];
@@ -299,6 +380,11 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       !buyout.endTime && buyout.eventDate
         ? formatTime(new Date(buyout.eventDate.getTime() + 60 * 60 * 1000))
         : buyout.endTime ?? undefined;
+    const numberOfHours = deriveNumberOfHours({
+      startTime: derivedStartTime,
+      endTime: derivedEndTime,
+      quotedTotal: buyout.financial?.quotedTotal
+    });
     const sourceStatusLabel = buyout.sourceStatusLabel ?? lifecycleStage;
     const sourceLifecycleStage = lifecycleStage;
     const sourceTrackingHealth = trackingLabelMap[buyout.trackingHealth];
@@ -312,7 +398,8 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       sourceBallInCourt,
       sourceStatusLabel,
       sourceNextAction,
-      amountPaid: buyout.financial?.amountPaid ?? 0
+      amountPaid: buyout.financial?.amountPaid ?? 0,
+      isInternalTest: isKellyTest
     });
     const effectiveLifecycleStage = reconciledState.lifecycleStage;
     const effectiveTrackingHealth = reconciledState.trackingHealth;
@@ -323,7 +410,8 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     const effectiveNextAction = reconciledState.nextAction;
     const effectiveStatusLabel = reconciledState.statusLabel;
     const healthFlags = [
-      countdown !== null && countdown < 0 ? "Event date on the source board is in the past." : null,
+      !isKellyTest && countdown !== null && countdown < 0 ? "Event date on the source board is in the past." : null,
+      !isKellyTest &&
       workflow.some((step) => step.key === "remaining-payment-received" && step.complete) &&
       (buyout.financial?.amountPaid ?? 0) === 0
         ? "Workflow shows payment completed, but financials still show $0 paid."
@@ -332,10 +420,21 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
       workflow.some((step) => step.key === "date-finalized" && step.complete)
         ? "Lifecycle status is behind the checklist state on the Monday board."
         : null,
-      effectiveStatusLabel !== sourceStatusLabel
+      !isKellyTest && effectiveStatusLabel !== sourceStatusLabel
         ? `Operationally this reads as "${effectiveStatusLabel}" even though Monday still shows "${sourceStatusLabel}".`
         : null
     ].filter((value): value is string => Boolean(value));
+
+    const sentTemplateIds = Array.from(
+      new Set(
+        (isKellyTest ? TEST_SENT_TEMPLATES : [])
+          .concat(
+            buyout.emails
+              .filter((email) => email.status === "SENT")
+              .map((email) => email.templateKey)
+          )
+      )
+    );
 
     return {
     id: buyout.id,
@@ -347,7 +446,7 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     countdownDays: countdown,
     location: buyout.location?.name ?? "Unassigned",
     assignedTo:
-      isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
+      isKellyTest
         ? "Kelly"
         : buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
     instructor: buyout.instructorName ?? "Unassigned",
@@ -373,20 +472,27 @@ export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
     amountPaid: buyout.financial?.amountPaid ?? 0,
     outstanding,
     paymentProgress,
+    numberOfHours,
+    clientName:
+      isKellyTest
+        ? "Kelly Jackson"
+        : buyout.inquiry?.clientName ?? buyout.displayName,
     clientEmail:
-      isKellyTest || (buyout.inquiry?.clientEmail ?? "").toLowerCase() === TEST_EMAIL
+      isKellyTest
         ? TEST_EMAIL
         : buyout.inquiry?.clientEmail ?? "",
     clientPhone: buyout.inquiry?.clientPhone ?? undefined,
     startTime: derivedStartTime,
     endTime: derivedEndTime,
     preferredDates: buyout.inquiry?.preferredDates ?? undefined,
+    preferredLocation: buyout.inquiry?.preferredLocation ?? undefined,
+    depositAmount: buyout.financial?.depositAmount ?? undefined,
     depositLink: buyout.financial?.depositLink ?? undefined,
     balanceLink: buyout.financial?.balanceLink ?? undefined,
     signupLink: isKellyTest ? TEST_SIGNUP_LINK : getSignupLinkFromSnapshot(buyout.sourceSnapshot),
     notes: buyout.notesInternal ?? "",
     healthFlags,
-    sentTemplateIds: isKellyTest ? TEST_SENT_TEMPLATES : [],
+    sentTemplateIds,
     workflowProgress,
     workflow
     };
@@ -504,4 +610,114 @@ export async function createInquiryInDb(input: BuyoutInquiryInput) {
     createdAt: inquiry.createdAt.toISOString(),
     ...input
   };
+}
+
+export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
+  const existing = await prisma.buyout.findUnique({
+    where: { id },
+    include: {
+      inquiry: true,
+      financial: true,
+      location: true,
+      assignedManager: true
+    }
+  });
+
+  if (!existing) {
+    throw new Error("Buyout not found.");
+  }
+
+  const locationName = input.location?.trim();
+  const assignedTo = input.assignedTo?.trim();
+
+  const location =
+    locationName && locationName !== existing.location?.name
+      ? await prisma.location.upsert({
+          where: { id: `loc_${locationName.toLowerCase().replace(/[^a-z0-9]+/g, "_")}` },
+          update: { name: locationName },
+          create: {
+            id: `loc_${locationName.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+            name: locationName
+          }
+        })
+      : existing.location;
+
+  const manager =
+    assignedTo && assignedTo !== existing.assignedManager?.name
+      ? await prisma.staffUser.upsert({
+          where: { email: `${assignedTo.toLowerCase().replace(/[^a-z0-9]+/g, ".")}@thestudiopilates.local` },
+          update: { name: assignedTo, role: "Manager" },
+          create: {
+            name: assignedTo,
+            email: `${assignedTo.toLowerCase().replace(/[^a-z0-9]+/g, ".")}@thestudiopilates.local`,
+            role: "Manager"
+          }
+        })
+      : existing.assignedManager;
+
+  await prisma.buyout.update({
+    where: { id },
+    data: {
+      displayName: input.clientName,
+      eventDate: input.eventDate ? new Date(`${input.eventDate}T12:00:00`) : null,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      instructorName: input.instructor,
+      nextAction: input.nextAction,
+      notesInternal: input.notes,
+      locationId: location?.id ?? null,
+      assignedManagerId: manager?.id ?? null
+    }
+  });
+
+  if (existing.inquiryId) {
+    await prisma.buyoutInquiry.update({
+      where: { id: existing.inquiryId },
+      data: {
+        clientName: input.clientName,
+        clientEmail: input.clientEmail,
+        clientPhone: input.clientPhone,
+        eventType: input.eventType
+      }
+    });
+  }
+
+  await prisma.buyoutFinancial.upsert({
+    where: { buyoutId: id },
+    update: {
+      depositLink: input.depositLink,
+      balanceLink: input.balanceLink
+    },
+    create: {
+      buyoutId: id,
+      depositLink: input.depositLink,
+      balanceLink: input.balanceLink
+    }
+  });
+
+  if (input.signupLink || existing.sourceSnapshot) {
+    const snapshot =
+      existing.sourceSnapshot && typeof existing.sourceSnapshot === "object" && !Array.isArray(existing.sourceSnapshot)
+        ? { ...(existing.sourceSnapshot as Record<string, unknown>) }
+        : {};
+    const values =
+      snapshot.values && typeof snapshot.values === "object" && !Array.isArray(snapshot.values)
+        ? { ...(snapshot.values as Record<string, unknown>) }
+        : {};
+
+    if (input.signupLink) {
+      values.signupLink = input.signupLink;
+    }
+
+    snapshot.values = values;
+
+    await prisma.buyout.update({
+      where: { id },
+      data: {
+        sourceSnapshot: snapshot as never
+      }
+    });
+  }
+
+  return prisma.buyout.findUnique({ where: { id } });
 }

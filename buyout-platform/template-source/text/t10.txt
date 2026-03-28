@@ -1,0 +1,30 @@
+The Studio Pilates Buyout: {{Client Name}} | Missing Signups
+
+Hi {{Client First Name}},
+
+We're looking forward to your Studio Buyout and wanted to check in. It looks like not all of your guests have completed their sign-up and waiver yet.
+
+<hr> <b>Your Event</b>
+<b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+
+<hr> <b>Next Steps | Please Share with Your Guests</b>
+
+All guests are required to sign up in advance so waivers are completed before arrival.
+
+<b>Guest Sign-Up Link:</b> {{Signup Link}}
+
+Please note:
+• Sign-ups must be completed at least 24 hours before the event
+• Creating accounts and signing waivers on-site can significantly delay your start time
+• Any time spent on lobby check-ins will cut into your scheduled class
+
+<hr>
+To keep things running smoothly, we recommend sharing the link with your guests as soon as possible.
+
+Need help tracking who's signed up? Just reply here. Happy to help.
+
+Warmly,
+Autumn
+The Studio Pilates Team

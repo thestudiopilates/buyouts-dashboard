@@ -1,0 +1,41 @@
+The Studio Pilates Buyout: {{Client Name}} | {{Event Date}}
+
+Hi {{Client First Name}},
+
+Great news! Your Studio Buyout is available. Here are the confirmed details:
+
+<hr> <b>Your Buyout Details</b>
+<b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+
+<hr> <b>Payment Summary</b>
+<b>Studio Buyout Rate:</b> $450/hour
+<b>Number of Hours:</b> {{Number of Hours}}
+<b>Total:</b> {{Total Price}}
+
+<hr> <b>Next Steps | Action Required</b>
+
+To officially reserve your date, instructor, and front desk coverage, please complete payment using the link below:
+
+<b>Complete Payment:</b> {{Deposit Link}}
+
+Before submitting payment, please review our full buyout terms, including capacity, guest sign-ups, waivers, decor guidelines, and timing policies:
+<b>Buyout Terms & Info:</b> https://thestudiopilates.com/product/private-events/
+
+Submitting payment confirms that you've reviewed and agreed to all buyout terms and policies.
+
+<hr> <b>What Happens After Payment</b>
+
+Once we receive your payment:
+
+1. Your buyout is locked into our schedule
+2. An instructor will be assigned
+3. You'll receive a signup link to share with your guests
+4. We'll check in as your event approaches to make sure everything is on track
+
+Questions before completing payment? Just reply here. We're happy to help!
+
+Warmly,
+Autumn
+The Studio Pilates Team

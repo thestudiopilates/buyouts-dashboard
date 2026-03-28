@@ -1,0 +1,32 @@
+The Studio Pilates Buyout: {{Client Name}} | 48-Hour Signup Reminder
+
+Hi {{Client First Name}},
+
+Your Studio Buyout is in 48 hours! We're so excited, but we need your help with one final thing.
+
+It looks like not all guests have completed their sign-up and waiver yet.
+
+<hr> <b>Your Event</b>
+<b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+
+<hr> <b>Urgent | Please Share with Your Guests</b>
+<b>Guest Sign-Up Link:</b> {{Signup Link}}
+
+All guests must be signed up before arrival. Here's why this matters:
+
+• Creating accounts and signing waivers at the studio takes 5-10 minutes per person
+• This will delay your class start time
+• The class will still end at the scheduled time, so late starts mean less class time
+• Additional time beyond your reservation is billed at $450/hour
+
+<hr> <b>Next Steps</b>
+
+Please send the sign-up link to any remaining guests today. If you believe everyone is already signed up, you're all set.
+
+We're excited to host you and your group. See you soon.
+
+Warmly,
+Autumn
+The Studio Pilates Team

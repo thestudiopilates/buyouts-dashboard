@@ -1,0 +1,27 @@
+The Studio Pilates Buyout: {{Client Name}} | Balance Reminder
+
+Hi {{Client First Name}},
+
+We're following up regarding the remaining balance for your upcoming Studio Buyout.
+
+<hr> <b>Your Event</b>
+<b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+
+<hr> <b>Payment Status</b>
+<b>Total Buyout Cost:</b> {{Total Price}}
+<b>Amount Paid:</b> {{Amount Paid}}
+<b>Remaining Balance Due:</b> {{Remaining Balance}}
+
+<hr> <b>Important</b>
+If the remaining balance is not received by seven (7) days before the event, the buyout will be cancelled and the initial deposit will be non-refundable. This allows us to release the studio, instructor, and front desk coverage back into our schedule.
+
+<hr> <b>Next Steps | Action Required</b>
+<b>Submit Remaining Balance:</b> {{Remaining Balance Link}}
+
+If you've already submitted payment, thank you! Please disregard this message. If you need to discuss timing or have questions, just reply here.
+
+Warmly,
+Autumn
+The Studio Pilates Team

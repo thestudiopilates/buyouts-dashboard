@@ -1,0 +1,27 @@
+The Studio Pilates Buyout: {{Client Name}} | Cancellation
+
+Hi {{Client First Name}},
+
+We're writing to confirm that your Studio Buyout has been cancelled due to non-payment.
+
+<hr> <b>Cancelled Event</b> <b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+
+<hr> <b>Cancellation Details</b>
+
+Per our buyout terms, the remaining balance was due no later than two (2) weeks before the event. Because payment was not received by seven (7) days prior:
+
+• The studio, instructor, and front desk coverage have been released
+• The event is no longer on our schedule
+• The initial deposit is non-refundable
+
+<hr> <b>Looking Ahead</b>
+
+We understand plans change, and we'd be happy to help you book a future event if you're interested. Any new request would be subject to current availability, pricing, and booking requirements.
+
+If you believe this cancellation was made in error, please reply to this email and we'll review.
+
+Warmly,
+Autumn
+The Studio Pilates Team

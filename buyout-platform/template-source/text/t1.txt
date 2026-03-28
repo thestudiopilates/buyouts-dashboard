@@ -1,0 +1,29 @@
+The Studio Pilates Buyout: {{Client Name}} | Initial Inquiry
+
+Hi {{Client First Name}},
+
+Thank you so much for reaching out about a Studio Buyout at The Studio Pilates! We'd love to host your group.
+
+We've received your request for {{Preferred Date}} at our {{Preferred Location}} location. Our team is now reviewing studio availability, instructor scheduling, and front desk coverage to see if we can make it happen.
+
+<hr> <b>A Few Things to Know</b>
+
+Our standard booking window is a minimum of three (3) weeks before the event date. This gives us time to secure an instructor, arrange front desk coverage, and adjust studio scheduling as needed.
+
+If your requested date is less than three weeks away, it would be considered a Rush Buyout, which includes a $100 rush coordination fee and a $250 initial deposit to prioritize your event.
+
+<hr> <b>What Happens Next</b>
+
+You'll hear back from us within 1-2 business days with one of the following:
+
+• Confirmation of your date, time, and studio
+• Alternative dates if your first choice isn't available
+• Payment and deposit instructions to lock everything in
+
+If you have any flexibility on dates, times, or location, or anything else we should know about your event, feel free to reply here.
+
+We're excited about the possibility of hosting you!
+
+Warmly,
+Autumn
+The Studio Pilates Team

@@ -1,0 +1,27 @@
+The Studio Pilates Buyout: {{Client Name}} | Deposit Reminder
+
+Hi {{Client First Name}},
+
+Just checking in! We're holding the following Studio Buyout details for you, but we haven't received payment yet:
+
+<hr> <b>Buyout on Hold</b>
+<b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+
+<hr> <b>Important</b>
+Until payment is received, your date and time cannot be fully held and may be released to other requests.
+
+<b>Amount Due:</b> {{Total Price}}
+
+<b>Submit Payment:</b> {{Deposit Link}}
+
+<hr> <b>Next Steps</b>
+
+If you'd like to move forward, please complete payment as soon as possible so we can officially lock your event into our schedule.
+
+If your plans have changed or you need more time, just let us know. We're happy to work with you.
+
+Warmly,
+Autumn
+The Studio Pilates Team

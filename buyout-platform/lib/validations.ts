@@ -39,3 +39,27 @@ export type InquiryFormState = {
   message?: string;
   errors?: Record<string, string[] | undefined>;
 };
+
+export const buyoutUpdateSchema = z.object({
+  clientName: z.string().min(2, "Client name is required."),
+  clientEmail: z.string().email("Enter a valid email address."),
+  clientPhone: optionalText,
+  eventType: optionalText,
+  eventDate: optionalText,
+  startTime: optionalText,
+  endTime: optionalText,
+  location: optionalText,
+  assignedTo: optionalText,
+  instructor: optionalText,
+  nextAction: optionalText,
+  notes: optionalText,
+  depositLink: optionalText,
+  balanceLink: optionalText,
+  signupLink: optionalText
+});
+
+export type BuyoutUpdateFormState = {
+  status: "idle" | "success" | "error";
+  message?: string;
+  errors?: Record<string, string[] | undefined>;
+};

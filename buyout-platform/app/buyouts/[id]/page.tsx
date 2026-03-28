@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BuyoutDetailEditor } from "@/components/buyout-detail-editor";
+import { BuyoutEmailPanel } from "@/components/buyout-email-panel";
 import { PortalShell } from "@/components/portal-shell";
 import { getBuyout } from "@/lib/buyouts";
+import { getBuyoutEmailPanelData } from "@/lib/email-templates";
 
 function formatCurrency(value: number) {
   return `$${value.toLocaleString()}`;
@@ -19,6 +22,8 @@ export default async function BuyoutDetailPage({
   if (!buyout) {
     notFound();
   }
+
+  const emailPanel = await getBuyoutEmailPanelData(id);
 
   return (
     <div className="shell">
@@ -44,7 +49,7 @@ export default async function BuyoutDetailPage({
 
           <div className="detail-grid">
             <div className="stack">
-              <section className="detail-card card">
+              <section className="detail-card card" id="operational-overview">
                 <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: 0 }}>
                   Operational overview
                 </h2>
@@ -113,7 +118,9 @@ export default async function BuyoutDetailPage({
                 </div>
               </section>
 
-              <section className="detail-card card">
+              <BuyoutDetailEditor buyout={buyout} />
+
+              <section className="detail-card card" id="contacts-and-links">
                 <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: 0 }}>
                   Contacts and links
                 </h2>
@@ -145,12 +152,22 @@ export default async function BuyoutDetailPage({
                 </div>
               </section>
 
-              <section className="detail-card card">
+              <section className="detail-card card" id="team-notes">
                 <h2 className="section-title" style={{ fontSize: "1.5rem", marginTop: 0 }}>
                   Team notes
                 </h2>
                 <pre className="notes-block">{buyout.notes || "No notes captured yet."}</pre>
               </section>
+
+              <div id="email-operations">
+                <BuyoutEmailPanel
+                  activity={emailPanel.activity}
+                  buyout={buyout}
+                  gmail={emailPanel.gmail}
+                  previews={emailPanel.previews}
+                  templates={emailPanel.templates}
+                />
+              </div>
             </div>
 
             <aside className="stack">

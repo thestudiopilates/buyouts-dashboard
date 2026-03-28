@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "import:monday": "node --env-file=.env.local scripts/import-monday.mjs",
     "fetch:monday": "node --env-file=.env.local scripts/fetch-monday-export.mjs",
+    "export:templates": "node --import tsx --env-file=.env.local scripts/export-email-template-source.mjs",
     "sync:monday": "npm run fetch:monday && npm run import:monday -- ./data/monday-active-buyouts.json",
     "seed:demo": "node --import tsx --env-file=.env.local scripts/seed-demo.ts"
   },

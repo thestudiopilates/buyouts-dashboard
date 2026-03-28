@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { BuyoutSummary } from "@/lib/types";
 
@@ -58,6 +58,8 @@ const TEMPLATE_HINTS: Record<string, string> = {
   t10: "Missing attendee signups reminder",
   t11: "Final event details"
 };
+
+const SINGLE_SEND_TEMPLATE_IDS = new Set(["t1", "t3", "t5", "t11"]);
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -181,9 +183,123 @@ function KPI({
   );
 }
 
-function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => void }) {
+function Drawer({
+  buyout,
+  onClose,
+  onBuyoutUpdated
+}: {
+  buyout: BuyoutSummary;
+  onClose: () => void;
+  onBuyoutUpdated: (buyout: BuyoutSummary) => void;
+}) {
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("overview");
+  const [editorMode, setEditorMode] = useState<"details" | "notes" | null>(null);
+  const [message, setMessage] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [pendingEmailId, setPendingEmailId] = useState("");
+  const [form, setForm] = useState({
+    clientName: buyout.clientName,
+    clientEmail: buyout.clientEmail,
+    clientPhone: buyout.clientPhone ?? "",
+    eventType: buyout.eventType,
+    eventDate: buyout.eventDate === "TBD" ? "" : buyout.eventDate,
+    startTime: buyout.startTime ?? "",
+    endTime: buyout.endTime ?? "",
+    location: buyout.location,
+    assignedTo: buyout.assignedTo,
+    instructor: buyout.instructor,
+    nextAction: buyout.nextAction,
+    notes: buyout.notes,
+    depositLink: buyout.depositLink ?? "",
+    balanceLink: buyout.balanceLink ?? "",
+    signupLink: buyout.signupLink ?? ""
+  });
+  const [isPending, startTransition] = useTransition();
   const countdown = countdownTone(buyout.countdownDays);
+
+  useEffect(() => {
+    setTab("overview");
+    setEditorMode(null);
+    setMessage("");
+    setEmailMessage("");
+    setPendingEmailId("");
+    setForm({
+      clientName: buyout.clientName,
+      clientEmail: buyout.clientEmail,
+      clientPhone: buyout.clientPhone ?? "",
+      eventType: buyout.eventType,
+      eventDate: buyout.eventDate === "TBD" ? "" : buyout.eventDate,
+      startTime: buyout.startTime ?? "",
+      endTime: buyout.endTime ?? "",
+      location: buyout.location,
+      assignedTo: buyout.assignedTo,
+      instructor: buyout.instructor,
+      nextAction: buyout.nextAction,
+      notes: buyout.notes,
+      depositLink: buyout.depositLink ?? "",
+      balanceLink: buyout.balanceLink ?? "",
+      signupLink: buyout.signupLink ?? ""
+    });
+  }, [buyout]);
+
+  function updateField(key: keyof typeof form, value: string) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleSave() {
+    setMessage("");
+
+    startTransition(async () => {
+      const response = await fetch(`/api/buyouts/${buyout.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form)
+      });
+
+      const payload = (await response.json()) as {
+        message?: string;
+        buyout?: BuyoutSummary;
+      };
+
+      if (!response.ok || !payload.buyout) {
+        setMessage(payload.message ?? "Unable to update this buyout right now.");
+        return;
+      }
+
+      onBuyoutUpdated(payload.buyout);
+      setMessage(payload.message ?? "Buyout updated.");
+      setEditorMode(null);
+    });
+  }
+
+  function handleEmailSend(templateId: string) {
+    setEmailMessage("");
+    setPendingEmailId(templateId);
+
+    startTransition(async () => {
+      const response = await fetch(`/api/email-templates/${templateId}/test-send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buyoutId: buyout.id })
+      });
+
+      const payload = (await response.json()) as {
+        error?: string;
+        message?: string;
+        buyout?: BuyoutSummary;
+      };
+
+      if (!response.ok || !payload.buyout) {
+        setEmailMessage(payload.error ?? "Unable to run the internal review send.");
+        setPendingEmailId("");
+        return;
+      }
+
+      onBuyoutUpdated(payload.buyout);
+      setEmailMessage(payload.message ?? "Internal review send completed.");
+      setPendingEmailId("");
+    });
+  }
 
   return (
     <>
@@ -275,6 +391,92 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
         <div className="ops-drawer-body">
           {tab === "overview" ? (
             <div>
+              {editorMode ? (
+                <div className="ops-inline-editor">
+                  <div className="ops-inline-editor-head">
+                    <div className="ops-section-label">
+                      {editorMode === "notes" ? "Edit Notes" : "Edit Event Details"}
+                    </div>
+                    <button className="ops-inline-editor-close" onClick={() => setEditorMode(null)} type="button">
+                      Close
+                    </button>
+                  </div>
+                  <div className="ops-inline-editor-grid">
+                    {editorMode === "details" ? (
+                      <>
+                        <label className="field">
+                          <span>Client name</span>
+                          <input className="input" value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} />
+                        </label>
+                        <label className="field">
+                          <span>Client email</span>
+                          <input className="input" value={form.clientEmail} onChange={(event) => updateField("clientEmail", event.target.value)} />
+                        </label>
+                        <label className="field">
+                          <span>Phone</span>
+                          <input className="input" value={form.clientPhone} onChange={(event) => updateField("clientPhone", event.target.value)} />
+                        </label>
+                        <label className="field">
+                          <span>Event type</span>
+                          <input className="input" value={form.eventType} onChange={(event) => updateField("eventType", event.target.value)} />
+                        </label>
+                        <label className="field">
+                          <span>Event date</span>
+                          <input className="input" type="date" value={form.eventDate} onChange={(event) => updateField("eventDate", event.target.value)} />
+                        </label>
+                        <label className="field">
+                          <span>Location</span>
+                          <input className="input" value={form.location} onChange={(event) => updateField("location", event.target.value)} />
+                        </label>
+                        <label className="field">
+                          <span>Start time</span>
+                          <input className="input" value={form.startTime} onChange={(event) => updateField("startTime", event.target.value)} />
+                        </label>
+                        <label className="field">
+                          <span>End time</span>
+                          <input className="input" value={form.endTime} onChange={(event) => updateField("endTime", event.target.value)} />
+                        </label>
+                        <label className="field">
+                          <span>Assigned staff</span>
+                          <input className="input" value={form.assignedTo} onChange={(event) => updateField("assignedTo", event.target.value)} />
+                        </label>
+                        <label className="field">
+                          <span>Instructor</span>
+                          <input className="input" value={form.instructor} onChange={(event) => updateField("instructor", event.target.value)} />
+                        </label>
+                        <label className="field-full">
+                          <span>Next action</span>
+                          <input className="input" value={form.nextAction} onChange={(event) => updateField("nextAction", event.target.value)} />
+                        </label>
+                        <label className="field-full">
+                          <span>Deposit link</span>
+                          <input className="input" value={form.depositLink} onChange={(event) => updateField("depositLink", event.target.value)} />
+                        </label>
+                        <label className="field-full">
+                          <span>Balance link</span>
+                          <input className="input" value={form.balanceLink} onChange={(event) => updateField("balanceLink", event.target.value)} />
+                        </label>
+                        <label className="field-full">
+                          <span>Sign-up link</span>
+                          <input className="input" value={form.signupLink} onChange={(event) => updateField("signupLink", event.target.value)} />
+                        </label>
+                      </>
+                    ) : (
+                      <label className="field-full">
+                        <span>Team notes</span>
+                        <textarea className="textarea ops-inline-notes" value={form.notes} onChange={(event) => updateField("notes", event.target.value)} />
+                      </label>
+                    )}
+                  </div>
+                  <div className="ops-inline-editor-actions">
+                    <button className="ops-footer-primary" disabled={isPending} onClick={handleSave} type="button">
+                      {isPending ? "Saving..." : "Save Changes"}
+                    </button>
+                    {message ? <span className="success-text">{message}</span> : null}
+                  </div>
+                </div>
+              ) : null}
+
               {buyout.healthFlags.length > 0 ? (
                 <div className="ops-alert-box">
                   <div className="ops-alert-title">Source board inconsistencies</div>
@@ -452,6 +654,7 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
 
           {tab === "emails" ? (
             <div>
+              {emailMessage ? <div className="ops-email-banner">{emailMessage}</div> : null}
               <div className="ops-tab-summary">
                 <div>
                   <span className="ops-tab-big">
@@ -464,6 +667,8 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
                 {EMAIL_TEMPLATES.map((template) => {
                   const state = readiness(buyout, template.requiredFields);
                   const sent = buyout.sentTemplateIds.includes(template.id);
+                  const singleSend = SINGLE_SEND_TEMPLATE_IDS.has(template.id);
+                  const blocked = !state.ready || (singleSend && sent);
                   return (
                     <div
                       className="ops-email-row"
@@ -482,18 +687,32 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
                           {sent
                             ? TEMPLATE_HINTS[template.id]
                             : state.ready
-                              ? "Ready to send once automation is wired"
-                            : `Missing ${state.total - state.filled} required field${state.total - state.filled === 1 ? "" : "s"}`}
+                              ? "Ready to send now"
+                              : `Missing ${state.total - state.filled} required field${state.total - state.filled === 1 ? "" : "s"}`}
                         </div>
                       </div>
-                      <span
-                        className="ops-email-state"
-                        style={{
-                          color: sent ? COLORS.seaglass : state.ready ? COLORS.apricot : COLORS.cherry
-                        }}
-                      >
-                        {sent ? "Sent" : state.ready ? "Ready" : "Blocked"}
-                      </span>
+                      <div className="ops-email-action-stack">
+                        <span
+                          className="ops-email-state"
+                          style={{
+                            color: sent ? COLORS.seaglass : state.ready ? COLORS.apricot : COLORS.cherry
+                          }}
+                        >
+                          {sent ? "Sent" : state.ready ? "Ready" : "Blocked"}
+                        </span>
+                        <button
+                          className={`ops-email-send-btn${blocked ? " blocked" : ""}`}
+                          disabled={isPending || blocked}
+                          onClick={() => handleEmailSend(template.id)}
+                          type="button"
+                        >
+                          {pendingEmailId === template.id
+                            ? "Sending..."
+                            : singleSend && sent
+                              ? "Already Sent"
+                              : "Send Review"}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -542,7 +761,7 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
                     <div className="ops-link-icon" style={{ background: url ? `${COLORS.seaglass}18` : COLORS.divider }} />
                     <div className="ops-link-copy">
                       <div>{label}</div>
-                      <small>{url ? "Available for Kelly test flow" : "Not created"}</small>
+                      <small>{url ? "Available for email workflow" : "Not created"}</small>
                     </div>
                   </a>
                 ))}
@@ -552,9 +771,15 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
         </div>
 
         <div className="ops-drawer-footer">
-          <button className="ops-footer-primary">Send Email</button>
-          <button className="ops-footer-secondary">Edit Details</button>
-          <button className="ops-footer-tertiary">Notes</button>
+          <button className="ops-footer-primary" onClick={() => { setTab("emails"); setEditorMode(null); }} type="button">
+            Send Email
+          </button>
+          <button className="ops-footer-secondary" onClick={() => { setTab("overview"); setEditorMode("details"); }} type="button">
+            Edit Details
+          </button>
+          <button className="ops-footer-tertiary" onClick={() => { setTab("overview"); setEditorMode("notes"); }} type="button">
+            Notes
+          </button>
         </div>
       </aside>
     </>
@@ -562,6 +787,7 @@ function Drawer({ buyout, onClose }: { buyout: BuyoutSummary; onClose: () => voi
 }
 
 export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
+  const [localBuyouts, setLocalBuyouts] = useState(buyouts);
   const [selected, setSelected] = useState<BuyoutSummary | null>(null);
   const [filterBic, setFilterBic] = useState("All");
   const [filterLocation, setFilterLocation] = useState("All");
@@ -571,16 +797,16 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
   const [showCompleted, setShowCompleted] = useState(false);
 
   const locations = useMemo(
-    () => ["All", ...new Set(buyouts.map((buyout) => buyout.location).filter(Boolean))],
-    [buyouts]
+    () => ["All", ...new Set(localBuyouts.map((buyout) => buyout.location).filter(Boolean))],
+    [localBuyouts]
   );
   const staff = useMemo(
-    () => ["All", ...new Set(buyouts.map((buyout) => buyout.assignedTo).filter(Boolean))],
-    [buyouts]
+    () => ["All", ...new Set(localBuyouts.map((buyout) => buyout.assignedTo).filter(Boolean))],
+    [localBuyouts]
   );
 
   const visible = useMemo(() => {
-    return [...buyouts]
+    return [...localBuyouts]
       .filter((buyout) => {
         if (!showCompleted && ["Complete", "Cancelled"].includes(buyout.lifecycleStage)) return false;
         if (filterBic !== "All" && buyout.ballInCourt !== filterBic) return false;
@@ -600,9 +826,9 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
         if (sort === "checklist") return b.workflowProgress - a.workflowProgress;
         return a.name.localeCompare(b.name);
       });
-  }, [buyouts, filterBic, filterLocation, filterStaff, search, sort, showCompleted]);
+  }, [localBuyouts, filterBic, filterLocation, filterStaff, search, sort, showCompleted]);
 
-  const active = buyouts.filter((buyout) => !["Complete", "Cancelled"].includes(buyout.lifecycleStage));
+  const active = localBuyouts.filter((buyout) => !["Complete", "Cancelled"].includes(buyout.lifecycleStage));
   const pipeline = active.reduce((sum, buyout) => sum + buyout.total, 0);
   const collected = active.reduce((sum, buyout) => sum + buyout.amountPaid, 0);
   const attention = active.filter(
@@ -616,10 +842,10 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
     <div className="ops-shell">
       <div className="ops-mode-banner">
         <div>
-          <div className="ops-mode-title">Kelly test record</div>
+          <div className="ops-mode-title">Live operations view</div>
           <div className="ops-mode-copy">
-            Live dashboard is intentionally focused on the single test buyout while we finish status
-            and workflow alignment.
+            Dashboard now surfaces the active buyout pipeline while outbound email remains routed
+            through the internal review workflow.
           </div>
         </div>
         <Link className="ops-mode-link" href="/buyouts/inquire">
@@ -842,7 +1068,18 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
         {visible.length} of {buyouts.length} buyouts · The Studio Pilates
       </div>
 
-      {selected ? <Drawer buyout={selected} onClose={() => setSelected(null)} /> : null}
+      {selected ? (
+        <Drawer
+          buyout={selected}
+          onBuyoutUpdated={(updatedBuyout) => {
+            setLocalBuyouts((current) =>
+              current.map((buyout) => (buyout.id === updatedBuyout.id ? updatedBuyout : buyout))
+            );
+            setSelected(updatedBuyout);
+          }}
+          onClose={() => setSelected(null)}
+        />
+      ) : null}
     </div>
   );
 }

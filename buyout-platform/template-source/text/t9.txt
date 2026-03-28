@@ -1,0 +1,27 @@
+The Studio Pilates Buyout: {{Client Name}} | Cancellation and Refund
+
+Hi {{Client First Name}},
+
+This email confirms that your Studio Buyout has been cancelled per your request.
+
+<hr> <b>Cancelled Event</b>
+<b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+
+<hr> <b>Refund Details</b>
+
+Because you cancelled two (2) weeks or more before the event, your deposit is eligible for a full refund.
+
+<b>Refund Amount:</b> {{Deposit Amount}}
+<b>Refund Method:</b> Original payment method
+<b>Refund Timing:</b> Please allow up to 10 business days
+
+The studio, instructor, and front desk coverage have been released back into our schedule.
+
+<hr>
+We appreciate you letting us know with advance notice. If you'd like to book a future buyout, we'd love to have you. Just reach out anytime.
+
+Warmly,
+Autumn
+The Studio Pilates Team

@@ -1,0 +1,22 @@
+The Studio Pilates Buyout: {{Client Name}} | Follow Up
+
+Hi {{Client First Name}},
+
+Checking in on your Studio Buyout and keeping this thread open in case you need anything from us.
+
+<hr> <b>Current Event Details</b>
+<b>Date:</b> {{Event Date}}
+<b>Time:</b> {{Start Time}} - {{End Time}}
+<b>Location:</b> {{Location}}
+
+<hr> <b>Helpful Links</b>
+<b>Deposit / Payment Link:</b> {{Deposit Link}}
+<b>Remaining Balance Link:</b> {{Remaining Balance Link}}
+<b>Guest Sign-Up Link:</b> {{Signup Link}}
+
+<hr> <b>Next Steps</b>
+Reply here with any updates, questions, or changes you need help with. We’ll keep guiding the buyout based on where things stand and let you know the next required step.
+
+Warmly,
+Kelly Jackson
+The Studio Pilates Team
