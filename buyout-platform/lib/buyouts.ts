@@ -172,6 +172,9 @@ export async function setManualStage(
   const stageEnum = STAGE_TO_ENUM[newStage];
   if (!stageEnum) throw new Error(`Invalid stage: ${newStage}`);
 
+  const existing = await prisma.buyout.findUnique({ where: { id: buyoutId } });
+  if (!existing) throw new Error("Buyout not found.");
+
   const phase = BUYOUT_PHASES[newStage];
 
   await prisma.buyout.update({
