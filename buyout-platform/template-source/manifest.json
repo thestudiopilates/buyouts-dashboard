@@ -1,5 +1,11 @@
 [
   {
+    "key": "t0",
+    "name": "Custom / One-Off Message",
+    "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Follow Up",
+    "bodyTemplate": "Hi {{Client First Name}},\n\n\n\nWarmly,\nAutumn\nThe Studio Pilates Team"
+  },
+  {
     "key": "t1",
     "name": "First Inquiry Email",
     "subjectTemplate": "The Studio Pilates Buyout: {{Client Name}} | Initial Inquiry",

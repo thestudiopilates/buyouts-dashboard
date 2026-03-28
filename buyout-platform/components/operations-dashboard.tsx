@@ -42,6 +42,7 @@ const groupColors: Record<(typeof GROUPS)[number], string> = {
 };
 
 const EMAIL_TEMPLATES = [
+  { id: "t0", label: "Custom / One-Off Message", requiredFields: ["clientEmail"] },
   { id: "t1", label: "First Inquiry Email", requiredFields: ["clientEmail"] },
   { id: "t3", label: "Deposit & Date", requiredFields: ["eventDate", "depositLink"] },
   { id: "t5", label: "Event Details & Sign Up", requiredFields: ["eventDate", "startTime", "endTime", "signupLink"] },
@@ -51,6 +52,7 @@ const EMAIL_TEMPLATES = [
 ] as const;
 
 const TEMPLATE_HINTS: Record<string, string> = {
+  t0: "Custom message sent",
   t1: "Initial intake response",
   t3: "Date confirmation and payment request",
   t5: "Locked event details and signup link",
@@ -849,7 +851,9 @@ function Drawer({
                                 ? "Sending..."
                                 : singleSend && sent
                                   ? "Already Sent"
-                                  : "Draft & Send"}
+                                  : template.id === "t0"
+                                    ? "Compose"
+                                    : "Draft & Send"}
                             </button>
                           </div>
                         </div>

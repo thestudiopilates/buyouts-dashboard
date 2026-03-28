@@ -43,6 +43,22 @@ const ALL_ACTIVE_STAGES: StageKey[] = [
 
 export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
   {
+    key: "t0",
+    name: "Custom / One-Off Message",
+    triggerLabel: "Custom Message",
+    category: "General",
+    legacyColumnId: "",
+    subjectTemplate: "The Studio Pilates Buyout: {{Client Name}} | Follow Up",
+    fallbackBodyTemplate:
+      "Hi {{Client First Name}},\n\n\n\nWarmly,\nAutumn\nThe Studio Pilates Team",
+    requiredVariables: [{ key: "clientFirstName", label: "Client First Name" }],
+    allowedStages: ALL_ACTIVE_STAGES,
+    effectConfig: {
+      eventType: "informational",
+      sendPolicy: "repeatable"
+    }
+  },
+  {
     key: "t1",
     name: "First Inquiry Email",
     triggerLabel: "First Inquiry Email Sent",
