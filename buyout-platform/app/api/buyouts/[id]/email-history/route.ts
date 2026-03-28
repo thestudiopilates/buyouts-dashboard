@@ -1,19 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getBuyout } from "@/lib/buyouts";
-import { getEmailHistory, getGmailReadiness } from "@/lib/gmail";
 import { hasDatabaseUrl, prisma } from "@/lib/prisma";
-
-type EmailHistoryItem = {
-  id: string;
-  date: string;
-  from: string;
-  to: string;
-  subject: string;
-  snippet: string;
-  direction: "sent" | "received";
-  source: "platform" | "gmail";
-};
 
 export async function GET(
   _request: Request,
@@ -27,8 +15,20 @@ export async function GET(
       return NextResponse.json({ error: "Buyout not found." }, { status: 404 });
     }
 
-    const items: EmailHistoryItem[] = [];
+    type EmailItem = {
+      id: string;
+      date: string;
+      from: string;
+      to: string;
+      subject: string;
+      snippet: string;
+      direction: string;
+      source: string;
+    };
 
+    const items: EmailItem[] = [];
+
+    // Read from BuyoutEmail (platform sends)
     if (hasDatabaseUrl()) {
       const dbEmails = await prisma.buyoutEmail.findMany({
         where: { buyoutId: id },
@@ -49,43 +49,55 @@ export async function GET(
           });
         }
       }
-    }
 
-    const gmail = getGmailReadiness();
-    if (gmail.ready && buyout.clientEmail) {
+      // Read from StoredEmail (backfilled Gmail history)
       try {
-        const gmailMessages = await getEmailHistory(buyout.clientEmail);
-        for (const msg of gmailMessages) {
-          const isDuplicate = items.some(
-            (existing) =>
-              existing.subject === msg.subject &&
-              Math.abs(new Date(existing.date).getTime() - new Date(msg.date).getTime()) < 300000
-          );
+        const stored = await prisma.$queryRawUnsafe(
+          `SELECT "id","direction","fromAddress","toAddress","subject","snippet","sentAt","source"
+           FROM "StoredEmail"
+           WHERE "buyoutId" = $1
+           ORDER BY "sentAt" DESC
+           LIMIT 100`,
+          id
+        ) as Array<{
+          id: string;
+          direction: string;
+          fromAddress: string;
+          toAddress: string;
+          subject: string;
+          snippet: string;
+          sentAt: Date;
+          source: string;
+        }>;
 
-          if (!isDuplicate) {
-            items.push({
-              id: `gmail_${msg.id}`,
-              date: msg.date,
-              from: msg.from,
-              to: msg.to,
-              subject: msg.subject,
-              snippet: msg.snippet,
-              direction: msg.direction,
-              source: "gmail"
-            });
-          }
+        for (const row of stored) {
+          const isDup = items.some((i) => i.subject === row.subject && Math.abs(new Date(i.date).getTime() - row.sentAt.getTime()) < 300000);
+          if (isDup) continue;
+
+          items.push({
+            id: `stored_${row.id}`,
+            date: row.sentAt.toISOString(),
+            from: row.fromAddress,
+            to: row.toAddress,
+            subject: row.subject ?? "",
+            snippet: row.snippet ?? "",
+            direction: row.direction,
+            source: row.source
+          });
         }
       } catch {
-        // Gmail fetch failed — continue with DB records only
+        // StoredEmail table might not exist yet — that's fine
       }
     }
 
     items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    const sent = items.filter((m) => m.direction === "sent");
-    const received = items.filter((m) => m.direction === "received");
-
-    return NextResponse.json({ sent, received, all: items, gmailReady: gmail.ready });
+    return NextResponse.json({
+      sent: items.filter((m) => m.direction === "sent"),
+      received: items.filter((m) => m.direction === "received"),
+      all: items,
+      gmailReady: true
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load email history.";
     return NextResponse.json({ error: message }, { status: 500 });
