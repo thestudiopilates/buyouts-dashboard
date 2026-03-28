@@ -248,9 +248,12 @@ const BUYOUT_PRODUCTS = [
   "private buyout",
   "private event",
   "buyout / event",
+  "buyout/event",
   "buyout deposit",
   "remaining balance",
-  "studio buyout"
+  "studio buyout",
+  "event deposit",
+  "$450"
 ];
 
 function getHeader(msg: GmailMessageResponse, name: string): string {
@@ -374,10 +377,18 @@ export async function searchPaymentEmails(maxResults = 20): Promise<ParsedPaymen
       ?? body.match(/(Studio Buyout[^\n]*)/i);
     const productName = productMatch?.[1]?.trim() ?? "";
 
+    const bodyLower = body.toLowerCase();
     const isBuyoutProduct = BUYOUT_PRODUCTS.some((p) =>
-      productName.toLowerCase().includes(p) || body.toLowerCase().includes(p)
+      productName.toLowerCase().includes(p) || bodyLower.includes(p)
     );
-    if (!isBuyoutProduct) continue;
+
+    // Skip only if we can confirm it's NOT a buyout (e.g., study guide, retail)
+    const isDefinitelyNotBuyout = !isBuyoutProduct && (
+      bodyLower.includes("study guide") ||
+      bodyLower.includes("merchandise") ||
+      bodyLower.includes("gift card")
+    );
+    if (isDefinitelyNotBuyout) continue;
 
     // Extract total amount — look for Total: line first, then last dollar amount
     const totalMatch = body.match(/Total:\s*\$([0-9,]+\.?\d{0,2})/i);
