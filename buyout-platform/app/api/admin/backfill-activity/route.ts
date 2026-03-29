@@ -112,8 +112,8 @@ export async function POST() {
         buyoutId: buyout.id,
         emailId: null,
         eventType: "LAST_ACTION_RECORDED",
-        summary: "Last team action recorded (from Monday)",
-        detail: JSON.stringify({ source: "monday-import" }),
+        summary: "Last team action recorded (imported)",
+        detail: JSON.stringify({ source: "legacy-import" }),
         createdBy: null,
         createdAt: buyout.lastActionAt
       });

@@ -146,7 +146,7 @@ function reconcileOperationalState({
       lifecycleStage: sourceLifecycleStage,
       trackingHealth: "Major issue" as const,
       ballInCourt: "Team" as const,
-      nextAction: "Resolve payment mismatch from Monday"
+      nextAction: "Resolve payment mismatch — verify totals"
     };
   }
 

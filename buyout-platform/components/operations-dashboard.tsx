@@ -27,8 +27,17 @@ const TABS = [
   ["overview", "Overview"],
   ["checklist", "Checklist"],
   ["emails", "Emails"],
+  ["notes", "Notes"],
   ["financials", "Payments"],
   ["activity", "Activity"]
+] as const;
+
+const PRICING_LINKS = [
+  { label: "Deposit Booking", url: "https://thestudiopilates.com/product/private-pilates-class-advancedbooking/" },
+  { label: "Standard Full Payment", url: "https://thestudiopilates.com/product/private-group-pilates-events-atlanta/" },
+  { label: "Rush Payment (under 21 days)", url: "https://thestudiopilates.com/product/rush-private-buyout-event-less-than-21-days/" },
+  { label: "Remaining Balance", url: "https://thestudiopilates.com/product/private-buyout-event-remaining-balance/" },
+  { label: "Half Hour Addition", url: "https://thestudiopilates.com/product/private-buyout-event-half-hour-addition/" }
 ] as const;
 
 const GROUPS = ["Intake", "Discussion", "Payment", "Event Setup", "Logistics", "Registration", "Final Confirmations", "Pre-Event", "Execution"] as const;
@@ -780,16 +789,10 @@ function Drawer({
                   <option value="Cancelled">Cancelled</option>
                 </optgroup>
               </select>
-              {buyout.sourceStatusLabel && buyout.sourceStatusLabel !== buyout.statusLabel ? (
-                <div className="ops-source-note">Monday source: {buyout.sourceStatusLabel}</div>
-              ) : null}
             </div>
             <div className="ops-status-right">
               <div className="ops-status-label">Next Action</div>
               <div className="ops-status-next">{buyout.nextAction}</div>
-              {buyout.sourceNextAction && buyout.sourceNextAction !== buyout.nextAction ? (
-                <div className="ops-source-note">Monday source: {buyout.sourceNextAction}</div>
-              ) : null}
             </div>
           </div>
           <div className="ops-lifecycle-bar">
@@ -808,6 +811,9 @@ function Drawer({
                 setTab(key);
                 if (key === "activity" && !activityLoaded) {
                   setActivityLoaded(true);
+                  loadActivity();
+                }
+                if (key === "notes" && notesList.length === 0) {
                   loadActivity();
                 }
                 if (key === "financials" && !paymentsLoaded) {
@@ -1120,7 +1126,7 @@ function Drawer({
             const LIFECYCLE_ROWS: ChecklistRow[] = [
               // ── Intake (0-5% of timeline)
               { phase: "Intake", color: COLORS.seaglass, client: { key: "inquiry-reviewed", label: "Client request received" }, operator: { key: "inquiry-reviewed", label: "Review inquiry", dueLabel: dueLine(0.02, "inquiry-reviewed") } },
-              { phase: "Intake", color: COLORS.seaglass, client: null, operator: { key: "initial-inquiry-response-sent", label: "Send initial response (t1)", dueLabel: dueLine(0.05, "initial-inquiry-response-sent") } },
+              { phase: "Intake", color: COLORS.seaglass, client: null, operator: { key: "initial-inquiry-response-sent", label: "Send initial response", dueLabel: dueLine(0.05, "initial-inquiry-response-sent") } },
 
               // ── Discussion (5-20% of timeline)
               { phase: "Discussion", color: COLORS.sage, client: { key: "customer-responded", label: "Client responds", dueLabel: dueLine(0.15, "customer-responded") }, operator: { key: "customer-responded", label: "Date / time discussion" } },
@@ -1135,7 +1141,7 @@ function Drawer({
               // ── Payment (20-35% of timeline)
               { phase: "Payment", color: COLORS.terracotta, client: null, operator: {
                 key: "deposit-link-sent-and-terms-shared",
-                label: buyout.paymentTier === "deposit" ? "Send deposit & terms email (t3)" : buyout.paymentTier === "rush" ? "Send rush payment email (t3b)" : "Send payment email (t3a)",
+                label: buyout.paymentTier === "deposit" ? "Send deposit & terms email" : buyout.paymentTier === "rush" ? "Send rush payment email" : "Send payment email",
                 dueLabel: dueLine(0.25, "deposit-link-sent-and-terms-shared")
               } },
               ...(buyout.paymentTier === "deposit" ? [
@@ -1157,7 +1163,7 @@ function Drawer({
                 blocked: !buyout.signupLink ? "Signup link must be added in Edit Details" : undefined,
                 dueLabel: dueLine(0.48, "momence-class-created")
               } },
-              { phase: "Event Setup", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details to client (t5)", dueLabel: dueLine(0.55, "momence-link-sign-up-sent") } },
+              { phase: "Event Setup", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details to client", dueLabel: dueLine(0.55, "momence-link-sign-up-sent") } },
 
               // ── Logistics (after event details sent)
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-assigned", label: "Confirm front desk staff", dueLabel: dueLine(0.60, "front-desk-assigned") } },
@@ -1170,7 +1176,7 @@ function Drawer({
                 dueLabel: dueLine(0, "all-attendees-registered", 2)
               }, operator: {
                 key: "all-attendees-registered",
-                label: "Confirm registrations or send reminder (t10)",
+                label: "Confirm registrations or send reminder",
                 dueLabel: dueLine(0, "all-attendees-registered", 2)
               } },
               { phase: "Registration", color: COLORS.sunshine, client: null, operator: {
@@ -1186,13 +1192,13 @@ function Drawer({
 
               // ── Balance Reminder (deposit tier only — after confirmations)
               ...(buyout.paymentTier === "deposit" ? [
-                { phase: "Final Confirmations", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Remaining balance due (${balanceDueDate})` }, operator: { key: "remaining-payment-received", label: "Send balance due reminder (t6/t7)", dueLabel: dueLine(0, "remaining-payment-received", 14) } }
+                { phase: "Final Confirmations", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Remaining balance due (${balanceDueDate})` }, operator: { key: "remaining-payment-received", label: "Send balance due reminder", dueLabel: dueLine(0, "remaining-payment-received", 14) } }
               ] : [] as ChecklistRow[]),
 
               // ── Pre-Event (hard deadlines: 24hrs and day-of)
               { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: {
                 key: "final-confirmation-emails-sent",
-                label: "Send final confirmation (t11)",
+                label: "Send final confirmation",
                 dueLabel: dueLine(0, "final-confirmation-emails-sent", 1)
               } },
               { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: {
@@ -1202,7 +1208,7 @@ function Drawer({
               } },
 
               // ── Execution
-              { phase: "Execution", color: COLORS.cherry, client: null, operator: { key: "event-completed", label: "Event delivered & follow-up (t12)", dueLabel: eventDateObj ? formatDisplayDate(buyout.eventDate) : undefined } }
+              { phase: "Execution", color: COLORS.cherry, client: null, operator: { key: "event-completed", label: "Event delivered & follow-up", dueLabel: eventDateObj ? formatDisplayDate(buyout.eventDate) : undefined } }
             ];
 
             let currentPhase = "";
@@ -1530,28 +1536,7 @@ function Drawer({
               <div className="ops-mini-progress large">
                 <span style={{ width: `${buyout.paymentProgress}%` }} />
               </div>
-              <div className="ops-link-stack">
-                {[
-                  ["Deposit Link", buyout.depositLink],
-                  ["Balance Link", buyout.balanceLink],
-                  ["Sign-Up Link", buyout.signupLink]
-                ].map(([label, url]) => (
-                  <a
-                    className="ops-link-card"
-                    href={url || undefined}
-                    key={label as string}
-                    rel="noreferrer"
-                    target={url ? "_blank" : undefined}
-                  >
-                    <div className="ops-link-icon" style={{ background: url ? `${COLORS.seaglass}18` : COLORS.divider }} />
-                    <div className="ops-link-copy">
-                      <div>{label}</div>
-                      <small>{url ? "Available for email workflow" : "Not created"}</small>
-                    </div>
-                  </a>
-                ))}
-              </div>
-              <div className="ops-section-label">Matched Payments</div>
+              <div className="ops-section-label" style={{ marginTop: 0 }}>Matched Payments</div>
               <div className="ops-activity-list">
                 {!paymentsLoaded ? (
                   <div className="ops-draft-loading">Loading payments...</div>
@@ -1578,6 +1563,52 @@ function Drawer({
                   ))
                 )}
               </div>
+              <div className="ops-section-label">Payment Links</div>
+              <div className="ops-pricing-link-list">
+                {PRICING_LINKS.map(({ label, url }) => (
+                  <div className="ops-pricing-link-row" key={label}>
+                    <div className="ops-pricing-link-label">{label}</div>
+                    <div className="ops-pricing-link-url">{url}</div>
+                    <button
+                      className="ops-link-copy-btn"
+                      onClick={() => navigator.clipboard.writeText(url)}
+                      title="Copy link"
+                      type="button"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {tab === "notes" ? (
+            <div>
+              <div className="ops-note-input-row">
+                <textarea
+                  className="ops-draft-textarea"
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  placeholder="Type a note..."
+                  rows={3}
+                  value={newNoteText}
+                />
+              </div>
+              {notesList.length > 0 ? (
+                <div className="ops-activity-list" style={{ marginTop: "0.5rem" }}>
+                  {notesList.map((note) => (
+                    <div className="ops-activity-item ops-note-item" key={note.id}>
+                      <div className="ops-activity-date">
+                        {new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        <span className="ops-activity-author">{note.author}</span>
+                      </div>
+                      <div className="ops-activity-text">{note.text}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="ops-draft-loading">No notes yet.</div>
+              )}
             </div>
           ) : null}
 
@@ -1589,29 +1620,9 @@ function Drawer({
                 <div className="ops-draft-loading">Loading activity...</div>
               ) : (
                 <>
-                  <div className="ops-section-label" style={{ marginTop: 0 }}>Add Note</div>
-                  <div className="ops-note-input-row">
-                    <textarea
-                      className="ops-draft-textarea"
-                      onChange={(e) => setNewNoteText(e.target.value)}
-                      placeholder="Type a note..."
-                      rows={3}
-                      value={newNoteText}
-                    />
-                    <button
-                      className="ops-draft-send"
-                      disabled={isPending || !newNoteText.trim()}
-                      onClick={handleAddNote}
-                      type="button"
-                      style={{ marginTop: 8, width: "100%" }}
-                    >
-                      {isPending ? "Saving..." : "Add Note"}
-                    </button>
-                  </div>
-
                   {notesList.length > 0 ? (
                     <>
-                      <div className="ops-section-label">Notes</div>
+                      <div className="ops-section-label" style={{ marginTop: 0 }}>Notes</div>
                       <div className="ops-activity-list">
                         {notesList.map((note) => (
                           <div className="ops-activity-item ops-note-item" key={note.id}>
@@ -1702,13 +1713,25 @@ function Drawer({
                 Cancel
               </button>
             </>
+          ) : tab === "notes" ? (
+            <>
+              <button className="ops-footer-primary" disabled={isPending || !newNoteText.trim()} onClick={handleAddNote} type="button">
+                {isPending ? "Saving..." : "Add Note"}
+              </button>
+              <button className="ops-footer-secondary" onClick={() => { setTab("overview"); setEditorMode("details"); }} type="button">
+                Edit Details
+              </button>
+              <button className="ops-footer-tertiary" onClick={() => { setTab("activity"); setActivityLoaded(true); loadActivity(); }} type="button">
+                Activity
+              </button>
+            </>
           ) : tab === "activity" ? (
             <>
               <button className="ops-footer-primary" onClick={() => { setActivityLoaded(false); setActivityLog([]); setNotesList([]); setTimeout(loadActivity, 50); setActivityLoaded(true); }} type="button">
                 Refresh
               </button>
-              <button className="ops-footer-secondary" onClick={() => { setTab("emails"); setEditorMode(null); }} type="button">
-                Emails
+              <button className="ops-footer-secondary" onClick={() => { setTab("notes"); }} type="button">
+                Add Note
               </button>
               <button className="ops-footer-tertiary" onClick={() => { setTab("overview"); setEditorMode(null); }} type="button">
                 Overview
@@ -1722,8 +1745,8 @@ function Drawer({
               <button className="ops-footer-secondary" onClick={() => { setTab("overview"); setEditorMode("details"); }} type="button">
                 Edit Details
               </button>
-              <button className="ops-footer-tertiary" onClick={() => { setTab("activity"); setActivityLoaded(true); loadActivity(); }} type="button">
-                Activity
+              <button className="ops-footer-tertiary" onClick={() => { setTab("notes"); loadActivity(); }} type="button">
+                Notes
               </button>
             </>
           )}
@@ -2019,9 +2042,6 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                   </div>
                   <div className="ops-row-meta">
                     {buyout.lifecycleStage} · {buyout.trackingHealth}
-                    {buyout.sourceStatusLabel && buyout.sourceStatusLabel !== buyout.statusLabel
-                      ? ` · Monday: ${buyout.sourceStatusLabel}`
-                      : ""}
                   </div>
                   <div className="ops-lifecycle-bar table">
                     {lifecycleSegments(buyout.lifecycleStep, buyout.lifecycleStage).map((color, index) => (
@@ -2035,11 +2055,9 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                     {buyout.nextAction}
                   </div>
                   <div className="ops-row-meta">
-                    {buyout.sourceNextAction && buyout.sourceNextAction !== buyout.nextAction
-                      ? `Monday says ${buyout.sourceNextAction}`
-                      : buyout.lastAction
-                        ? `Last action ${formatDisplayDate(buyout.lastAction)}`
-                        : "No action logged"}
+                    {buyout.lastAction
+                      ? `Last action ${formatDisplayDate(buyout.lastAction)}`
+                      : "No action logged"}
                   </div>
                   {buyout.daysWaiting > 0 ? (
                     <span className="ops-wait-pill" style={{ background: `${wait}14`, color: wait }}>
