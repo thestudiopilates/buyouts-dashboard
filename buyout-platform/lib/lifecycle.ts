@@ -3,7 +3,7 @@ import { BUYOUT_PHASES } from "@/lib/buyout-phases";
 
 const STAGE_ORDER: StageKey[] = [
   "Inquiry", "Respond", "Discuss", "Feasible", "Quote", "Deposit",
-  "Paid", "Sign-Ups", "Confirmed", "Final", "Ready", "Complete"
+  "Paid", "Sign-Ups", "Confirmed", "Ready", "Final", "Complete"
 ];
 
 const TERMINAL_STAGES = new Set<StageKey>(["Complete", "Cancelled", "DOA", "Not Possible"]);
@@ -53,23 +53,22 @@ const STEP_ADVANCEMENT_RULES: Array<{
     ballInCourt: "Team"
   },
   // ── Confirmed sub-steps (after signups complete, work through confirmations)
-  // Balance reminder comes after Connect Team shift if deposit was paid
   {
-    requires: ["all-attendees-registered", "all-waivers-signed", "front-desk-assigned"],
+    requires: ["all-attendees-registered", "all-waivers-signed", "remaining-payment-received", "front-desk-assigned"],
     advancesTo: "Confirmed",
     nextAction: "Confirm Connect Team shift extended",
     ballInCourt: "Team"
   },
   {
-    requires: ["all-attendees-registered", "all-waivers-signed"],
+    requires: ["all-attendees-registered", "all-waivers-signed", "remaining-payment-received"],
     advancesTo: "Confirmed",
-    nextAction: "Confirm again with front desk staff",
+    nextAction: "Assign front desk and extend shift",
     ballInCourt: "Team"
   },
   {
-    requires: ["remaining-payment-received"],
+    requires: ["all-attendees-registered", "all-waivers-signed"],
     advancesTo: "Confirmed",
-    nextAction: "Confirm again with instructor",
+    nextAction: "Collect remaining balance if deposit tier",
     ballInCourt: "Team"
   },
   // ── Sign-Ups

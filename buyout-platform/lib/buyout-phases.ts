@@ -47,7 +47,7 @@ export const BUYOUT_PHASES: Record<StageKey, BuyoutPhaseConfig> = {
   Deposit: {
     stage: "Deposit",
     statusLabel: "Waiting on Deposit",
-    nextAction: "Follow up on deposit payment (t4)",
+    nextAction: "Waiting on payment from client",
     ballInCourt: "Client",
     templateKeys: ["t0", "t4", "t13"]
   },
