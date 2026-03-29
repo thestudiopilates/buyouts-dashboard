@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { createInquiry } from "@/lib/buyouts";
+import { renderEmailHtml } from "@/lib/email-renderer";
+import { getGmailReadiness, sendGmailMessage } from "@/lib/gmail";
 import { inquirySchema, type InquiryFormState } from "@/lib/validations";
 
 const ALLOWED_ORIGINS = [
@@ -73,6 +75,44 @@ export async function POST(request: Request) {
   }
 
   await createInquiry(parsed.data);
+
+  // Send notification email to the team
+  try {
+    const gmail = getGmailReadiness();
+    if (gmail.ready) {
+      const d = parsed.data;
+      const bodyText = [
+        `New buyout inquiry from ${d.clientName}`,
+        "",
+        `Name: ${d.clientName}`,
+        `Email: ${d.clientEmail}`,
+        d.clientPhone ? `Phone: ${d.clientPhone}` : null,
+        d.companyName ? `Company/Group: ${d.companyName}` : null,
+        d.eventType ? `Event Type: ${d.eventType}` : null,
+        d.preferredDates ? `Preferred Dates: ${d.preferredDates}` : null,
+        d.preferredLocation ? `Preferred Location: ${d.preferredLocation}` : null,
+        d.guestCountEstimate ? `Guest Count: ${d.guestCountEstimate}` : null,
+        d.notes ? `\nNotes:\n${d.notes}` : null,
+        "",
+        "View in dashboard: https://buyout-platform.vercel.app/dashboard"
+      ].filter(Boolean).join("\n");
+
+      const bodyHtml = renderEmailHtml({
+        subject: `New Buyout Inquiry: ${d.clientName}`,
+        body: bodyText,
+        previewLabel: "New Inquiry"
+      });
+
+      await sendGmailMessage({
+        to: gmail.senderEmail ?? "events@thestudiopilates.com",
+        subject: `New Buyout Inquiry: ${d.clientName} | ${d.eventType || "Private Event"}`,
+        bodyText,
+        bodyHtml
+      });
+    }
+  } catch {
+    // Notification failure should not block the inquiry from being saved
+  }
 
   const response: InquiryFormState = {
     status: "success",
