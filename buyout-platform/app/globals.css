@@ -1925,6 +1925,13 @@ textarea {
 
 /* ── Draft Editor ──────────────────────────────────────────── */
 
+.ops-client-pref {
+  font-size: 0.68rem;
+  color: var(--sunshine);
+  font-style: italic;
+  margin-top: 2px;
+}
+
 .ops-client-details {
   display: flex;
   flex-wrap: wrap;
