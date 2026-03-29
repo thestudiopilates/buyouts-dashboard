@@ -668,6 +668,37 @@ export async function createInquiryInDb(input: BuyoutInquiryInput) {
     });
   }
 
+  // Pre-populate all 16 workflow steps so progress shows correctly from the start
+  const WORKFLOW_STEPS = [
+    { key: "inquiry-reviewed", label: "Inquiry Reviewed", group: "INTAKE" },
+    { key: "initial-inquiry-response-sent", label: "Initial Response Sent", group: "INTAKE" },
+    { key: "customer-responded", label: "Customer Responded", group: "INTAKE" },
+    { key: "date-finalized", label: "Date Finalized", group: "PLANNING" },
+    { key: "deposit-link-sent-and-terms-shared", label: "Payment Link Sent", group: "PAYMENT" },
+    { key: "deposit-paid-and-terms-signed", label: "Payment Received", group: "PAYMENT" },
+    { key: "instructor-finalized", label: "Instructor Finalized", group: "LOGISTICS" },
+    { key: "momence-class-created", label: "Momence Class Created", group: "LOGISTICS" },
+    { key: "momence-link-sign-up-sent", label: "Event Details Sent to Client", group: "LOGISTICS" },
+    { key: "remaining-payment-received", label: "Remaining Balance Received", group: "PAYMENT" },
+    { key: "all-attendees-registered", label: "All Attendees Registered", group: "LOGISTICS" },
+    { key: "all-waivers-signed", label: "All Waivers Signed", group: "LOGISTICS" },
+    { key: "front-desk-assigned", label: "Front Desk Assigned", group: "PRE_EVENT" },
+    { key: "front-desk-shift-extended", label: "Desk Shift Extended", group: "PRE_EVENT" },
+    { key: "final-confirmation-emails-sent", label: "Final Confirmation Sent", group: "PRE_EVENT" },
+    { key: "event-completed", label: "Event Completed", group: "EXECUTION" }
+  ] as const;
+
+  await prisma.buyoutWorkflowStep.createMany({
+    data: WORKFLOW_STEPS.map((step, index) => ({
+      id: `${buyout.id}_${String(index + 1).padStart(2, "0")}`,
+      buyoutId: buyout.id,
+      stepKey: step.key,
+      label: step.label,
+      stepGroup: step.group,
+      isComplete: false
+    }))
+  });
+
   return {
     id: inquiry.id,
     createdAt: inquiry.createdAt.toISOString(),

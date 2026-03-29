@@ -561,7 +561,10 @@ function buildEmailVariables(buyout: BuyoutSummary | null): Record<string, strin
 
   const clientName = normalizeTemplateField(buyout.clientName) || buyout.name.replace(/\s+Test Event$/i, "").trim() || buyout.name;
   const clientFirstName = clientName.split(/\s+/)[0] ?? clientName;
-  const eventDate = normalizeTemplateField(buyout.eventDate);
+  const rawDate = normalizeTemplateField(buyout.eventDate);
+  const eventDate = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)
+    ? new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" }).format(new Date(`${rawDate}T12:00:00`))
+    : rawDate;
   const totalPrice = formatCurrency(buyout.total);
   const amountPaid = formatCurrency(buyout.amountPaid);
   const remainingBalance = formatCurrency(buyout.outstanding);
