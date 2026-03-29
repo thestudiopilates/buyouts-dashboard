@@ -39,6 +39,23 @@ function getSignupLinkFromSnapshot(sourceSnapshot: unknown) {
     : undefined;
 }
 
+function getSignupLink2FromSnapshot(sourceSnapshot: unknown): string | undefined {
+  if (
+    !sourceSnapshot ||
+    typeof sourceSnapshot !== "object" ||
+    !("values" in sourceSnapshot) ||
+    !sourceSnapshot.values ||
+    typeof sourceSnapshot.values !== "object" ||
+    !("signupLink2" in sourceSnapshot.values)
+  ) {
+    return undefined;
+  }
+
+  return typeof (sourceSnapshot.values as Record<string, unknown>).signupLink2 === "string"
+    ? (sourceSnapshot.values as Record<string, string>).signupLink2
+    : undefined;
+}
+
 function stageRank(stage: BuyoutSummary["lifecycleStage"]) {
   return STAGE_ORDER.indexOf(stage);
 }
@@ -469,6 +486,7 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
     depositLink: buyout.financial?.depositLink ?? undefined,
     balanceLink: buyout.financial?.balanceLink ?? undefined,
     signupLink: getSignupLinkFromSnapshot(buyout.sourceSnapshot),
+    signupLink2: getSignupLink2FromSnapshot(buyout.sourceSnapshot),
     notes: buyout.notesInternal ?? "",
     healthFlags,
     sentTemplateIds,
@@ -821,7 +839,7 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
     }
   });
 
-  if (input.signupLink !== undefined || existing.sourceSnapshot) {
+  if (input.signupLink !== undefined || input.signupLink2 !== undefined || existing.sourceSnapshot) {
     const snapshot =
       existing.sourceSnapshot && typeof existing.sourceSnapshot === "object" && !Array.isArray(existing.sourceSnapshot)
         ? { ...(existing.sourceSnapshot as Record<string, unknown>) }
@@ -835,6 +853,12 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
       delete values.signupLink;
     } else if (input.signupLink) {
       values.signupLink = input.signupLink;
+    }
+
+    if (input.signupLink2 === "") {
+      delete values.signupLink2;
+    } else if (input.signupLink2) {
+      values.signupLink2 = input.signupLink2;
     }
 
     snapshot.values = values;

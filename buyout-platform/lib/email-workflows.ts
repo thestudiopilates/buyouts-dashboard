@@ -202,7 +202,7 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
     legacyColumnId: "long_text_mkzjfbe9",
     subjectTemplate: "The Studio Pilates Buyout: {{Client Name}} | Event Details",
     fallbackBodyTemplate:
-      "Hi {{Client First Name}},\n\nYour event is booked for {{Event Date}} from {{Start Time}} to {{End Time}} at {{Location}} with {{Instructor}}.\n\nPlease share this signup link with your guests: {{Signup Link}}\n\nWarmly,\nThe Studio Pilates Team",
+      "Hi {{Client First Name}},\n\nYour event is booked for {{Event Date}} from {{Start Time}} to {{End Time}} at {{Location}} with {{Instructor}}.\n\nPlease share this signup link with your guests: {{Signup Link}}\n\n<b>Additional Signup Link:</b> {{Signup Link 2}}\n\nWarmly,\nThe Studio Pilates Team",
     requiredVariables: [
       { key: "clientFirstName", label: "Client First Name" },
       { key: "eventDate", label: "Event Date" },
@@ -310,7 +310,7 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
     legacyColumnId: "long_text_mkzj45br",
     subjectTemplate: "The Studio Pilates Buyout: {{Client Name}} | Missing Signups",
     fallbackBodyTemplate:
-      "Hi {{Client First Name}},\n\nWe still need your guests to sign up before {{Event Date}}.\n\nShare this link: {{Signup Link}}\n\nWarmly,\nThe Studio Pilates Team",
+      "Hi {{Client First Name}},\n\nWe still need your guests to sign up before {{Event Date}}.\n\nShare this link: {{Signup Link}}\n\n<b>Additional Signup Link:</b> {{Signup Link 2}}\n\nWarmly,\nThe Studio Pilates Team",
     requiredVariables: [
       { key: "clientFirstName", label: "Client First Name" },
       { key: "eventDate", label: "Event Date" },
@@ -393,7 +393,7 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
     legacyColumnId: "long_text_mkzjw24h",
     subjectTemplate: "The Studio Pilates Buyout: {{Client Name}} | 48-Hour Signup Reminder",
     fallbackBodyTemplate:
-      "Hi {{Client First Name}},\n\nYour event is almost here and we still need guest signups completed.\n\nShare this link now: {{Signup Link}}\n\nWarmly,\nThe Studio Pilates Team",
+      "Hi {{Client First Name}},\n\nYour event is almost here and we still need guest signups completed.\n\nShare this link now: {{Signup Link}}\n\n<b>Additional Signup Link:</b> {{Signup Link 2}}\n\nWarmly,\nThe Studio Pilates Team",
     requiredVariables: [
       { key: "clientFirstName", label: "Client First Name" },
       { key: "eventDate", label: "Event Date" },

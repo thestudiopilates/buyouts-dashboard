@@ -82,6 +82,7 @@ export type BuyoutSummary = {
   depositLink?: string;
   balanceLink?: string;
   signupLink?: string;
+  signupLink2?: string;
   notes: string;
   healthFlags: string[];
   sentTemplateIds: string[];
@@ -128,4 +129,5 @@ export type BuyoutUpdateInput = {
   depositLink?: string;
   balanceLink?: string;
   signupLink?: string;
+  signupLink2?: string;
 };

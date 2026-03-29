@@ -301,7 +301,8 @@ function Drawer({
     notes: buyout.notes,
     depositLink: buyout.depositLink ?? "",
     balanceLink: buyout.balanceLink ?? "",
-    signupLink: buyout.signupLink ?? ""
+    signupLink: buyout.signupLink ?? "",
+    signupLink2: buyout.signupLink2 ?? ""
   });
   const [isPending, startTransition] = useTransition();
   const countdown = countdownTone(buyout.countdownDays);
@@ -361,7 +362,8 @@ function Drawer({
       notes: buyout.notes,
       depositLink: buyout.depositLink ?? "",
       balanceLink: buyout.balanceLink ?? "",
-      signupLink: buyout.signupLink ?? ""
+      signupLink: buyout.signupLink ?? "",
+      signupLink2: buyout.signupLink2 ?? ""
     });
   }, [buyout]);
 
@@ -402,7 +404,8 @@ function Drawer({
       notes: buyout.notes,
       depositLink: buyout.depositLink ?? "",
       balanceLink: buyout.balanceLink ?? "",
-      signupLink: buyout.signupLink ?? ""
+      signupLink: buyout.signupLink ?? "",
+      signupLink2: buyout.signupLink2 ?? ""
     });
   }
 
@@ -925,6 +928,10 @@ function Drawer({
                           <label className="field-full">
                             <span>Sign-up link (Momence)</span>
                             <input className="input" value={form.signupLink} onChange={(event) => updateField("signupLink", event.target.value)} />
+                          </label>
+                          <label className="field-full">
+                            <span>Sign-up link 2 (second event / full Emory buyout)</span>
+                            <input className="input" value={form.signupLink2} onChange={(event) => updateField("signupLink2", event.target.value)} placeholder="Optional — only for back-to-back or full-location events" />
                           </label>
                           <label className="field-full">
                             <span>Deposit link</span>
