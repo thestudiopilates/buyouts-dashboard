@@ -761,6 +761,12 @@ function Drawer({
                       Close
                     </button>
                   </div>
+                  <div className="ops-inline-editor-actions" style={{ marginBottom: 12 }}>
+                    <button className="ops-footer-primary" disabled={isPending} onClick={handleSave} type="button">
+                      {isPending ? "Saving..." : "Save Changes"}
+                    </button>
+                    {message ? <span className="success-text">{message}</span> : null}
+                  </div>
                   <div className="ops-inline-editor-grid">
                     {editorMode === "details" ? (
                       <>
@@ -885,6 +891,35 @@ function Drawer({
                       {value}
                     </div>
                     <div className="ops-quick-label">{label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="ops-section-label">Event Details</div>
+              <div className="ops-detail-card">
+                {[
+                  ["Client", buyout.clientName, true],
+                  ["Email", buyout.clientEmail, true],
+                  ["Phone", buyout.clientPhone, false],
+                  ["Event Type", buyout.eventType, false],
+                  ["Preferred Dates", buyout.preferredDates, false],
+                  ["Event Date", buyout.eventDate === "TBD" ? null : formatDisplayDate(buyout.eventDate), true],
+                  ["Start Time", buyout.startTime, true],
+                  ["End Time", buyout.endTime, false],
+                  ["Location", buyout.location === "Unassigned" ? null : buyout.location, true],
+                  ["Instructor", buyout.instructor === "Unassigned" ? null : buyout.instructor, true],
+                  ["Signup Link", buyout.signupLink ? "Set" : null, true],
+                  ["Sign-Ups", buyout.signupLink ? `${buyout.signups}/${buyout.capacity || "?"}` : null, false],
+                  ["Front Desk", buyout.assignedTo === "Unassigned" ? null : buyout.assignedTo, true],
+                  ["Deposit Link", buyout.depositLink ? "Set" : null, false],
+                  ["Balance Link", buyout.balanceLink ? "Set" : null, false],
+                  ["Payment Tier", buyout.paymentTier === "deposit" ? "Deposit ($250 + balance)" : buyout.paymentTier === "rush" ? "Rush (+$100)" : "Standard (full)", false]
+                ].map(([label, value, required]) => (
+                  <div className="ops-detail-line" key={label as string}>
+                    <span>{label}</span>
+                    <strong style={{ color: !value && required ? COLORS.cherry : undefined }}>
+                      {value || (required ? "Still Needed" : "—")}
+                    </strong>
                   </div>
                 ))}
               </div>
@@ -1879,10 +1914,21 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       <span>{formatDisplayDate(buyout.eventDate)}</span>
                       <span>•</span>
                       <span>{buyout.location}</span>
+                      {buyout.startTime ? <><span>•</span><span>{buyout.startTime}{buyout.endTime ? ` - ${buyout.endTime}` : ""}</span></> : null}
                     </div>
-                    {buyout.notes ? (
-                      <div className="ops-client-note">{buyout.notes.slice(0, 80)}{buyout.notes.length > 80 ? "..." : ""}</div>
-                    ) : null}
+                    <div className="ops-client-details">
+                      <span className={buyout.instructor && buyout.instructor !== "Unassigned" ? "ops-detail-ok" : "ops-detail-missing"}>
+                        {buyout.instructor && buyout.instructor !== "Unassigned" ? buyout.instructor : "Instructor needed"}
+                      </span>
+                      <span>•</span>
+                      <span className={buyout.signupLink ? "ops-detail-ok" : "ops-detail-missing"}>
+                        {buyout.signupLink ? `${buyout.signups}/${buyout.capacity || "?"} signed up` : "Momence link needed"}
+                      </span>
+                      <span>•</span>
+                      <span className={buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? "ops-detail-ok" : "ops-detail-missing"}>
+                        {buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? `Desk: ${buyout.assignedTo}` : "Front desk needed"}
+                      </span>
+                    </div>
                     {buyout.ballInCourt === "Client" && buyout.daysWaiting > 7 ? (
                       <span className="ops-cold-badge">{buyout.daysWaiting > 14 ? "Suggest DOA" : "Going Cold"}</span>
                     ) : null}
