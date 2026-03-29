@@ -45,11 +45,11 @@ const ALL_ACTIVE_STAGES: StageKey[] = [
 export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
   {
     key: "t0",
-    name: "Custom / One-Off Message",
+    name: "A Note from The Studio Pilates Events Team",
     triggerLabel: "Custom Message",
     category: "General",
     legacyColumnId: "",
-    subjectTemplate: "A Note from The Studio Pilates Events Team",
+    subjectTemplate: "The Studio Pilates Buyout: {{Client Name}} | A Note from Our Events Team",
     fallbackBodyTemplate:
       "Hi {{Client First Name}},\n\n\n\nWarmly,\nAutumn\nThe Studio Pilates Team",
     requiredVariables: [{ key: "clientFirstName", label: "Client First Name" }],
