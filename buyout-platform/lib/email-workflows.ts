@@ -49,7 +49,7 @@ export const EMAIL_TEMPLATE_SEEDS: EmailTemplateSeed[] = [
     triggerLabel: "Custom Message",
     category: "General",
     legacyColumnId: "",
-    subjectTemplate: "The Studio Pilates Buyout: {{Client Name}} | Follow Up",
+    subjectTemplate: "A Note from The Studio Pilates Events Team",
     fallbackBodyTemplate:
       "Hi {{Client First Name}},\n\n\n\nWarmly,\nAutumn\nThe Studio Pilates Team",
     requiredVariables: [{ key: "clientFirstName", label: "Client First Name" }],
