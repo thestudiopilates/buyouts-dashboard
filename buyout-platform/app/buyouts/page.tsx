@@ -1,5 +1,7 @@
-import { BuyoutTable } from "@/components/buyout-table";
+import Link from "next/link";
+
 import { PortalShell } from "@/components/portal-shell";
+import { OperationsDashboard } from "@/components/operations-dashboard";
 import { listBuyouts } from "@/lib/buyouts";
 
 export const dynamic = "force-dynamic";
@@ -11,17 +13,20 @@ export default async function BuyoutsPage() {
     <div className="shell">
       <PortalShell activeHref="/buyouts">
         <div className="section-block">
-          <p className="eyebrow">Buyouts module</p>
-          <h1 className="page-title" style={{ fontSize: "2.4rem" }}>
-            Pipeline and event management
-          </h1>
-          <p className="section-copy">
-            This is the operating surface for the team. It should eventually own assignment,
-            status, workflow, financials, and communications without Monday as the center.
-          </p>
-        </div>
-        <div className="section-block" style={{ paddingTop: 0 }}>
-          <BuyoutTable buyouts={buyouts} />
+          <div className="portal-topbar">
+            <div>
+              <p className="eyebrow">Buyout Operations</p>
+              <h1 className="page-title" style={{ fontSize: "2.4rem" }}>
+                Pipeline &amp; Event Management
+              </h1>
+            </div>
+            <Link className="btn btn-primary" href="/buyouts/inquire">
+              New Inquiry
+            </Link>
+          </div>
+          <section style={{ marginTop: "1.25rem" }}>
+            <OperationsDashboard buyouts={buyouts} />
+          </section>
         </div>
       </PortalShell>
     </div>

@@ -4,12 +4,8 @@ import { ReactNode } from "react";
 const navItems = [
   { href: "/dashboard", label: "Home" },
   { href: "/buyouts", label: "Buyouts" },
-  { href: "/dashboard/migration", label: "Migration" },
-  { href: "/projects", label: "Projects" },
-  { href: "/studio-schedule", label: "Studio Schedule" },
   { href: "/front-desk", label: "Front Desk" },
-  { href: "/reports", label: "Reports" },
-  { href: "/settings", label: "Settings" }
+  { href: "/settings", label: "Email Templates" }
 ] as const;
 
 export function PortalShell({
