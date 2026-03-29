@@ -299,10 +299,14 @@ export function mapWorkflowGroup(group: string): WorkflowGroup {
     case "Intake":
       return WorkflowGroup.INTAKE;
     case "Planning":
+    case "Discussion":
       return WorkflowGroup.PLANNING;
     case "Payment":
       return WorkflowGroup.PAYMENT;
     case "Logistics":
+    case "Event Setup":
+    case "Registration":
+    case "Final Confirmations":
       return WorkflowGroup.LOGISTICS;
     case "Pre-Event":
       return WorkflowGroup.PRE_EVENT;

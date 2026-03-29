@@ -31,15 +31,18 @@ const TABS = [
   ["activity", "Activity"]
 ] as const;
 
-const GROUPS = ["Intake", "Planning", "Payment", "Logistics", "Pre-Event", "Execution"] as const;
+const GROUPS = ["Intake", "Discussion", "Payment", "Event Setup", "Logistics", "Registration", "Final Confirmations", "Pre-Event", "Execution"] as const;
 
 const groupColors: Record<(typeof GROUPS)[number], string> = {
   Intake: COLORS.seaglass,
-  Planning: COLORS.sage,
+  Discussion: COLORS.sage,
   Payment: COLORS.terracotta,
+  "Event Setup": COLORS.sky,
   Logistics: COLORS.sky,
-  "Pre-Event": COLORS.sunshine,
-  Execution: COLORS.apricot
+  Registration: COLORS.sunshine,
+  "Final Confirmations": COLORS.apricot,
+  "Pre-Event": COLORS.apricot,
+  Execution: COLORS.cherry
 };
 
 const EMAIL_TEMPLATES = [

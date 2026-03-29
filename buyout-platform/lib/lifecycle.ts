@@ -98,10 +98,10 @@ const STEP_ADVANCEMENT_RULES: Array<{
     nextAction: "Secure instructor and update event details",
     ballInCourt: "Team"
   },
-  // ── Payment
+  // ── Payment (deposit path: link sent → waiting for deposit)
   {
     requires: ["deposit-link-sent-and-terms-shared"],
-    advancesTo: "Quote",
+    advancesTo: "Deposit",
     nextAction: "Waiting on payment from client",
     ballInCourt: "Client"
   },
