@@ -249,6 +249,8 @@ function Drawer({
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("overview");
   const [editorMode, setEditorMode] = useState<"details" | "notes" | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const [drawerWidth, setDrawerWidth] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [pendingEmailId, setPendingEmailId] = useState("");
@@ -365,6 +367,55 @@ function Drawer({
 
   function updateField(key: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleCancelEdit() {
+    setEditorMode(null);
+    setMessage("");
+    setForm({
+      clientName: buyout.clientName,
+      clientEmail: buyout.clientEmail,
+      clientPhone: buyout.clientPhone ?? "",
+      eventType: buyout.eventType,
+      preferredDates: buyout.preferredDates ?? "",
+      preferredLocation: buyout.preferredLocation ?? "",
+      guestCountEstimate: String(buyout.capacity || ""),
+      eventDate: buyout.eventDate === "TBD" ? "" : buyout.eventDate,
+      startTime: buyout.startTime ?? "",
+      endTime: buyout.endTime ?? "",
+      location: buyout.location,
+      capacity: String(buyout.capacity || ""),
+      assignedTo: buyout.assignedTo,
+      instructor: buyout.instructor,
+      notes: buyout.notes,
+      depositLink: buyout.depositLink ?? "",
+      balanceLink: buyout.balanceLink ?? "",
+      signupLink: buyout.signupLink ?? ""
+    });
+  }
+
+  function startDrawerResize(e: React.MouseEvent) {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = drawerRef.current?.offsetWidth ?? window.innerWidth * 0.5;
+
+    function onMove(ev: MouseEvent) {
+      const delta = startX - ev.clientX;
+      const next = Math.max(380, Math.min(window.innerWidth * 0.9, startWidth + delta));
+      setDrawerWidth(next);
+    }
+
+    function onUp() {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
   }
 
   function handleSave() {
@@ -651,7 +702,8 @@ function Drawer({
   return (
     <>
       <div className="ops-drawer-overlay" onClick={onClose} />
-      <aside className="ops-drawer">
+      <aside className="ops-drawer" ref={drawerRef} style={drawerWidth ? { width: drawerWidth } : undefined}>
+        <div className="ops-drawer-resize" onMouseDown={startDrawerResize} />
         <div
           className="ops-drawer-header"
           style={{
@@ -955,7 +1007,7 @@ function Drawer({
                 <div className="ops-detail-line"><span>Preferred Dates</span><strong>{buyout.preferredDates || "Not specified"}</strong></div>
                 <div className="ops-detail-line"><span>Preferred Location</span><strong>{buyout.preferredLocation || "Not specified"}</strong></div>
                 <div className="ops-detail-line"><span>Guest Estimate</span><strong>{buyout.capacity || "Not specified"}</strong></div>
-                <div className="ops-detail-line"><span>Inquiry Date</span><strong>{buyout.inquiryDate ?? "Unknown"}</strong></div>
+                <div className="ops-detail-line"><span>Inquiry Date</span><strong>{buyout.inquiryDate ? formatDisplayDate(buyout.inquiryDate) : "Unknown"}</strong></div>
                 <div className="ops-detail-line"><span>Payment Tier</span><strong>{buyout.paymentTier === "deposit" ? "Deposit ($250 + balance)" : buyout.paymentTier === "rush" ? "Rush (+$100 fee)" : "Standard (full payment)"}</strong></div>
               </div>
 
@@ -1619,6 +1671,15 @@ function Drawer({
               </button>
               <button className="ops-footer-tertiary" onClick={handlePreviewDraft} type="button">
                 Preview
+              </button>
+            </>
+          ) : editorMode ? (
+            <>
+              <button className="ops-footer-primary" disabled={isPending} onClick={handleSave} type="button">
+                {isPending ? "Saving..." : "Save Changes"}
+              </button>
+              <button className="ops-footer-secondary" onClick={handleCancelEdit} type="button">
+                Cancel
               </button>
             </>
           ) : tab === "activity" ? (

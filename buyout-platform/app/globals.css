@@ -1470,11 +1470,27 @@ textarea {
   z-index: 100;
   display: flex;
   flex-direction: column;
-  width: 560px;
-  max-width: 100%;
+  width: 50vw;
+  min-width: 380px;
+  max-width: 90vw;
   height: 100vh;
   background: var(--card);
   box-shadow: -8px 0 32px rgba(40, 32, 14, 0.1);
+}
+
+.ops-drawer-resize {
+  position: absolute;
+  top: 0;
+  left: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 101;
+}
+
+.ops-drawer-resize:hover,
+.ops-drawer-resize:active {
+  background: linear-gradient(90deg, transparent, rgba(159, 84, 63, 0.15), transparent);
 }
 
 .ops-drawer-header {
