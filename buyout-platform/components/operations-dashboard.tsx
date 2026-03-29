@@ -1063,13 +1063,8 @@ function Drawer({
               } },
               { phase: "Event Setup", color: COLORS.sky, client: null, operator: { key: "momence-link-sign-up-sent", label: "Send event details to client (t5)", dueLabel: dueLine(0.55, "momence-link-sign-up-sent") } },
 
-              // ── Remaining Balance (deposit tier only — hard deadline: 14 days before event)
-              ...(buyout.paymentTier === "deposit" ? [
-                { phase: "Remaining Balance", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Client pays remaining balance`, dueLabel: dueLine(0, "remaining-payment-received", 14) }, operator: { key: "remaining-payment-received", label: "Confirm balance received or send reminder (t6)", dueLabel: dueLine(0, "remaining-payment-received", 14) } }
-              ] : [] as ChecklistRow[]),
-
-              // ── Logistics (55-70% of timeline)
-              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-assigned", label: "Assign front desk", dueLabel: dueLine(0.60, "front-desk-assigned") } },
+              // ── Logistics (after event details sent)
+              { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-assigned", label: "Confirm front desk staff", dueLabel: dueLine(0.60, "front-desk-assigned") } },
               { phase: "Logistics", color: COLORS.sky, client: null, operator: { key: "front-desk-shift-extended", label: "Extend desk shift if needed", dueLabel: dueLine(0.65, "front-desk-shift-extended") } },
 
               // ── Registration (hard deadline: 48 hours before event)
@@ -1087,6 +1082,16 @@ function Drawer({
                 label: "Confirm all waivers signed",
                 dueLabel: dueLine(0, "all-waivers-signed", 2)
               } },
+
+              // ── Final Confirmations
+              { phase: "Final Confirmations", color: COLORS.apricot, client: null, operator: { key: "all-waivers-signed", label: "Confirm again with instructor", dueLabel: dueLine(0.80, "all-waivers-signed") } },
+              { phase: "Final Confirmations", color: COLORS.apricot, client: null, operator: { key: "front-desk-assigned", label: "Confirm again with front desk staff", dueLabel: dueLine(0.82, "front-desk-assigned") } },
+              { phase: "Final Confirmations", color: COLORS.apricot, client: null, operator: { key: "front-desk-shift-extended", label: "Confirm Connect Team shift extended", dueLabel: dueLine(0.84, "front-desk-shift-extended") } },
+
+              // ── Balance Reminder (deposit tier only — after confirmations)
+              ...(buyout.paymentTier === "deposit" ? [
+                { phase: "Final Confirmations", color: COLORS.terracotta, client: { key: "remaining-payment-received", label: `Remaining balance due (${balanceDueDate})` }, operator: { key: "remaining-payment-received", label: "Send balance due reminder (t6/t7)", dueLabel: dueLine(0, "remaining-payment-received", 14) } }
+              ] : [] as ChecklistRow[]),
 
               // ── Pre-Event (hard deadlines: 24hrs and day-of)
               { phase: "Pre-Event", color: COLORS.apricot, client: null, operator: {

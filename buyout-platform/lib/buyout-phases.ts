@@ -12,84 +12,84 @@ export const BUYOUT_PHASES: Record<StageKey, BuyoutPhaseConfig> = {
   Inquiry: {
     stage: "Inquiry",
     statusLabel: "New Inquiry Received",
-    nextAction: "Review inquiry and send initial response",
+    nextAction: "Review inquiry and respond (t1)",
     ballInCourt: "Team",
     templateKeys: ["t0", "t1", "t2", "t13"]
   },
   Respond: {
     stage: "Respond",
     statusLabel: "Initial Response Sent",
-    nextAction: "Wait for client response",
+    nextAction: "Waiting on client to finalize date / time",
     ballInCourt: "Client",
     templateKeys: ["t0", "t2", "t13"]
   },
   Discuss: {
     stage: "Discuss",
     statusLabel: "In Discussion",
-    nextAction: "Confirm dates, times, location, and event details",
-    ballInCourt: "Both",
+    nextAction: "Waiting on client to finalize date / time",
+    ballInCourt: "Client",
     templateKeys: ["t0", "t2", "t13"]
   },
   Feasible: {
     stage: "Feasible",
-    statusLabel: "Date Agreed — Update Details & Send Payment",
-    nextAction: "Update event details, then send payment link",
+    statusLabel: "Date Agreed",
+    nextAction: "1. Update final date and details in dashboard 2. Send payment email to client",
     ballInCourt: "Team",
-    templateKeys: ["t0", "t3", "t13"]
+    templateKeys: ["t0", "t3", "t3a", "t3b", "t13"]
   },
   Quote: {
     stage: "Quote",
-    statusLabel: "Payment Link Sent",
-    nextAction: "Wait for payment",
+    statusLabel: "Waiting on Payment",
+    nextAction: "Waiting on payment from client",
     ballInCourt: "Client",
-    templateKeys: ["t0", "t3", "t4", "t13"]
+    templateKeys: ["t0", "t3", "t3a", "t3b", "t4", "t13"]
   },
   Deposit: {
     stage: "Deposit",
-    statusLabel: "Awaiting Payment",
-    nextAction: "Follow up on payment status",
+    statusLabel: "Waiting on Deposit",
+    nextAction: "Follow up on deposit payment (t4)",
     ballInCourt: "Client",
     templateKeys: ["t0", "t4", "t13"]
   },
   Paid: {
     stage: "Paid",
-    statusLabel: "Payment Received",
-    nextAction: "Finalize instructor & update event details",
+    statusLabel: "Initial Payment Complete",
+    nextAction: "Secure instructor and update event details",
     ballInCourt: "Team",
     templateKeys: ["t0", "t5", "t6", "t13"]
   },
   "Sign-Ups": {
     stage: "Sign-Ups",
     statusLabel: "Awaiting Guest Sign-Ups",
-    nextAction: "Monitor registrations and waivers",
+    nextAction: "Monitor sign-ups and send reminders if needed (t10/t14)",
     ballInCourt: "Client",
     templateKeys: ["t0", "t6", "t10", "t13", "t14"]
   },
   Confirmed: {
     stage: "Confirmed",
     statusLabel: "Sign-Ups Complete",
-    nextAction: "Confirm remaining balance and prep final communication",
+    nextAction: "Confirm again with instructor",
     ballInCourt: "Team",
     templateKeys: ["t0", "t6", "t7", "t11", "t13"]
   },
   Final: {
     stage: "Final",
     statusLabel: "Final Confirmation Sent",
-    nextAction: "Prepare final event logistics",
+    nextAction: "Day-of prep and event delivery",
     ballInCourt: "Team",
     templateKeys: ["t0", "t7", "t11", "t13", "t14"]
   },
   Ready: {
     stage: "Ready",
     statusLabel: "Ready for Event",
-    nextAction: "Host event and capture any final changes",
+    nextAction: "Send final confirmation (t11)",
     ballInCourt: "Team",
     templateKeys: ["t0", "t12", "t13", "t14"]
   },
   Complete: {
     stage: "Complete",
     statusLabel: "Event Complete",
-    nextAction: "Closed",
+    nextAction: "Send thank you, questionnaire, and referral code (t12)",
     ballInCourt: "Team",
     templateKeys: ["t0", "t12", "t13"]
   },
@@ -117,7 +117,7 @@ export const BUYOUT_PHASES: Record<StageKey, BuyoutPhaseConfig> = {
   "On Hold": {
     stage: "On Hold",
     statusLabel: "On Hold",
-    nextAction: "Client to re-engage when ready",
+    nextAction: "Waiting for client to re-engage",
     ballInCourt: "Client",
     templateKeys: ["t0", "t13"]
   }
@@ -160,7 +160,7 @@ export const PAYMENT_RULES = {
     note: "$250 deposit required to hold date. Remaining balance due 14 days before event. Option to pay in full upfront."
   },
   standard: {
-    label: "Standard (14–30 days from inquiry)",
+    label: "Standard (14-30 days from inquiry)",
     depositRequired: false,
     depositAmount: 0,
     depositDeadline: null,
@@ -168,7 +168,7 @@ export const PAYMENT_RULES = {
     fullPaymentOption: true,
     rushFee: 0,
     links: ["full"],
-    note: "Full payment due. No deposit required — event is within 30 days of inquiry."
+    note: "Full payment due. No deposit required."
   },
   rush: {
     label: "Rush Event (under 14 days from inquiry)",

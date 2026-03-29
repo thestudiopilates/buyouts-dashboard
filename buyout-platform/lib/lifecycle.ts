@@ -31,42 +31,55 @@ const STEP_ADVANCEMENT_RULES: Array<{
   nextAction: string;
   ballInCourt: BallInCourtKey;
 }> = [
+  // ── Execution
   {
     requires: ["event-completed"],
     advancesTo: "Complete",
-    nextAction: "Closed",
+    nextAction: "Send thank you, questionnaire, and referral code (t12)",
     ballInCourt: "Team"
   },
+  // ── Pre-Event
   {
     requires: ["final-confirmation-emails-sent"],
     advancesTo: "Final",
-    nextAction: "Prepare final event logistics",
+    nextAction: "Day-of prep and event delivery",
     ballInCourt: "Team"
   },
+  // ── Ready (desk done, send final confirmation)
   {
     requires: ["front-desk-assigned", "front-desk-shift-extended"],
     advancesTo: "Ready",
-    nextAction: "Send final confirmation email",
+    nextAction: "Send final confirmation (t11)",
+    ballInCourt: "Team"
+  },
+  // ── Confirmed sub-steps (after signups complete, work through confirmations)
+  // Balance reminder comes after Connect Team shift if deposit was paid
+  {
+    requires: ["all-attendees-registered", "all-waivers-signed", "front-desk-assigned"],
+    advancesTo: "Confirmed",
+    nextAction: "Confirm Connect Team shift extended",
     ballInCourt: "Team"
   },
   {
     requires: ["all-attendees-registered", "all-waivers-signed"],
     advancesTo: "Confirmed",
-    nextAction: "Assign front desk and confirm remaining balance",
+    nextAction: "Confirm again with front desk staff",
     ballInCourt: "Team"
   },
   {
     requires: ["remaining-payment-received"],
     advancesTo: "Confirmed",
-    nextAction: "Monitor signups and waivers",
-    ballInCourt: "Client"
+    nextAction: "Confirm again with instructor",
+    ballInCourt: "Team"
   },
+  // ── Sign-Ups
   {
     requires: ["momence-link-sign-up-sent"],
     advancesTo: "Sign-Ups",
-    nextAction: "Monitor registrations and waivers",
+    nextAction: "Monitor sign-ups and send reminders if needed (t10/t14)",
     ballInCourt: "Client"
   },
+  // ── Event Setup sub-steps (after payment, build toward sending details)
   {
     requires: ["momence-class-created"],
     advancesTo: "Paid",
@@ -76,43 +89,46 @@ const STEP_ADVANCEMENT_RULES: Array<{
   {
     requires: ["instructor-finalized"],
     advancesTo: "Paid",
-    nextAction: "Create Momence event & update with signup URL",
+    nextAction: "Create Momence event and add signup URL",
     ballInCourt: "Team"
   },
   {
     requires: ["deposit-paid-and-terms-signed"],
     advancesTo: "Paid",
-    nextAction: "Finalize instructor & update event details",
+    nextAction: "Secure instructor and update event details",
     ballInCourt: "Team"
   },
+  // ── Payment
   {
     requires: ["deposit-link-sent-and-terms-shared"],
     advancesTo: "Quote",
-    nextAction: "Wait for payment",
+    nextAction: "Waiting on payment from client",
     ballInCourt: "Client"
   },
+  // ── Discussion → Date Agreed
   {
     requires: ["date-finalized"],
     advancesTo: "Feasible",
-    nextAction: "Update event details, then send payment link",
+    nextAction: "1. Update final date and details in dashboard 2. Send payment email to client",
     ballInCourt: "Team"
   },
   {
     requires: ["customer-responded"],
     advancesTo: "Discuss",
-    nextAction: "Confirm dates, times, location, and event details",
-    ballInCourt: "Both"
+    nextAction: "Waiting on client to finalize date / time",
+    ballInCourt: "Client"
   },
+  // ── Intake
   {
     requires: ["initial-inquiry-response-sent"],
     advancesTo: "Respond",
-    nextAction: "Wait for client response",
+    nextAction: "Waiting on client to finalize date / time",
     ballInCourt: "Client"
   },
   {
     requires: ["inquiry-reviewed"],
     advancesTo: "Inquiry",
-    nextAction: "Send initial inquiry response",
+    nextAction: "Review inquiry and respond (t1)",
     ballInCourt: "Team"
   }
 ];
