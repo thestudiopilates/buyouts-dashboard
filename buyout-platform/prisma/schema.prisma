@@ -222,3 +222,60 @@ model BuyoutTask {
   buyout     Buyout     @relation(fields: [buyoutId], references: [id], onDelete: Cascade)
   owner      StaffUser? @relation("TaskOwner", fields: [ownerId], references: [id])
 }
+
+model EmailTemplate {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt @default(now())
+  key               String   @unique
+  name              String
+  triggerLabel      String
+  category          String
+  subjectTemplate   String
+  bodyTemplate      String
+  requiredVariables Json     @default("[]")
+  allowedStages     Json     @default("[]")
+  effectConfig      Json     @default("{}")
+  isActive          Boolean  @default(true)
+}
+
+model BuyoutEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+  buyoutId  String
+  emailId   String?
+  eventType String
+  summary   String
+  detail    Json?
+  createdBy String?
+}
+
+model InboxAlert {
+  id             String    @id @default(cuid())
+  createdAt      DateTime  @default(now())
+  buyoutId       String
+  clientEmail    String
+  gmailMessageId String    @unique
+  subject        String?
+  snippet        String?
+  receivedAt     DateTime
+  respondedAt    DateTime?
+  isRead         Boolean   @default(false)
+  isDismissed    Boolean   @default(false)
+}
+
+model StoredEmail {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  buyoutId       String
+  gmailMessageId String   @unique
+  direction      String
+  fromAddress    String
+  toAddress      String
+  subject        String?
+  snippet        String?
+  bodyPreview    String?
+  sentAt         DateTime
+  source         String   @default("gmail-backfill")
+}
