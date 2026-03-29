@@ -2,6 +2,14 @@ import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
 
+const PAYMENT_LINKS = {
+  rush:             "https://thestudiopilates.com/product/rush-private-buyout-event-less-than-21-days/",
+  standard:         "https://thestudiopilates.com/product/private-group-pilates-events-atlanta/",
+  deposit:          "https://thestudiopilates.com/product/private-pilates-class-advancedbooking/",
+  remainingBalance: "https://thestudiopilates.com/product/private-buyout-event-remaining-balance/",
+  halfHour:         "https://thestudiopilates.com/product/private-buyout-event-half-hour-addition/"
+} as const;
+
 import { getBuyout, listBuyouts } from "@/lib/buyouts";
 import { renderEmailHtml } from "@/lib/email-renderer";
 import { getGmailReadiness, type GmailReadiness } from "@/lib/gmail";
@@ -549,6 +557,7 @@ function buildEmailVariables(buyout: BuyoutSummary | null): Record<string, strin
       depositLink: "",
       remainingBalance: "",
       remainingBalanceLink: "",
+      halfHourLink: "",
       signupLink: "",
       clientEmail: "",
       rushFee: "",
@@ -594,9 +603,10 @@ function buildEmailVariables(buyout: BuyoutSummary | null): Record<string, strin
     totalPrice,
     amountPaid,
     depositAmount,
-    depositLink: normalizeTemplateField(buyout.depositLink),
+    depositLink: normalizeTemplateField(buyout.depositLink) || (isRush ? PAYMENT_LINKS.rush : isDeposit ? PAYMENT_LINKS.deposit : PAYMENT_LINKS.standard),
     remainingBalance,
-    remainingBalanceLink: normalizeTemplateField(buyout.balanceLink),
+    remainingBalanceLink: normalizeTemplateField(buyout.balanceLink) || PAYMENT_LINKS.remainingBalance,
+    halfHourLink: PAYMENT_LINKS.halfHour,
     signupLink: normalizeTemplateField(buyout.signupLink),
     clientEmail: normalizeTemplateField(buyout.clientEmail) || KELLY_TEST_EMAIL,
     rushFee: rushFeeAmount,
