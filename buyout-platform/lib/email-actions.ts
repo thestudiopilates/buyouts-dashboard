@@ -217,9 +217,6 @@ export async function executeTemplateReviewSend(input: {
   }
 
   const preview = previewEmailTemplate(template, buyoutSummary);
-  if (!input.bodyOverride && preview.missingVariables.length > 0) {
-    throw new Error(`Missing required fields: ${preview.missingVariables.join(", ")}.`);
-  }
 
   const finalSubject = input.subjectOverride?.trim() || preview.renderedSubject;
   const finalBody = input.bodyOverride?.trim() || preview.renderedBody;

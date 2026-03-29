@@ -1398,7 +1398,7 @@ function Drawer({
                       const state = readiness(buyout, template.requiredFields);
                       const sent = buyout.sentTemplateIds.includes(template.id);
                       const singleSend = SINGLE_SEND_TEMPLATE_IDS.has(template.id);
-                      const blocked = !state.ready || (singleSend && sent);
+                      const blocked = singleSend && sent;
                       return (
                         <div
                           className="ops-email-row"
@@ -1408,7 +1408,7 @@ function Drawer({
                               ? `${COLORS.seaglass}33`
                               : state.ready
                                 ? `${COLORS.sunshine}33`
-                                : `${COLORS.cherry}22`
+                                : `${COLORS.divider}`
                           }}
                         >
                           {template.id !== "t0" ? (
@@ -1433,8 +1433,8 @@ function Drawer({
                               {sent
                                 ? TEMPLATE_HINTS[template.id]
                                 : state.ready
-                                  ? "Ready to send now"
-                                  : `Missing ${state.total - state.filled} required field${state.total - state.filled === 1 ? "" : "s"}`}
+                                  ? "Ready to send"
+                                  : `${state.filled}/${state.total} fields ready — check draft before sending`}
                             </div>
                           </div>
                           <div className="ops-email-action-stack">
