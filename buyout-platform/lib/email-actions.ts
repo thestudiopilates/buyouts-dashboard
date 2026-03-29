@@ -203,7 +203,7 @@ export async function executeTemplateReviewSend(input: {
   // No strict stage gate — templates can be sent out of order.
   // Terminal buyouts still block non-universal templates.
   const terminalStages = ["Complete", "Cancelled", "DOA", "Not Possible"];
-  const universalTemplates = ["t0", "t13"];
+  const universalTemplates = ["t0", "t12", "t13"];
   if (terminalStages.includes(buyoutSummary.lifecycleStage) && !universalTemplates.includes(template.key)) {
     throw new Error(
       `${template.name} cannot be sent while ${buyoutSummary.name} is ${buyoutSummary.lifecycleStage}. Use Custom or Ongoing Discussion instead.`
