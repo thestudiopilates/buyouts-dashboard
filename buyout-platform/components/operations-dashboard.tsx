@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { BuyoutSummary, PaymentRecord } from "@/lib/types";
 
@@ -248,6 +248,7 @@ function Drawer({
 }) {
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("overview");
   const [editorMode, setEditorMode] = useState<"details" | "notes" | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [pendingEmailId, setPendingEmailId] = useState("");
@@ -345,6 +346,14 @@ function Drawer({
   useEffect(() => {
     syncFreshBuyout();
   }, [buyout.id]);
+
+  useEffect(() => {
+    if (editorMode && editorRef.current) {
+      setTimeout(() => {
+        editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+    }
+  }, [editorMode]);
 
   function updateField(key: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -752,7 +761,7 @@ function Drawer({
           {tab === "overview" ? (
             <div>
               {editorMode ? (
-                <div className="ops-inline-editor">
+                <div className="ops-inline-editor" ref={editorRef}>
                   <div className="ops-inline-editor-head">
                     <div className="ops-section-label">
                       {editorMode === "notes" ? "Edit Notes" : "Edit Event Details"}
@@ -811,7 +820,7 @@ function Drawer({
                           <input className="input" value={form.endTime} onChange={(event) => updateField("endTime", event.target.value)} />
                         </label>
                         <label className="field">
-                          <span>Assigned staff</span>
+                          <span>Front Desk</span>
                           <input className="input" value={form.assignedTo} onChange={(event) => updateField("assignedTo", event.target.value)} />
                         </label>
                         <label className="field">
@@ -970,40 +979,10 @@ function Drawer({
                 ))}
               </div>
 
-              <div className="ops-section-label">Event Details</div>
+              <div className="ops-section-label">Quick Info</div>
               <div className="ops-detail-card">
-                {[
-                  ["Inquiry Date", buyout.inquiryDate ?? "Unknown"],
-                  ["Event Date", buyout.eventDate],
-                  ["Preferred", buyout.preferredDates || "Not captured"],
-                  ["Time", buyout.startTime && buyout.endTime ? `${buyout.startTime} - ${buyout.endTime}` : "TBD"],
-                  ["Location", buyout.location],
-                  ["Instructor", buyout.instructor],
-                  ["Front Desk", buyout.assignedTo],
-                  ["Payment Type", buyout.paymentTier === "rush" ? `Rush (+$${buyout.rushFee} fee)` : buyout.paymentTier === "deposit" ? "Deposit Required ($250 + Balance)" : "Standard (Full Payment)"]
-                ].map(([label, value]) => (
-                  <div className="ops-detail-line" key={label}>
-                    <span>{label}</span>
-                    <strong>{value}</strong>
-                  </div>
-                ))}
-              </div>
-
-              <div className="ops-section-label">Attendance</div>
-              <div className="ops-attendance">
-                <div className="ops-attendance-count">
-                  <span>{buyout.signups}</span>
-                  <small>/ {buyout.capacity || 0}</small>
-                </div>
-                <div className="ops-mini-progress large">
-                  <span style={{ width: `${buyout.signupFillPercent ?? 0}%` }} />
-                </div>
-              </div>
-
-              <div className="ops-section-label">Contact</div>
-              <div className="ops-detail-card">
-                <div className="ops-contact-primary">{buyout.clientEmail || "No email captured"}</div>
-                {buyout.clientPhone ? <div className="ops-contact-secondary">{buyout.clientPhone}</div> : null}
+                <div className="ops-detail-line"><span>Inquiry Date</span><strong>{buyout.inquiryDate ?? "Unknown"}</strong></div>
+                <div className="ops-detail-line"><span>Payment Tier</span><strong>{buyout.paymentTier === "rush" ? `Rush (+$${buyout.rushFee} fee)` : buyout.paymentTier === "deposit" ? "Deposit ($250 + Balance)" : "Standard (Full Payment)"}</strong></div>
               </div>
 
               <div className="ops-section-label">Notes</div>
@@ -1903,8 +1882,8 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                     {buyout.name[0]}
                   </div>
                   <div className="ops-client-copy">
-                    <div className="ops-client-name">{buyout.name}</div>
-                    <div className="ops-client-sub">
+                    <div className="ops-client-name-row">
+                      <span className="ops-client-name">{buyout.name}</span>
                       <span
                         className="ops-type-pill"
                         style={{ background: typeStyle.bg, color: typeStyle.fg }}
@@ -1914,39 +1893,40 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       {buyout.paymentTier === "rush" ? (
                         <span className="ops-rush-pill">Rush</span>
                       ) : null}
-                      <span>{buyout.assignedTo}</span>
                     </div>
-                    <div className="ops-client-meta">
+                    <div className="ops-client-event-line">
                       <span>{formatDisplayDate(buyout.eventDate)}</span>
-                      <span>•</span>
+                      <span className="ops-meta-dot">•</span>
                       <span>{buyout.location}</span>
-                      {buyout.startTime ? <><span>•</span><span>{buyout.startTime}{buyout.endTime ? ` - ${buyout.endTime}` : ""}</span></> : null}
+                      {buyout.startTime ? <><span className="ops-meta-dot">•</span><span>{buyout.startTime}{buyout.endTime ? `–${buyout.endTime}` : ""}</span></> : null}
                     </div>
-                    {buyout.preferredDates ? (
-                      <div className="ops-client-pref">Request: {buyout.preferredDates}</div>
+                    {buyout.preferredDates && buyout.preferredDates !== buyout.eventDate ? (
+                      <div className="ops-client-pref">Requested: {buyout.preferredDates}</div>
                     ) : null}
-                    <div className="ops-client-details">
-                      <span className={buyout.instructor && buyout.instructor !== "Unassigned" ? "ops-detail-ok" : "ops-detail-missing"}>
-                        {buyout.instructor && buyout.instructor !== "Unassigned" ? `✓ ${buyout.instructor}` : "✗ Instructor"}
+                    <div className="ops-readiness-row">
+                      <span className={`ops-ready-chip ${buyout.instructor && buyout.instructor !== "Unassigned" ? "ok" : "missing"}`}>
+                        {buyout.instructor && buyout.instructor !== "Unassigned" ? buyout.instructor : "No instructor"}
                       </span>
-                      <span className={buyout.signupLink ? "ops-detail-ok" : "ops-detail-missing"}>
-                        {buyout.signupLink ? `✓ ${buyout.signups}/${buyout.capacity || "?"} signed up` : "✗ Momence"}
+                      <span className={`ops-ready-chip ${buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? "ok" : "missing"}`}>
+                        {buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? `Desk: ${buyout.assignedTo}` : "No front desk"}
                       </span>
-                      <span className={buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? "ops-detail-ok" : "ops-detail-missing"}>
-                        {buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? `✓ Desk: ${buyout.assignedTo}` : "✗ Front desk"}
+                      <span className={`ops-ready-chip ${buyout.signupLink ? "ok" : "missing"}`}>
+                        {buyout.signupLink ? `${buyout.signups}/${buyout.capacity || "?"} signed up` : "No Momence"}
                       </span>
                     </div>
-                    {buyout.ballInCourt === "Client" && buyout.daysWaiting > 7 ? (
-                      <span className="ops-cold-badge">{buyout.daysWaiting > 14 ? "Suggest DOA" : "Going Cold"}</span>
-                    ) : null}
-                    {inboxAlerts.some((a) => a.buyoutId === buyout.id) ? (
-                      <span className="ops-inbox-badge">Needs Response</span>
-                    ) : null}
-                    {buyout.responseUrgency === "overdue" || buyout.responseUrgency === "critical" ? (
-                      <span className="ops-urgency-badge" style={{ background: buyout.responseUrgency === "critical" ? "#8b0000" : COLORS.cherry, color: "#fff" }}>{buyout.responseUrgency === "critical" ? "Critical" : "Overdue"}</span>
-                    ) : buyout.responseUrgency === "needs-attention" ? (
-                      <span className="ops-urgency-badge" style={{ background: COLORS.sunshine, color: COLORS.coffee }}>Follow Up</span>
-                    ) : null}
+                    <div className="ops-alert-pills">
+                      {buyout.ballInCourt === "Client" && buyout.daysWaiting > 7 ? (
+                        <span className="ops-cold-badge">{buyout.daysWaiting > 14 ? "Suggest DOA" : "Going Cold"}</span>
+                      ) : null}
+                      {inboxAlerts.some((a) => a.buyoutId === buyout.id) ? (
+                        <span className="ops-inbox-badge">Needs Response</span>
+                      ) : null}
+                      {buyout.responseUrgency === "overdue" || buyout.responseUrgency === "critical" ? (
+                        <span className="ops-urgency-badge" style={{ background: buyout.responseUrgency === "critical" ? "#8b0000" : COLORS.cherry, color: "#fff" }}>{buyout.responseUrgency === "critical" ? "Critical" : "Overdue"}</span>
+                      ) : buyout.responseUrgency === "needs-attention" ? (
+                        <span className="ops-urgency-badge" style={{ background: COLORS.sunshine, color: COLORS.coffee }}>Follow Up</span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 

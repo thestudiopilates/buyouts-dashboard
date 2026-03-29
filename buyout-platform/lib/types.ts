@@ -114,10 +114,14 @@ export type BuyoutUpdateInput = {
   clientEmail: string;
   clientPhone?: string;
   eventType?: string;
+  preferredDates?: string;
+  preferredLocation?: string;
+  guestCountEstimate?: number;
   eventDate?: string;
   startTime?: string;
   endTime?: string;
   location?: string;
+  capacity?: number;
   assignedTo?: string;
   instructor?: string;
   notes?: string;

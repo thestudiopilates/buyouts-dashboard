@@ -739,7 +739,14 @@ textarea {
 .field-full {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.25rem;
+}
+
+.field > span,
+.field-full > span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--coffee);
 }
 
 .field-full {
@@ -750,15 +757,16 @@ textarea {
 .textarea,
 .select {
   width: 100%;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.92);
-  padding: 0.85rem 0.95rem;
+  padding: 0.5rem 0.75rem;
   font-family: var(--font-body), "Segoe UI", sans-serif;
+  font-size: 0.88rem;
 }
 
 .textarea {
-  min-height: 120px;
+  min-height: 80px;
   resize: vertical;
 }
 
@@ -1251,6 +1259,65 @@ textarea {
   flex-wrap: wrap;
 }
 
+.ops-client-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.ops-client-event-line {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: #7b6c61;
+}
+
+.ops-meta-dot {
+  opacity: 0.4;
+}
+
+.ops-readiness-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.ops-ready-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.ops-ready-chip.ok {
+  background: rgba(121, 127, 93, 0.1);
+  color: var(--sage);
+}
+
+.ops-ready-chip.missing {
+  background: rgba(232, 88, 27, 0.08);
+  color: var(--cherry);
+}
+
+.ops-alert-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.ops-alert-pills:empty {
+  display: none;
+}
+
 .ops-client-meta {
   display: flex;
   align-items: center;
@@ -1603,7 +1670,7 @@ textarea {
 .ops-inline-editor-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem;
+  gap: 0.55rem;
 }
 
 .ops-inline-editor-close {
@@ -1622,7 +1689,7 @@ textarea {
 }
 
 .ops-inline-notes {
-  min-height: 140px;
+  min-height: 100px;
 }
 
 .ops-detail-line {
@@ -1926,10 +1993,11 @@ textarea {
 /* ── Draft Editor ──────────────────────────────────────────── */
 
 .ops-client-pref {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   color: var(--sunshine);
   font-style: italic;
-  margin-top: 2px;
+  margin-top: 1px;
+  font-weight: 500;
 }
 
 .ops-client-details {
