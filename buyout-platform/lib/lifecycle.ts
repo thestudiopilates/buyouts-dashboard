@@ -229,6 +229,44 @@ export function deriveStageFromWorkflow(
   });
 }
 
+export type ResponseUrgency = "on-track" | "needs-attention" | "overdue" | "critical" | null;
+
+export function deriveResponseUrgency(input: {
+  ballInCourt: BallInCourtKey;
+  daysWaiting: number;
+  countdownDays: number | null;
+  lastClientContactDaysAgo: number | null;
+  lastTeamActionDaysAgo: number | null;
+  lifecycleStage: StageKey;
+}): ResponseUrgency {
+  if (TERMINAL_STAGES.has(input.lifecycleStage)) return null;
+  if (input.lifecycleStage === "On Hold") return null;
+
+  const { ballInCourt, countdownDays, lastClientContactDaysAgo, lastTeamActionDaysAgo } = input;
+
+  // When WE owe a response (client wrote us, we haven't replied)
+  if (ballInCourt === "Team" && lastClientContactDaysAgo !== null) {
+    if (countdownDays !== null && countdownDays <= 14 && lastClientContactDaysAgo >= 1) return "critical";
+    if (lastClientContactDaysAgo > 1) return "overdue";
+    if (lastClientContactDaysAgo >= 1) return "needs-attention";
+    return "on-track";
+  }
+
+  // When CLIENT owes a response (we sent something, waiting)
+  if (ballInCourt === "Client" && lastTeamActionDaysAgo !== null) {
+    if (lastTeamActionDaysAgo > 7) return "overdue";
+    if (lastTeamActionDaysAgo > 5) return "needs-attention";
+    if (lastTeamActionDaysAgo > 3) return "needs-attention";
+    return "on-track";
+  }
+
+  // Both or unknown — use days waiting as fallback
+  if (input.daysWaiting > 5) return "needs-attention";
+  if (input.daysWaiting > 3) return "on-track";
+
+  return "on-track";
+}
+
 export function getManualStageOptions(currentStage: StageKey): Array<{ value: StageKey; label: string }> {
   const options: Array<{ value: StageKey; label: string }> = [];
 

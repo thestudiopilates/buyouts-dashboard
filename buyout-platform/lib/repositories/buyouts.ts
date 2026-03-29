@@ -1,7 +1,7 @@
 import { BallInCourt, BuyoutStage, Prisma, TrackingHealth, WorkflowGroup } from "@prisma/client";
 
 import { getBuyoutPhase, getPaymentTier, PAYMENT_RULES } from "@/lib/buyout-phases";
-import { deriveStageFromWorkflow } from "@/lib/lifecycle";
+import { deriveResponseUrgency, deriveStageFromWorkflow } from "@/lib/lifecycle";
 import { mockBuyouts } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
 import { BuyoutInquiryInput, BuyoutSummary, BuyoutUpdateInput, WorkflowStep } from "@/lib/types";
@@ -469,6 +469,15 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
     healthFlags,
     sentTemplateIds,
     inquiryDate: buyout.inquiry?.createdAt ? toIsoDay(buyout.inquiry.createdAt) : null,
+    lastClientContact: null,
+    responseUrgency: deriveResponseUrgency({
+      ballInCourt: effectiveBallInCourt,
+      daysWaiting: waiting,
+      countdownDays: countdown,
+      lastClientContactDaysAgo: null,
+      lastTeamActionDaysAgo: buyout.lastActionAt ? Math.floor((Date.now() - buyout.lastActionAt.getTime()) / 86400000) : null,
+      lifecycleStage: effectiveLifecycleStage
+    }),
     paymentTier: getPaymentTier({
       inquiryDate: buyout.inquiry?.createdAt ? toIsoDay(buyout.inquiry.createdAt) : null,
       eventDate: toIsoDay(buyout.eventDate)

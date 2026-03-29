@@ -1882,6 +1882,11 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                     {inboxAlerts.some((a) => a.buyoutId === buyout.id) ? (
                       <span className="ops-inbox-badge">Needs Response</span>
                     ) : null}
+                    {buyout.responseUrgency === "overdue" || buyout.responseUrgency === "critical" ? (
+                      <span className="ops-urgency-badge" style={{ background: buyout.responseUrgency === "critical" ? "#8b0000" : COLORS.cherry, color: "#fff" }}>{buyout.responseUrgency === "critical" ? "Critical" : "Overdue"}</span>
+                    ) : buyout.responseUrgency === "needs-attention" ? (
+                      <span className="ops-urgency-badge" style={{ background: COLORS.sunshine, color: COLORS.coffee }}>Follow Up</span>
+                    ) : null}
                   </div>
                 </div>
 

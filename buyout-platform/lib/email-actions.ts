@@ -19,6 +19,36 @@ const KELLY_TEST_EMAIL = "kelly@thestudiopilates.com";
 const KELLY_TEST_ITEM_ID = "10989594648";
 const INTERNAL_REVIEW_RECIPIENT = process.env.EMAIL_TEST_RECIPIENT || KELLY_TEST_EMAIL;
 
+// Ordered list of workflow steps — earlier steps are prerequisites for later ones.
+// When a template marks a step complete, all steps above it are also auto-completed.
+const WORKFLOW_ORDER = [
+  "inquiry-reviewed",
+  "initial-inquiry-response-sent",
+  "customer-responded",
+  "date-finalized",
+  "deposit-link-sent-and-terms-shared",
+  "deposit-paid-and-terms-signed",
+  "instructor-finalized",
+  "momence-class-created",
+  "momence-link-sign-up-sent",
+  "remaining-payment-received",
+  "all-attendees-registered",
+  "all-waivers-signed",
+  "front-desk-assigned",
+  "front-desk-shift-extended",
+  "final-confirmation-emails-sent",
+  "event-completed"
+];
+
+function getPrerequisiteKeys(stepKeys: string[]): string[] {
+  if (stepKeys.length === 0) return [];
+
+  const maxIndex = Math.max(...stepKeys.map((k) => WORKFLOW_ORDER.indexOf(k)).filter((i) => i >= 0));
+  if (maxIndex < 0) return [];
+
+  return WORKFLOW_ORDER.slice(0, maxIndex);
+}
+
 const STAGE_ENUM_MAP: Record<StageKey, BuyoutStage> = {
   Inquiry: BuyoutStage.INQUIRY,
   Respond: BuyoutStage.RESPOND,
@@ -170,9 +200,13 @@ export async function executeTemplateReviewSend(input: {
     throw new Error("The selected buyout summary is unavailable.");
   }
 
-  if (!template.allowedStages.includes(buyoutSummary.lifecycleStage)) {
+  // No strict stage gate — templates can be sent out of order.
+  // Terminal buyouts still block non-universal templates.
+  const terminalStages = ["Complete", "Cancelled", "DOA", "Not Possible"];
+  const universalTemplates = ["t0", "t13"];
+  if (terminalStages.includes(buyoutSummary.lifecycleStage) && !universalTemplates.includes(template.key)) {
     throw new Error(
-      `${template.name} is blocked while ${buyoutSummary.name} is in ${buyoutSummary.lifecycleStage}.`
+      `${template.name} cannot be sent while ${buyoutSummary.name} is ${buyoutSummary.lifecycleStage}. Use Custom or Ongoing Discussion instead.`
     );
   }
 
@@ -277,6 +311,35 @@ export async function executeTemplateReviewSend(input: {
           isComplete: true,
           completedAt: now,
           completedBy: senderEmail
+        }
+      });
+    }
+
+    // Auto-complete prerequisite steps that logically must have happened before this template
+    const explicitKeys = template.effectConfig.workflowKeys ?? [];
+    const prerequisiteKeys = getPrerequisiteKeys(explicitKeys);
+    for (const prereqKey of prerequisiteKeys) {
+      const existing = buyoutRecord.workflowSteps.find((step) => step.stepKey === prereqKey);
+      if (existing?.isComplete) continue;
+
+      await tx.buyoutWorkflowStep.upsert({
+        where: { id: existing?.id ?? `${buyoutRecord.id}_${prereqKey}` },
+        update: {
+          label: existing?.label ?? titleizeWorkflowKey(prereqKey),
+          stepGroup: existing?.stepGroup ?? workflowGroup,
+          isComplete: true,
+          completedAt: now,
+          completedBy: `auto-prereq:${input.templateKey}`
+        },
+        create: {
+          id: `${buyoutRecord.id}_${prereqKey}`,
+          buyoutId: buyoutRecord.id,
+          stepKey: prereqKey,
+          label: titleizeWorkflowKey(prereqKey),
+          stepGroup: workflowGroup,
+          isComplete: true,
+          completedAt: now,
+          completedBy: `auto-prereq:${input.templateKey}`
         }
       });
     }

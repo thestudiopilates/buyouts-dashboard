@@ -1933,6 +1933,17 @@ textarea {
   font-style: italic;
 }
 
+.ops-urgency-badge {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
 .ops-cold-badge {
   display: inline-block;
   margin-top: 4px;

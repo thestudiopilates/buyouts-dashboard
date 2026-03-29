@@ -86,6 +86,8 @@ export type BuyoutSummary = {
   healthFlags: string[];
   sentTemplateIds: string[];
   inquiryDate: string | null;
+  lastClientContact: string | null;
+  responseUrgency: "on-track" | "needs-attention" | "overdue" | "critical" | null;
   paymentTier: "deposit" | "standard" | "rush";
   rushFee: number;
   workflowProgress: number;
