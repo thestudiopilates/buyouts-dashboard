@@ -12,6 +12,7 @@ export async function POST(
     subjectOverride?: string;
     bodyOverride?: string;
     cc?: string;
+    sendToClient?: boolean;
   };
 
   try {
@@ -20,11 +21,12 @@ export async function POST(
       buyoutId: body.buyoutId,
       subjectOverride: body.subjectOverride,
       bodyOverride: body.bodyOverride,
-      cc: body.cc
+      cc: body.cc,
+      sendToClient: body.sendToClient
     });
     return NextResponse.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to run the internal review send.";
+    const message = error instanceof Error ? error.message : "Unable to send.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

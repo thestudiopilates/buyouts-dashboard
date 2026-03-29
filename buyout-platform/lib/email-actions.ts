@@ -177,6 +177,7 @@ export async function executeTemplateReviewSend(input: {
   subjectOverride?: string;
   bodyOverride?: string;
   cc?: string;
+  sendToClient?: boolean;
 }) {
   if (!hasDatabaseUrl()) {
     throw new Error("Database connection is required for test sends.");
@@ -236,7 +237,7 @@ export async function executeTemplateReviewSend(input: {
   });
   const providerResult = gmail.ready
     ? await sendGmailMessage({
-        to: INTERNAL_REVIEW_RECIPIENT,
+        to: input.sendToClient ? buyoutSummary.clientEmail : INTERNAL_REVIEW_RECIPIENT,
         cc: input.cc || undefined,
         subject: finalSubject,
         bodyText: finalBody,
@@ -368,10 +369,13 @@ export async function executeTemplateReviewSend(input: {
 
   return {
     message: gmail.ready
-      ? `Internal Gmail review send completed for ${template.name}. Sent to ${INTERNAL_REVIEW_RECIPIENT} and workflow state updated from the template rules.`
-      : `Internal review send recorded for ${template.name}. Add Gmail credentials to send from the real inbox.`,
+      ? input.sendToClient
+        ? `Email sent to client (${buyoutSummary.clientEmail}) for ${template.name}. Workflow state updated.`
+        : `Internal review send completed for ${template.name}. Sent to ${INTERNAL_REVIEW_RECIPIENT}.`
+      : `Send recorded for ${template.name}. Add Gmail credentials to send from the real inbox.`,
     activity: await listEmailActivity(buyoutRecord.id),
     buyout: updatedBuyout,
-    recipient: INTERNAL_REVIEW_RECIPIENT
+    recipient: input.sendToClient ? buyoutSummary.clientEmail : INTERNAL_REVIEW_RECIPIENT,
+    sentToClient: input.sendToClient ?? false
   };
 }

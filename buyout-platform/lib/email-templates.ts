@@ -555,7 +555,8 @@ function buildEmailVariables(buyout: BuyoutSummary | null): Record<string, strin
       totalWithRush: "",
       paymentDeadline: "",
       paymentTier: "",
-      inquiryDate: ""
+      inquiryDate: "",
+      referralCode: ""
     };
   }
 
@@ -602,7 +603,8 @@ function buildEmailVariables(buyout: BuyoutSummary | null): Record<string, strin
     totalWithRush,
     paymentDeadline,
     paymentTier: buyout.paymentTier,
-    inquiryDate: buyout.inquiryDate ?? ""
+    inquiryDate: buyout.inquiryDate ?? "",
+    referralCode: `TSP-${clientFirstName.toUpperCase()}`
   };
 }
 

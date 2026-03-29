@@ -593,8 +593,9 @@ function Drawer({
       });
   }
 
-  function handleConfirmSend() {
+  function handleConfirmSend(toClient = false) {
     if (!draftTemplate) return;
+    if (toClient && !confirm(`Send this email directly to ${buyout.clientEmail}?`)) return;
     setEmailMessage("");
     setPendingEmailId(draftTemplate);
     const sendBody = restoreTagsForSend(draftBody);
@@ -606,7 +607,8 @@ function Drawer({
         body: JSON.stringify({
           buyoutId: buyout.id,
           bodyOverride: sendBody,
-          cc: draftCc || undefined
+          cc: draftCc || undefined,
+          sendToClient: toClient
         })
       });
 
@@ -1575,26 +1577,26 @@ function Drawer({
         <div className="ops-drawer-footer">
           {previewHtml ? (
             <>
-              <button className="ops-footer-primary" disabled={isPending} onClick={handleConfirmSend} type="button">
-                {isPending ? "Sending..." : "Confirm & Send"}
+              <button className="ops-footer-primary" disabled={isPending} onClick={() => handleConfirmSend(true)} type="button">
+                {isPending ? "Sending..." : "Send to Client"}
               </button>
-              <button className="ops-footer-secondary" onClick={() => setPreviewHtml(null)} type="button">
-                Back to Editor
+              <button className="ops-footer-secondary" disabled={isPending} onClick={() => handleConfirmSend(false)} type="button">
+                {isPending ? "..." : "Internal Review"}
               </button>
-              <button className="ops-footer-tertiary" onClick={handleCloseDraft} type="button">
-                Cancel
+              <button className="ops-footer-tertiary" onClick={() => setPreviewHtml(null)} type="button">
+                Back
               </button>
             </>
           ) : draftTemplate ? (
             <>
-              <button className="ops-footer-primary" disabled={isPending || draftLoading} onClick={handleConfirmSend} type="button">
-                {isPending ? "Sending..." : "Send Email"}
+              <button className="ops-footer-primary" disabled={isPending || draftLoading} onClick={() => handleConfirmSend(true)} type="button">
+                {isPending ? "Sending..." : "Send to Client"}
               </button>
-              <button className="ops-footer-secondary" disabled={draftLoading} onClick={handlePreviewDraft} type="button">
-                Preview First
+              <button className="ops-footer-secondary" disabled={isPending || draftLoading} onClick={() => handleConfirmSend(false)} type="button">
+                {isPending ? "..." : "Internal Review"}
               </button>
-              <button className="ops-footer-tertiary" onClick={handleCloseDraft} type="button">
-                Cancel
+              <button className="ops-footer-tertiary" onClick={handlePreviewDraft} type="button">
+                Preview
               </button>
             </>
           ) : tab === "activity" ? (
@@ -1882,7 +1884,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       <div className="ops-client-note">{buyout.notes.slice(0, 80)}{buyout.notes.length > 80 ? "..." : ""}</div>
                     ) : null}
                     {buyout.ballInCourt === "Client" && buyout.daysWaiting > 7 ? (
-                      <span className="ops-cold-badge">Going Cold</span>
+                      <span className="ops-cold-badge">{buyout.daysWaiting > 14 ? "Suggest DOA" : "Going Cold"}</span>
                     ) : null}
                     {inboxAlerts.some((a) => a.buyoutId === buyout.id) ? (
                       <span className="ops-inbox-badge">Needs Response</span>
