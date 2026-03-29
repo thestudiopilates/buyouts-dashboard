@@ -1763,6 +1763,42 @@ textarea {
   text-align: right;
 }
 
+.ops-link-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.ops-link-open {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--positive);
+  text-decoration: none;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(0, 105, 118, 0.08);
+}
+
+.ops-link-open:hover {
+  background: rgba(0, 105, 118, 0.16);
+}
+
+.ops-link-copy-btn {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  cursor: pointer;
+}
+
+.ops-link-copy-btn:hover {
+  background: var(--oat-light);
+  color: var(--coffee);
+}
+
 .ops-attendance {
   margin-bottom: 1rem;
 }

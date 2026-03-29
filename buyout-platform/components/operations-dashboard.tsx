@@ -1026,16 +1026,32 @@ function Drawer({
                       ["Capacity", buyout.capacity ? String(buyout.capacity) : null, true],
                       ["Instructor", buyout.instructor === "Unassigned" ? null : buyout.instructor, true],
                       ["Front Desk", buyout.assignedTo === "Unassigned" ? null : buyout.assignedTo, true],
-                      ["Signup Link", buyout.signupLink ? "Ready" : null, true],
-                      ["Sign-Ups", buyout.signupLink ? `${buyout.signups}/${buyout.capacity || "?"}` : null, false],
-                      ["Deposit Link", buyout.depositLink ? "Ready" : null, false],
-                      ["Balance Link", buyout.balanceLink ? "Ready" : null, false]
+                      ["Sign-Ups", buyout.signupLink ? `${buyout.signups}/${buyout.capacity || "?"}` : null, false]
                     ].map(([label, value, required]) => (
                       <div className="ops-detail-line" key={label as string}>
                         <span>{label}</span>
                         <strong style={{ color: !value && required ? COLORS.cherry : value ? COLORS.seaglass : undefined, fontWeight: !value && required ? 700 : 600 }}>
                           {value || (required ? "Needed" : "—")}
                         </strong>
+                      </div>
+                    ))}
+                    {[
+                      ["Signup", buyout.signupLink],
+                      ["Deposit", buyout.depositLink],
+                      ["Balance", buyout.balanceLink]
+                    ].map(([label, url]) => (
+                      <div className="ops-detail-line" key={label as string}>
+                        <span>{label}</span>
+                        {url ? (
+                          <span className="ops-link-actions">
+                            <a href={url as string} target="_blank" rel="noopener noreferrer" className="ops-link-open">Open ↗</a>
+                            <button type="button" className="ops-link-copy-btn" onClick={() => { navigator.clipboard.writeText(url as string); }}>Copy</button>
+                          </span>
+                        ) : (
+                          <strong style={{ color: label === "Signup" ? COLORS.cherry : undefined, fontWeight: label === "Signup" ? 700 : 600 }}>
+                            {label === "Signup" ? "Needed" : "—"}
+                          </strong>
+                        )}
                       </div>
                     ))}
                   </div>
