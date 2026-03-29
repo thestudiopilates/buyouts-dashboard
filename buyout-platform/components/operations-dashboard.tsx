@@ -280,7 +280,8 @@ function Drawer({
   const [newNoteText, setNewNoteText] = useState("");
   const [activityLoaded, setActivityLoaded] = useState(false);
   const [emailSubTab, setEmailSubTab] = useState<"templates" | "sent" | "received">("templates");
-  const [emailHistory, setEmailHistory] = useState<Array<{ id: string; date: string; from: string; to: string; subject: string; snippet: string; direction: string }>>([]);
+  const [emailHistory, setEmailHistory] = useState<Array<{ id: string; date: string; from: string; to: string; subject: string; snippet: string; bodyText?: string; direction: string }>>([]);
+  const [expandedEmailIds, setExpandedEmailIds] = useState<Set<string>>(new Set());
   const [emailHistoryLoaded, setEmailHistoryLoaded] = useState(false);
   const [unrespondedHours, setUnrespondedHours] = useState<number | null>(null);
   const [form, setForm] = useState({
@@ -1500,10 +1501,22 @@ function Drawer({
                                     : msg.date}
                                 </div>
                                 <div className="ops-timeline-subject">{msg.subject || "(No subject)"}</div>
-                                <div className="ops-timeline-snippet">{msg.snippet}</div>
                                 <div className="ops-timeline-meta">
                                   {msg.direction === "sent" ? `To: ${msg.to}` : `From: ${msg.from}`}
                                 </div>
+                                {expandedEmailIds.has(msg.id) ? (
+                                  <>
+                                    <div className="ops-timeline-body">{msg.bodyText || msg.snippet}</div>
+                                    <button className="ops-expand-btn" type="button" onClick={() => setExpandedEmailIds((prev) => { const next = new Set(prev); next.delete(msg.id); return next; })}>▲ Collapse</button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="ops-timeline-snippet">{msg.snippet}</div>
+                                    {(msg.bodyText || msg.snippet) && (
+                                      <button className="ops-expand-btn" type="button" onClick={() => setExpandedEmailIds((prev) => new Set(prev).add(msg.id))}>▼ View full email</button>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </div>
                           );

@@ -2481,6 +2481,35 @@ textarea {
   opacity: 0.7;
 }
 
+.ops-timeline-body {
+  font-size: 0.78rem;
+  color: var(--text);
+  line-height: 1.55;
+  margin-top: 8px;
+  white-space: pre-wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.ops-expand-btn {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--brand);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.8;
+}
+
+.ops-expand-btn:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 /* ── Activity Timeline ──────────────────────────────────── */
 
 .ops-note-input-row {
