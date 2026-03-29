@@ -1673,6 +1673,16 @@ textarea {
   gap: 0.55rem;
 }
 
+.ops-editor-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid;
+}
+
 .ops-inline-editor-close {
   border: 1px solid var(--border);
   border-radius: 999px;

@@ -274,10 +274,14 @@ function Drawer({
     clientEmail: buyout.clientEmail,
     clientPhone: buyout.clientPhone ?? "",
     eventType: buyout.eventType,
+    preferredDates: buyout.preferredDates ?? "",
+    preferredLocation: buyout.preferredLocation ?? "",
+    guestCountEstimate: String(buyout.capacity || ""),
     eventDate: buyout.eventDate === "TBD" ? "" : buyout.eventDate,
     startTime: buyout.startTime ?? "",
     endTime: buyout.endTime ?? "",
     location: buyout.location,
+    capacity: String(buyout.capacity || ""),
     assignedTo: buyout.assignedTo,
     instructor: buyout.instructor,
     notes: buyout.notes,
@@ -330,10 +334,14 @@ function Drawer({
       clientEmail: buyout.clientEmail,
       clientPhone: buyout.clientPhone ?? "",
       eventType: buyout.eventType,
+      preferredDates: buyout.preferredDates ?? "",
+      preferredLocation: buyout.preferredLocation ?? "",
+      guestCountEstimate: String(buyout.capacity || ""),
       eventDate: buyout.eventDate === "TBD" ? "" : buyout.eventDate,
       startTime: buyout.startTime ?? "",
       endTime: buyout.endTime ?? "",
       location: buyout.location,
+      capacity: String(buyout.capacity || ""),
       assignedTo: buyout.assignedTo,
       instructor: buyout.instructor,
       notes: buyout.notes,
@@ -776,79 +784,113 @@ function Drawer({
                     </button>
                     {message ? <span className="success-text">{message}</span> : null}
                   </div>
-                  <div className="ops-inline-editor-grid">
+                  <div>
                     {editorMode === "details" ? (
                       <>
-                        <label className="field">
-                          <span>Client name</span>
-                          <input className="input" value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} />
-                        </label>
-                        <label className="field">
-                          <span>Client email</span>
-                          <input className="input" value={form.clientEmail} onChange={(event) => updateField("clientEmail", event.target.value)} />
-                        </label>
-                        <label className="field">
-                          <span>Phone</span>
-                          <input className="input" value={form.clientPhone} onChange={(event) => updateField("clientPhone", event.target.value)} />
-                        </label>
-                        <label className="field">
-                          <span>Event type</span>
-                          <select className="select" value={form.eventType} onChange={(event) => updateField("eventType", event.target.value)}>
-                            <option value="">Select type</option>
-                            <option value="Birthday">Birthday</option>
-                            <option value="Bachelorette">Bachelorette</option>
-                            <option value="Corporate">Corporate</option>
-                            <option value="Team Building">Team Building</option>
-                            <option value="Specialty Group">Specialty Group</option>
-                            <option value="Other">Other</option>
-                          </select>
-                        </label>
-                        <label className="field">
-                          <span>Event date</span>
-                          <input className="input" type="date" value={form.eventDate} onChange={(event) => updateField("eventDate", event.target.value)} />
-                        </label>
-                        <label className="field">
-                          <span>Location</span>
-                          <input className="input" value={form.location} onChange={(event) => updateField("location", event.target.value)} />
-                        </label>
-                        <label className="field">
-                          <span>Start time</span>
-                          <input className="input" value={form.startTime} onChange={(event) => updateField("startTime", event.target.value)} />
-                        </label>
-                        <label className="field">
-                          <span>End time</span>
-                          <input className="input" value={form.endTime} onChange={(event) => updateField("endTime", event.target.value)} />
-                        </label>
-                        <label className="field">
-                          <span>Front Desk</span>
-                          <input className="input" value={form.assignedTo} onChange={(event) => updateField("assignedTo", event.target.value)} />
-                        </label>
-                        <label className="field">
-                          <span>Instructor</span>
-                          <input className="input" value={form.instructor} onChange={(event) => updateField("instructor", event.target.value)} />
-                        </label>
-                        <div className="field-full" style={{ opacity: 0.7 }}>
-                          <span style={{ fontSize: "0.82rem", color: COLORS.warmGrey }}>Next action (auto-derived from checklist)</span>
+                        <div className="ops-editor-section-label" style={{ color: COLORS.sunshine, borderColor: `${COLORS.sunshine}33` }}>Client Request</div>
+                        <div className="ops-inline-editor-grid">
+                          <label className="field">
+                            <span>Client name</span>
+                            <input className="input" value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} />
+                          </label>
+                          <label className="field">
+                            <span>Client email</span>
+                            <input className="input" value={form.clientEmail} onChange={(event) => updateField("clientEmail", event.target.value)} />
+                          </label>
+                          <label className="field">
+                            <span>Phone</span>
+                            <input className="input" value={form.clientPhone} onChange={(event) => updateField("clientPhone", event.target.value)} />
+                          </label>
+                          <label className="field">
+                            <span>Event type</span>
+                            <select className="select" value={form.eventType} onChange={(event) => updateField("eventType", event.target.value)}>
+                              <option value="">Select type</option>
+                              <option value="Birthday">Birthday</option>
+                              <option value="Bachelorette">Bachelorette</option>
+                              <option value="Corporate">Corporate</option>
+                              <option value="Team Building">Team Building</option>
+                              <option value="Specialty Group">Specialty Group</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </label>
+                          <label className="field">
+                            <span>Preferred dates</span>
+                            <input className="input" value={form.preferredDates} onChange={(event) => updateField("preferredDates", event.target.value)} placeholder="e.g. March 15 or flexible" />
+                          </label>
+                          <label className="field">
+                            <span>Preferred location</span>
+                            <input className="input" value={form.preferredLocation} onChange={(event) => updateField("preferredLocation", event.target.value)} placeholder="e.g. Emory or West Midtown" />
+                          </label>
+                          <label className="field">
+                            <span>Guest count (estimate)</span>
+                            <input className="input" type="number" value={form.guestCountEstimate} onChange={(event) => updateField("guestCountEstimate", event.target.value)} placeholder="e.g. 20" />
+                          </label>
+                        </div>
+
+                        <div className="ops-editor-section-label" style={{ color: COLORS.seaglass, borderColor: `${COLORS.seaglass}33`, marginTop: "1rem" }}>Finalized Event Details</div>
+                        <div className="ops-inline-editor-grid">
+                          <label className="field">
+                            <span>Confirmed date</span>
+                            <input className="input" type="date" value={form.eventDate} onChange={(event) => updateField("eventDate", event.target.value)} />
+                          </label>
+                          <label className="field">
+                            <span>Confirmed location</span>
+                            <input className="input" value={form.location} onChange={(event) => updateField("location", event.target.value)} />
+                          </label>
+                          <label className="field">
+                            <span>Start time</span>
+                            <input className="input" value={form.startTime} onChange={(event) => updateField("startTime", event.target.value)} />
+                          </label>
+                          <label className="field">
+                            <span>End time</span>
+                            <input className="input" value={form.endTime} onChange={(event) => updateField("endTime", event.target.value)} />
+                          </label>
+                          <label className="field">
+                            <span>Confirmed capacity</span>
+                            <input className="input" type="number" value={form.capacity} onChange={(event) => updateField("capacity", event.target.value)} placeholder="e.g. 25" />
+                          </label>
+                          <label className="field">
+                            <span>Instructor</span>
+                            <input className="input" value={form.instructor} onChange={(event) => updateField("instructor", event.target.value)} />
+                          </label>
+                          <label className="field">
+                            <span>Front Desk</span>
+                            <input className="input" value={form.assignedTo} onChange={(event) => updateField("assignedTo", event.target.value)} />
+                          </label>
+                        </div>
+
+                        <div className="ops-editor-section-label" style={{ color: COLORS.warmGrey, borderColor: `${COLORS.warmGrey}33`, marginTop: "1rem" }}>Links &amp; Notes</div>
+                        <div className="ops-inline-editor-grid">
+                          <label className="field-full">
+                            <span>Sign-up link (Momence)</span>
+                            <input className="input" value={form.signupLink} onChange={(event) => updateField("signupLink", event.target.value)} />
+                          </label>
+                          <label className="field-full">
+                            <span>Deposit link</span>
+                            <input className="input" value={form.depositLink} onChange={(event) => updateField("depositLink", event.target.value)} />
+                          </label>
+                          <label className="field-full">
+                            <span>Balance link</span>
+                            <input className="input" value={form.balanceLink} onChange={(event) => updateField("balanceLink", event.target.value)} />
+                          </label>
+                          <label className="field-full">
+                            <span>Team notes</span>
+                            <textarea className="textarea" rows={3} value={form.notes} onChange={(event) => updateField("notes", event.target.value)} />
+                          </label>
+                        </div>
+
+                        <div className="field-full" style={{ opacity: 0.7, marginTop: "0.75rem" }}>
+                          <span style={{ fontSize: "0.78rem", color: COLORS.warmGrey }}>Next action (auto-derived from checklist)</span>
                           <div className="ops-draft-subject-display">{buyout.nextAction}</div>
                         </div>
-                        <label className="field-full">
-                          <span>Deposit link</span>
-                          <input className="input" value={form.depositLink} onChange={(event) => updateField("depositLink", event.target.value)} />
-                        </label>
-                        <label className="field-full">
-                          <span>Balance link</span>
-                          <input className="input" value={form.balanceLink} onChange={(event) => updateField("balanceLink", event.target.value)} />
-                        </label>
-                        <label className="field-full">
-                          <span>Sign-up link</span>
-                          <input className="input" value={form.signupLink} onChange={(event) => updateField("signupLink", event.target.value)} />
-                        </label>
                       </>
                     ) : (
-                      <label className="field-full">
-                        <span>Team notes</span>
-                        <textarea className="textarea ops-inline-notes" value={form.notes} onChange={(event) => updateField("notes", event.target.value)} />
-                      </label>
+                      <div className="ops-inline-editor-grid">
+                        <label className="field-full">
+                          <span>Team notes</span>
+                          <textarea className="textarea ops-inline-notes" value={form.notes} onChange={(event) => updateField("notes", event.target.value)} />
+                        </label>
+                      </div>
                     )}
                   </div>
                   <div className="ops-inline-editor-actions">
@@ -904,30 +946,32 @@ function Drawer({
                 ))}
               </div>
 
-              <div className="ops-section-label">Client Request</div>
+              <div className="ops-section-label" style={{ color: COLORS.sunshine }}>Client Request</div>
               <div className="ops-detail-card" style={{ background: `${COLORS.sunshine}08`, border: `1px solid ${COLORS.sunshine}22` }}>
                 <div className="ops-detail-line"><span>Client</span><strong>{buyout.clientName}</strong></div>
                 <div className="ops-detail-line"><span>Email</span><strong>{buyout.clientEmail || "Not provided"}</strong></div>
                 {buyout.clientPhone ? <div className="ops-detail-line"><span>Phone</span><strong>{buyout.clientPhone}</strong></div> : null}
                 <div className="ops-detail-line"><span>Event Type</span><strong>{buyout.eventType || "Not specified"}</strong></div>
                 <div className="ops-detail-line"><span>Preferred Dates</span><strong>{buyout.preferredDates || "Not specified"}</strong></div>
-                <div className="ops-detail-line"><span>Preferred Location</span><strong>{buyout.preferredLocation || buyout.location || "Not specified"}</strong></div>
-                <div className="ops-detail-line"><span>Guest Count</span><strong>{buyout.capacity || "Not specified"}</strong></div>
+                <div className="ops-detail-line"><span>Preferred Location</span><strong>{buyout.preferredLocation || "Not specified"}</strong></div>
+                <div className="ops-detail-line"><span>Guest Estimate</span><strong>{buyout.capacity || "Not specified"}</strong></div>
+                <div className="ops-detail-line"><span>Inquiry Date</span><strong>{buyout.inquiryDate ?? "Unknown"}</strong></div>
                 <div className="ops-detail-line"><span>Payment Tier</span><strong>{buyout.paymentTier === "deposit" ? "Deposit ($250 + balance)" : buyout.paymentTier === "rush" ? "Rush (+$100 fee)" : "Standard (full payment)"}</strong></div>
               </div>
 
-              <div className="ops-section-label">Finalized Event Details</div>
+              <div className="ops-section-label" style={{ color: COLORS.seaglass }}>Finalized Event Details</div>
               <div className="ops-detail-card" style={{ background: `${COLORS.seaglass}06`, border: `1px solid ${COLORS.seaglass}22` }}>
                 {[
                   ["Event Date", buyout.eventDate === "TBD" ? null : formatDisplayDate(buyout.eventDate), true],
                   ["Start Time", buyout.startTime, true],
                   ["End Time", buyout.endTime, true],
                   ["Location", buyout.location === "Unassigned" ? null : buyout.location, true],
+                  ["Capacity", buyout.capacity ? String(buyout.capacity) : null, true],
                   ["Instructor", buyout.instructor === "Unassigned" ? null : buyout.instructor, true],
                   ["Front Desk", buyout.assignedTo === "Unassigned" ? null : buyout.assignedTo, true],
-                  ["Momence / Signup Link", buyout.signupLink ? "Ready" : null, true],
+                  ["Sign-Up Link", buyout.signupLink ? "Ready" : null, true],
                   ["Sign-Ups", buyout.signupLink ? `${buyout.signups} / ${buyout.capacity || "?"}` : null, false],
-                  ["Deposit Link", buyout.depositLink ? "Ready" : null, true],
+                  ["Deposit Link", buyout.depositLink ? "Ready" : null, false],
                   ["Balance Link", buyout.balanceLink ? "Ready" : null, false]
                 ].map(([label, value, required]) => (
                   <div className="ops-detail-line" key={label as string}>
@@ -939,56 +983,14 @@ function Drawer({
                 ))}
               </div>
 
-              <div className="ops-section-label">Source Snapshot</div>
-              <div className="ops-quick-grid ops-source-grid">
-                {[
-                  [
-                    buyout.lifecycleStage,
-                    buyout.sourceLifecycleStage && buyout.sourceLifecycleStage !== buyout.lifecycleStage
-                      ? `Monday: ${buyout.sourceLifecycleStage}`
-                      : null,
-                    "Lifecycle"
-                  ],
-                  [
-                    buyout.nextAction,
-                    buyout.sourceNextAction && buyout.sourceNextAction !== buyout.nextAction
-                      ? `Monday: ${buyout.sourceNextAction}`
-                      : null,
-                    "Due Next"
-                  ],
-                  [
-                    buyout.trackingHealth,
-                    buyout.sourceTrackingHealth && buyout.sourceTrackingHealth !== buyout.trackingHealth
-                      ? `Monday: ${buyout.sourceTrackingHealth}`
-                      : null,
-                    "Tracking"
-                  ],
-                  [
-                    buyout.ballInCourt === "Team" ? "Us" : buyout.ballInCourt,
-                    buyout.sourceBallInCourt && buyout.sourceBallInCourt !== buyout.ballInCourt
-                      ? `Monday: ${buyout.sourceBallInCourt === "Team" ? "Us" : buyout.sourceBallInCourt}`
-                      : null,
-                    "Ball In Court"
-                  ]
-                ].map(([value, subvalue, label]) => (
-                  <div className="ops-quick-card ops-source-card" key={label as string}>
-                    <div className="ops-quick-value ops-source-value">{value}</div>
-                    {subvalue ? <div className="ops-source-subvalue">{subvalue}</div> : null}
-                    <div className="ops-quick-label">{label}</div>
+              {buyout.notes ? (
+                <>
+                  <div className="ops-section-label">Notes</div>
+                  <div className="ops-notes-box">
+                    <pre>{buyout.notes}</pre>
                   </div>
-                ))}
-              </div>
-
-              <div className="ops-section-label">Quick Info</div>
-              <div className="ops-detail-card">
-                <div className="ops-detail-line"><span>Inquiry Date</span><strong>{buyout.inquiryDate ?? "Unknown"}</strong></div>
-                <div className="ops-detail-line"><span>Payment Tier</span><strong>{buyout.paymentTier === "rush" ? `Rush (+$${buyout.rushFee} fee)` : buyout.paymentTier === "deposit" ? "Deposit ($250 + Balance)" : "Standard (Full Payment)"}</strong></div>
-              </div>
-
-              <div className="ops-section-label">Notes</div>
-              <div className="ops-notes-box">
-                <pre>{buyout.notes || "No notes yet"}</pre>
-              </div>
+                </>
+              ) : null}
             </div>
           ) : null}
 

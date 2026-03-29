@@ -756,6 +756,7 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
       eventDate: input.eventDate ? new Date(`${input.eventDate}T12:00:00`) : undefined,
       startTime: input.startTime ?? undefined,
       endTime: input.endTime ?? undefined,
+      capacity: input.capacity ?? undefined,
       instructorName: input.instructor ?? undefined,
       notesInternal: input.notes ?? undefined,
       locationId: location?.id ?? undefined,
@@ -770,7 +771,10 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
         clientName: input.clientName,
         clientEmail: input.clientEmail,
         clientPhone: input.clientPhone,
-        eventType: input.eventType
+        eventType: input.eventType,
+        preferredDates: input.preferredDates ?? undefined,
+        preferredLocation: input.preferredLocation ?? undefined,
+        guestCountEstimate: input.guestCountEstimate ?? undefined
       }
     });
   }
