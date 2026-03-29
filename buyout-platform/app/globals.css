@@ -1494,7 +1494,7 @@ textarea {
 }
 
 .ops-drawer-header {
-  padding: 1.35rem 1.5rem;
+  padding: 0.85rem 1.25rem;
   color: var(--oat-light);
 }
 
@@ -1502,13 +1502,14 @@ textarea {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .ops-drawer-name {
   font-family: var(--font-heading), Georgia, serif;
-  font-size: 1.4rem;
+  font-size: 1.15rem;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .ops-close-btn {
@@ -1524,23 +1525,23 @@ textarea {
 
 .ops-drawer-pill-row {
   display: flex;
-  gap: 0.4rem;
-  margin-top: 0.8rem;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
 }
 
 .ops-drawer-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: 8px;
+  gap: 0.25rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.15);
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 700;
 }
 
 .ops-status-strip {
-  padding: 0.8rem 1.5rem;
+  padding: 0.5rem 1.25rem;
   background: var(--oat);
   border-bottom: 1px solid var(--border);
 }
@@ -1556,7 +1557,7 @@ textarea {
 
 .ops-status-value {
   font-family: var(--font-heading), Georgia, serif;
-  font-size: 1rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--brand);
 }
@@ -1566,7 +1567,7 @@ textarea {
 }
 
 .ops-status-next {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--positive);
 }
@@ -1578,12 +1579,12 @@ textarea {
 }
 
 .ops-tab-btn {
-  padding: 0.8rem 0.9rem;
+  padding: 0.55rem 0.75rem;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -1596,14 +1597,14 @@ textarea {
 .ops-drawer-body {
   flex: 1;
   overflow-y: auto;
-  padding: 1.1rem 1.5rem;
+  padding: 0.75rem 1.25rem;
 }
 
 .ops-quick-grid,
 .ops-financial-grid {
   display: grid;
-  gap: 0.55rem;
-  margin-bottom: 1rem;
+  gap: 0.4rem;
+  margin-bottom: 0.65rem;
 }
 
 .ops-quick-grid {
@@ -1621,13 +1622,20 @@ textarea {
 .ops-quick-card,
 .ops-money-card {
   border: 1px solid transparent;
-  border-radius: 10px;
-  padding: 0.8rem;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
   text-align: center;
 }
 
 .ops-quick-value {
-  font-size: 1.35rem;
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.ops-quick-label {
+  font-size: 0.62rem;
+  color: var(--muted);
+  margin-top: 1px;
 }
 
 .ops-source-card {
@@ -1651,23 +1659,38 @@ textarea {
 }
 
 .ops-section-label {
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--brand);
+}
+
+.ops-detail-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.ops-detail-split .ops-detail-card {
+  margin-bottom: 0;
 }
 
 .ops-detail-card,
 .ops-notes-box {
-  margin-bottom: 1rem;
-  border-radius: 12px;
+  margin-bottom: 0.65rem;
+  border-radius: 10px;
   background: var(--oat-light);
   overflow: hidden;
 }
 
 .ops-inline-editor {
-  margin-bottom: 1rem;
-  padding: 1rem;
+  margin-bottom: 0.65rem;
+  padding: 0.75rem;
   border: 1px solid rgba(159, 84, 63, 0.14);
-  border-radius: 14px;
+  border-radius: 12px;
   background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(245,235,231,0.92));
 }
 
@@ -1676,11 +1699,11 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .ops-inline-editor-head {
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.5rem;
 }
 
 .ops-inline-editor-grid {
@@ -1711,20 +1734,20 @@ textarea {
 }
 
 .ops-inline-editor-actions {
-  margin-top: 1rem;
+  margin-top: 0.65rem;
 }
 
 .ops-inline-notes {
-  min-height: 100px;
+  min-height: 72px;
 }
 
 .ops-detail-line {
   display: flex;
   justify-content: space-between;
-  gap: 0.8rem;
-  padding: 0.62rem 1rem;
-  border-bottom: 1px solid rgba(224, 214, 204, 0.35);
-  font-size: 0.75rem;
+  gap: 0.6rem;
+  padding: 0.38rem 0.75rem;
+  border-bottom: 1px solid rgba(224, 214, 204, 0.3);
+  font-size: 0.72rem;
 }
 
 .ops-detail-line:last-child {
@@ -1771,18 +1794,18 @@ textarea {
 
 .ops-notes-box pre {
   margin: 0;
-  padding: 0.85rem 1rem;
+  padding: 0.55rem 0.75rem;
   white-space: pre-wrap;
   font-family: var(--font-body), "Segoe UI", sans-serif;
-  font-size: 0.76rem;
-  line-height: 1.55;
+  font-size: 0.72rem;
+  line-height: 1.45;
   color: var(--coffee);
 }
 
 .ops-alert-box {
-  margin-bottom: 1rem;
-  padding: 0.9rem 1rem;
-  border-radius: 12px;
+  margin-bottom: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
   background: rgba(232, 88, 27, 0.08);
   border: 1px solid rgba(232, 88, 27, 0.16);
 }
@@ -1949,17 +1972,17 @@ textarea {
 .ops-footer-primary,
 .ops-footer-secondary,
 .ops-footer-tertiary {
-  padding: 0.75rem 0.85rem;
-  border-radius: 10px;
-  font-size: 0.74rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.72rem;
   font-weight: 700;
   cursor: pointer;
 }
 
 .ops-drawer-footer {
   display: flex;
-  gap: 0.55rem;
-  padding: 0.9rem 1.5rem;
+  gap: 0.45rem;
+  padding: 0.6rem 1.25rem;
   border-top: 1px solid var(--border);
   background: var(--card);
 }
@@ -1991,9 +2014,12 @@ textarea {
   .metrics-grid,
   .ops-source-grid,
   .ops-kpi-grid,
-  .ops-quick-grid,
   .ops-financial-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ops-quick-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .form-grid {
@@ -2008,6 +2034,73 @@ textarea {
 
   .ops-drawer {
     width: 100%;
+    min-width: 0;
+  }
+
+  .ops-drawer-header {
+    padding: 0.65rem 1rem;
+  }
+
+  .ops-drawer-name {
+    font-size: 1rem;
+  }
+
+  .ops-status-strip {
+    padding: 0.4rem 1rem;
+  }
+
+  .ops-status-meta {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
+
+  .ops-status-right {
+    text-align: left;
+  }
+
+  .ops-tab-bar {
+    padding: 0 0.75rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ops-tab-btn {
+    padding: 0.45rem 0.55rem;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  .ops-drawer-body {
+    padding: 0.6rem 0.85rem;
+  }
+
+  .ops-detail-line {
+    padding: 0.32rem 0.6rem;
+    font-size: 0.68rem;
+  }
+
+  .ops-inline-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-drawer-footer {
+    padding: 0.5rem 0.85rem;
+  }
+
+  .ops-footer-primary,
+  .ops-footer-secondary,
+  .ops-footer-tertiary {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.68rem;
+  }
+
+  .ops-detail-split {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-drawer-resize {
+    display: none;
   }
 
   .ops-mode-banner {

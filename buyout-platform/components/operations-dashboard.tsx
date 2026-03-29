@@ -1001,50 +1001,51 @@ function Drawer({
                 ))}
               </div>
 
-              <div className="ops-section-label" style={{ color: COLORS.sunshine }}>Client Request</div>
-              <div className="ops-detail-card" style={{ background: `${COLORS.sunshine}08`, border: `1px solid ${COLORS.sunshine}22` }}>
-                <div className="ops-detail-line"><span>Client</span><strong>{buyout.clientName}</strong></div>
-                <div className="ops-detail-line"><span>Email</span><strong>{buyout.clientEmail || "Not provided"}</strong></div>
-                {buyout.clientPhone ? <div className="ops-detail-line"><span>Phone</span><strong>{buyout.clientPhone}</strong></div> : null}
-                <div className="ops-detail-line"><span>Event Type</span><strong>{buyout.eventType || "Not specified"}</strong></div>
-                <div className="ops-detail-line"><span>Preferred Dates</span><strong>{buyout.preferredDates || "Not specified"}</strong></div>
-                <div className="ops-detail-line"><span>Preferred Location</span><strong>{buyout.preferredLocation || "Not specified"}</strong></div>
-                <div className="ops-detail-line"><span>Guest Estimate</span><strong>{buyout.capacity || "Not specified"}</strong></div>
-                <div className="ops-detail-line"><span>Inquiry Date</span><strong>{buyout.inquiryDate ? formatDisplayDate(buyout.inquiryDate) : "Unknown"}</strong></div>
-                <div className="ops-detail-line"><span>Payment Tier</span><strong>{buyout.paymentTier === "deposit" ? "Deposit ($250 + balance)" : buyout.paymentTier === "rush" ? "Rush (+$100 fee)" : "Standard (full payment)"}</strong></div>
-              </div>
-
-              <div className="ops-section-label" style={{ color: COLORS.seaglass }}>Finalized Event Details</div>
-              <div className="ops-detail-card" style={{ background: `${COLORS.seaglass}06`, border: `1px solid ${COLORS.seaglass}22` }}>
-                {[
-                  ["Event Date", buyout.eventDate === "TBD" ? null : formatDisplayDate(buyout.eventDate), true],
-                  ["Start Time", buyout.startTime, true],
-                  ["End Time", buyout.endTime, true],
-                  ["Location", buyout.location === "Unassigned" ? null : buyout.location, true],
-                  ["Capacity", buyout.capacity ? String(buyout.capacity) : null, true],
-                  ["Instructor", buyout.instructor === "Unassigned" ? null : buyout.instructor, true],
-                  ["Front Desk", buyout.assignedTo === "Unassigned" ? null : buyout.assignedTo, true],
-                  ["Sign-Up Link", buyout.signupLink ? "Ready" : null, true],
-                  ["Sign-Ups", buyout.signupLink ? `${buyout.signups} / ${buyout.capacity || "?"}` : null, false],
-                  ["Deposit Link", buyout.depositLink ? "Ready" : null, false],
-                  ["Balance Link", buyout.balanceLink ? "Ready" : null, false]
-                ].map(([label, value, required]) => (
-                  <div className="ops-detail-line" key={label as string}>
-                    <span>{label}</span>
-                    <strong style={{ color: !value && required ? COLORS.cherry : value ? COLORS.seaglass : undefined, fontWeight: !value && required ? 700 : 600 }}>
-                      {value || (required ? "Still Needed" : "—")}
-                    </strong>
+              <div className="ops-detail-split">
+                <div>
+                  <div className="ops-section-label" style={{ color: COLORS.sunshine }}>Client Request</div>
+                  <div className="ops-detail-card" style={{ background: `${COLORS.sunshine}08`, border: `1px solid ${COLORS.sunshine}22` }}>
+                    <div className="ops-detail-line"><span>Client</span><strong>{buyout.clientName}</strong></div>
+                    <div className="ops-detail-line"><span>Email</span><strong>{buyout.clientEmail || "—"}</strong></div>
+                    {buyout.clientPhone ? <div className="ops-detail-line"><span>Phone</span><strong>{buyout.clientPhone}</strong></div> : null}
+                    <div className="ops-detail-line"><span>Type</span><strong>{buyout.eventType || "—"}</strong></div>
+                    <div className="ops-detail-line"><span>Dates</span><strong>{buyout.preferredDates || "—"}</strong></div>
+                    <div className="ops-detail-line"><span>Location</span><strong>{buyout.preferredLocation || "—"}</strong></div>
+                    <div className="ops-detail-line"><span>Guests</span><strong>{buyout.capacity || "—"}</strong></div>
+                    <div className="ops-detail-line"><span>Inquiry</span><strong>{buyout.inquiryDate ? formatDisplayDate(buyout.inquiryDate) : "—"}</strong></div>
+                    <div className="ops-detail-line"><span>Tier</span><strong>{buyout.paymentTier === "deposit" ? "Deposit" : buyout.paymentTier === "rush" ? "Rush" : "Standard"}</strong></div>
                   </div>
-                ))}
+                </div>
+                <div>
+                  <div className="ops-section-label" style={{ color: COLORS.seaglass }}>Finalized Details</div>
+                  <div className="ops-detail-card" style={{ background: `${COLORS.seaglass}06`, border: `1px solid ${COLORS.seaglass}22` }}>
+                    {[
+                      ["Date", buyout.eventDate === "TBD" ? null : formatDisplayDate(buyout.eventDate), true],
+                      ["Time", buyout.startTime && buyout.endTime ? `${buyout.startTime}–${buyout.endTime}` : buyout.startTime, true],
+                      ["Location", buyout.location === "Unassigned" ? null : buyout.location, true],
+                      ["Capacity", buyout.capacity ? String(buyout.capacity) : null, true],
+                      ["Instructor", buyout.instructor === "Unassigned" ? null : buyout.instructor, true],
+                      ["Front Desk", buyout.assignedTo === "Unassigned" ? null : buyout.assignedTo, true],
+                      ["Signup Link", buyout.signupLink ? "Ready" : null, true],
+                      ["Sign-Ups", buyout.signupLink ? `${buyout.signups}/${buyout.capacity || "?"}` : null, false],
+                      ["Deposit Link", buyout.depositLink ? "Ready" : null, false],
+                      ["Balance Link", buyout.balanceLink ? "Ready" : null, false]
+                    ].map(([label, value, required]) => (
+                      <div className="ops-detail-line" key={label as string}>
+                        <span>{label}</span>
+                        <strong style={{ color: !value && required ? COLORS.cherry : value ? COLORS.seaglass : undefined, fontWeight: !value && required ? 700 : 600 }}>
+                          {value || (required ? "Needed" : "—")}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {buyout.notes ? (
-                <>
-                  <div className="ops-section-label">Notes</div>
-                  <div className="ops-notes-box">
-                    <pre>{buyout.notes}</pre>
-                  </div>
-                </>
+                <div className="ops-notes-box">
+                  <pre>{buyout.notes}</pre>
+                </div>
               ) : null}
             </div>
           ) : null}
