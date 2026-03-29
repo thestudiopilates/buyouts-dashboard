@@ -96,7 +96,7 @@ export async function POST(
          VALUES ($1, $2, 'NOTE_ADDED', $3, $4::jsonb, $5)`,
         randomUUID(),
         id,
-        `Note added: ${body.text.trim().slice(0, 80)}`,
+        `Note added`,
         JSON.stringify({ noteId: newNote.id, text: newNote.text }),
         newNote.author
       );

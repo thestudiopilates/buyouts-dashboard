@@ -12,7 +12,7 @@ export const BUYOUT_PHASES: Record<StageKey, BuyoutPhaseConfig> = {
   Inquiry: {
     stage: "Inquiry",
     statusLabel: "New Inquiry Received",
-    nextAction: "Review inquiry and respond (t1)",
+    nextAction: "Review inquiry and respond",
     ballInCourt: "Team",
     templateKeys: ["t0", "t1", "t2", "t13"]
   },
@@ -61,7 +61,7 @@ export const BUYOUT_PHASES: Record<StageKey, BuyoutPhaseConfig> = {
   "Sign-Ups": {
     stage: "Sign-Ups",
     statusLabel: "Awaiting Guest Sign-Ups",
-    nextAction: "Monitor sign-ups and send reminders if needed (t10/t14)",
+    nextAction: "Monitor sign-ups and send reminders if needed",
     ballInCourt: "Client",
     templateKeys: ["t0", "t6", "t10", "t13", "t14"]
   },
@@ -82,14 +82,14 @@ export const BUYOUT_PHASES: Record<StageKey, BuyoutPhaseConfig> = {
   Ready: {
     stage: "Ready",
     statusLabel: "Ready for Event",
-    nextAction: "Send final confirmation (t11)",
+    nextAction: "Send final confirmation",
     ballInCourt: "Team",
     templateKeys: ["t0", "t12", "t13", "t14"]
   },
   Complete: {
     stage: "Complete",
     statusLabel: "Event Complete",
-    nextAction: "Send thank you, questionnaire, and referral code (t12)",
+    nextAction: "Send thank you, questionnaire, and referral code",
     ballInCourt: "Team",
     templateKeys: ["t0", "t12", "t13"]
   },

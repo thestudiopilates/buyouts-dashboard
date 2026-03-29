@@ -1664,7 +1664,7 @@ function Drawer({
                                   : event.eventType === "LAST_ACTION_RECORDED" ? "Action"
                                   : "Event"}
                               </span>
-                              {event.summary}
+                              {event.eventType === "NOTE_ADDED" ? "Note added — see Notes tab" : event.summary}
                             </div>
                           </div>
                         ))}

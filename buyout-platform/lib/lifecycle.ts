@@ -35,7 +35,7 @@ const STEP_ADVANCEMENT_RULES: Array<{
   {
     requires: ["event-completed"],
     advancesTo: "Complete",
-    nextAction: "Send thank you, questionnaire, and referral code (t12)",
+    nextAction: "Send thank you, questionnaire, and referral code",
     ballInCourt: "Team"
   },
   // ── Pre-Event
@@ -49,7 +49,7 @@ const STEP_ADVANCEMENT_RULES: Array<{
   {
     requires: ["front-desk-assigned", "front-desk-shift-extended"],
     advancesTo: "Ready",
-    nextAction: "Send final confirmation (t11)",
+    nextAction: "Send final confirmation",
     ballInCourt: "Team"
   },
   // ── Confirmed sub-steps (after signups complete, work through confirmations)
@@ -75,14 +75,14 @@ const STEP_ADVANCEMENT_RULES: Array<{
   {
     requires: ["momence-link-sign-up-sent"],
     advancesTo: "Sign-Ups",
-    nextAction: "Monitor sign-ups and send reminders if needed (t10/t14)",
+    nextAction: "Monitor sign-ups and send reminders if needed",
     ballInCourt: "Client"
   },
   // ── Event Setup sub-steps (after payment, build toward sending details)
   {
     requires: ["momence-class-created"],
     advancesTo: "Paid",
-    nextAction: "Send event details to client (t5)",
+    nextAction: "Send event details to client",
     ballInCourt: "Team"
   },
   {
@@ -127,7 +127,7 @@ const STEP_ADVANCEMENT_RULES: Array<{
   {
     requires: ["inquiry-reviewed"],
     advancesTo: "Inquiry",
-    nextAction: "Review inquiry and respond (t1)",
+    nextAction: "Review inquiry and respond",
     ballInCourt: "Team"
   }
 ];
