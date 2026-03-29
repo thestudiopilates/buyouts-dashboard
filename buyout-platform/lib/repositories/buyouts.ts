@@ -722,13 +722,13 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
     where: { id },
     data: {
       displayName: input.clientName,
-      eventDate: input.eventDate ? new Date(`${input.eventDate}T12:00:00`) : null,
-      startTime: input.startTime,
-      endTime: input.endTime,
-      instructorName: input.instructor,
-      notesInternal: input.notes,
-      locationId: location?.id ?? null,
-      assignedManagerId: manager?.id ?? null
+      eventDate: input.eventDate ? new Date(`${input.eventDate}T12:00:00`) : undefined,
+      startTime: input.startTime ?? undefined,
+      endTime: input.endTime ?? undefined,
+      instructorName: input.instructor ?? undefined,
+      notesInternal: input.notes ?? undefined,
+      locationId: location?.id ?? undefined,
+      assignedManagerId: manager?.id ?? undefined
     }
   });
 
