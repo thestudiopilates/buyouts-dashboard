@@ -622,7 +622,15 @@ export async function createInquiryInDb(input: BuyoutInquiryInput) {
       })
     : null;
 
-  await prisma.buyout.create({
+  // Parse preferred date into an actual date if provided
+  const eventDate = input.preferredDate ? new Date(`${input.preferredDate}T12:00:00`) : null;
+  const validEventDate = eventDate && !isNaN(eventDate.getTime()) ? eventDate : null;
+
+  // Parse duration into a quoted total ($450/hr)
+  const durationHours = input.duration ? parseFloat(input.duration) : null;
+  const quotedTotal = durationHours && durationHours > 0 ? Math.round(durationHours * 450) : null;
+
+  const buyout = await prisma.buyout.create({
     data: {
       displayName: input.clientName,
       inquiryId: inquiry.id,
@@ -630,11 +638,26 @@ export async function createInquiryInDb(input: BuyoutInquiryInput) {
       trackingHealth: "ON_TRACK",
       ballInCourt: "TEAM",
       nextAction: "Review inquiry and send initial response",
+      eventDate: validEventDate,
+      startTime: input.preferredTime ?? null,
       capacity: input.guestCountEstimate ?? null,
       notesInternal: input.notes ?? null,
       locationId: location?.id ?? null
     }
   });
+
+  // Create financial record if we can calculate pricing
+  if (quotedTotal) {
+    await prisma.buyoutFinancial.create({
+      data: {
+        buyoutId: buyout.id,
+        quotedTotal,
+        depositAmount: 250,
+        amountPaid: 0,
+        remainingBalance: quotedTotal
+      }
+    });
+  }
 
   return {
     id: inquiry.id,

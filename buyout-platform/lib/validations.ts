@@ -28,9 +28,12 @@ export const inquirySchema = z.object({
   clientPhone: optionalText,
   companyName: optionalText,
   eventType: optionalText,
+  preferredDate: optionalText,
+  preferredTime: optionalText,
   preferredDates: optionalText,
   preferredLocation: optionalText,
   guestCountEstimate: optionalPositiveInteger,
+  duration: optionalText,
   notes: optionalText
 });
 

@@ -98,9 +98,12 @@ export type BuyoutInquiryInput = {
   clientPhone?: string;
   companyName?: string;
   eventType?: string;
+  preferredDate?: string;
+  preferredTime?: string;
   preferredDates?: string;
   preferredLocation?: string;
   guestCountEstimate?: number;
+  duration?: string;
   notes?: string;
 };
 

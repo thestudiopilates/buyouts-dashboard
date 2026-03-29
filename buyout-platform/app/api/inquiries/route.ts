@@ -42,9 +42,12 @@ export async function POST(request: Request) {
       clientPhone: String(body.clientPhone ?? ""),
       companyName: String(body.companyName ?? ""),
       eventType: String(body.eventType ?? ""),
+      preferredDate: String(body.preferredDate ?? ""),
+      preferredTime: String(body.preferredTime ?? ""),
       preferredDates: String(body.preferredDates ?? ""),
       preferredLocation: String(body.preferredLocation ?? ""),
       guestCountEstimate: String(body.guestCountEstimate ?? ""),
+      duration: String(body.duration ?? ""),
       notes: String(body.notes ?? "")
     };
   } else {
@@ -55,9 +58,12 @@ export async function POST(request: Request) {
       clientPhone: String(formData.get("clientPhone") ?? ""),
       companyName: String(formData.get("companyName") ?? ""),
       eventType: String(formData.get("eventType") ?? ""),
+      preferredDate: String(formData.get("preferredDate") ?? ""),
+      preferredTime: String(formData.get("preferredTime") ?? ""),
       preferredDates: String(formData.get("preferredDates") ?? ""),
       preferredLocation: String(formData.get("preferredLocation") ?? ""),
       guestCountEstimate: String(formData.get("guestCountEstimate") ?? ""),
+      duration: String(formData.get("duration") ?? ""),
       notes: String(formData.get("notes") ?? "")
     };
   }
