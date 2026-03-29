@@ -1233,12 +1233,12 @@ function Drawer({
                     return (
                       <div key={idx}>
                         {showPhase ? (
-                          <div className="ops-dual-phase" style={{ borderColor: row.color }}>
+                          <div className="ops-dual-phase" style={{ borderColor: row.color, backgroundColor: row.color + "18" }}>
                             <span style={{ background: row.color }} />
                             {row.phase}
                           </div>
                         ) : null}
-                        <div className="ops-dual-row">
+                        <div className="ops-dual-row" style={{ backgroundColor: row.color + "0A", borderLeft: `3px solid ${row.color}30` }}>
                           <div className="ops-dual-cell">
                             {row.client ? (
                               <button

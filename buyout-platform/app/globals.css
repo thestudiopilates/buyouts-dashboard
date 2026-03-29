@@ -2232,16 +2232,18 @@ textarea {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 8px 4px;
-  margin-top: 8px;
+  padding: 6px 8px 5px;
+  margin-top: 10px;
   font-size: 0.75rem;
   font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--coffee);
-  border-top: 1px solid var(--divider);
+  border-top: 2px solid transparent;
+  border-radius: 3px 3px 0 0;
 }
 
 .ops-dual-phase:first-child {
-  border-top: none;
   margin-top: 0;
 }
 
