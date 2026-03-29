@@ -609,6 +609,33 @@ export async function createInquiryInDb(input: BuyoutInquiryInput) {
     }
   });
 
+  // Auto-create a Buyout record so the inquiry immediately enters the lifecycle
+  const locationName = input.preferredLocation?.trim();
+  const location = locationName
+    ? await prisma.location.upsert({
+        where: { id: `loc_${locationName.toLowerCase().replace(/[^a-z0-9]+/g, "_")}` },
+        update: { name: locationName },
+        create: {
+          id: `loc_${locationName.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+          name: locationName
+        }
+      })
+    : null;
+
+  await prisma.buyout.create({
+    data: {
+      displayName: input.clientName,
+      inquiryId: inquiry.id,
+      lifecycleStage: "INQUIRY",
+      trackingHealth: "ON_TRACK",
+      ballInCourt: "TEAM",
+      nextAction: "Review inquiry and send initial response",
+      capacity: input.guestCountEstimate ?? null,
+      notesInternal: input.notes ?? null,
+      locationId: location?.id ?? null
+    }
+  });
+
   return {
     id: inquiry.id,
     createdAt: inquiry.createdAt.toISOString(),
