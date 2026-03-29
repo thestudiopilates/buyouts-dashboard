@@ -433,7 +433,7 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
     eventDate: toIsoDay(buyout.eventDate),
     countdownDays: countdown,
     location: buyout.location?.name ?? "Unassigned",
-    assignedTo: buyout.assignedManager?.name ?? buyout.instructorName ?? "Unassigned",
+    assignedTo: buyout.assignedManager?.name ?? "Unassigned",
     instructor: buyout.instructorName ?? "Unassigned",
     lifecycleStage: effectiveLifecycleStage,
     sourceLifecycleStage: lifecycleStage,
@@ -727,6 +727,11 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
 
   const locationName = input.location?.trim();
   const assignedTo = input.assignedTo?.trim();
+  const instructorName = input.instructor?.trim();
+
+  // Detect whether instructor or front desk was CLEARED
+  const instructorCleared = instructorName !== undefined && instructorName === "";
+  const frontDeskCleared = assignedTo !== undefined && assignedTo === "";
 
   const location =
     locationName && locationName !== existing.location?.name
@@ -751,7 +756,7 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
             role: "Manager"
           }
         })
-      : existing.assignedManager;
+      : frontDeskCleared ? null : existing.assignedManager;
 
   await prisma.buyout.update({
     where: { id },
@@ -761,12 +766,32 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
       startTime: input.startTime ?? undefined,
       endTime: input.endTime ?? undefined,
       capacity: input.capacity ?? undefined,
-      instructorName: input.instructor ?? undefined,
+      instructorName: instructorCleared ? null : (instructorName || undefined),
       notesInternal: input.notes ?? undefined,
       locationId: location?.id ?? undefined,
-      assignedManagerId: manager?.id ?? undefined
+      assignedManagerId: manager?.id ?? null
     }
   });
+
+  // When instructor or front desk is CLEARED, uncheck the related workflow step
+  const workflowUnchecks: string[] = [];
+  if (instructorCleared) workflowUnchecks.push("instructor-finalized");
+  if (frontDeskCleared) workflowUnchecks.push("front-desk-assigned");
+
+  if (workflowUnchecks.length > 0) {
+    await prisma.buyoutWorkflowStep.updateMany({
+      where: {
+        buyoutId: id,
+        stepKey: { in: workflowUnchecks },
+        isComplete: true
+      },
+      data: {
+        isComplete: false,
+        completedAt: null,
+        completedBy: null
+      }
+    });
+  }
 
   if (existing.inquiryId) {
     await prisma.buyoutInquiry.update({

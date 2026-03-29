@@ -9,6 +9,15 @@ const optionalText = z.preprocess((value) => {
   return trimmed.length > 0 ? trimmed : undefined;
 }, z.string().optional());
 
+// Like optionalText but preserves empty strings as "" so clearing a field is detectable
+const clearableText = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  return value.trim();
+}, z.string().optional());
+
 const optionalPositiveInteger = z.preprocess((value) => {
   if (typeof value !== "string") {
     return undefined;
@@ -56,8 +65,8 @@ export const buyoutUpdateSchema = z.object({
   endTime: optionalText,
   location: optionalText,
   capacity: optionalPositiveInteger,
-  assignedTo: optionalText,
-  instructor: optionalText,
+  assignedTo: clearableText,
+  instructor: clearableText,
   notes: optionalText,
   depositLink: optionalText,
   balanceLink: optionalText,
