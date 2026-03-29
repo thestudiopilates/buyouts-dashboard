@@ -676,7 +676,7 @@ export async function createInquiryInDb(input: BuyoutInquiryInput) {
   const WORKFLOW_STEPS = [
     { key: "inquiry-reviewed", label: "Inquiry Reviewed", group: "INTAKE" },
     { key: "initial-inquiry-response-sent", label: "Initial Response Sent", group: "INTAKE" },
-    { key: "customer-responded", label: "Customer Responded", group: "INTAKE" },
+    { key: "customer-responded", label: "Customer Responded", group: "PLANNING" },
     { key: "date-finalized", label: "Date Finalized", group: "PLANNING" },
     { key: "deposit-link-sent-and-terms-shared", label: "Payment Link Sent", group: "PAYMENT" },
     { key: "deposit-paid-and-terms-signed", label: "Payment Received", group: "PAYMENT" },
@@ -686,8 +686,8 @@ export async function createInquiryInDb(input: BuyoutInquiryInput) {
     { key: "remaining-payment-received", label: "Remaining Balance Received", group: "PAYMENT" },
     { key: "all-attendees-registered", label: "All Attendees Registered", group: "LOGISTICS" },
     { key: "all-waivers-signed", label: "All Waivers Signed", group: "LOGISTICS" },
-    { key: "front-desk-assigned", label: "Front Desk Assigned", group: "PRE_EVENT" },
-    { key: "front-desk-shift-extended", label: "Desk Shift Extended", group: "PRE_EVENT" },
+    { key: "front-desk-assigned", label: "Front Desk Assigned", group: "LOGISTICS" },
+    { key: "front-desk-shift-extended", label: "Desk Shift Extended", group: "LOGISTICS" },
     { key: "final-confirmation-emails-sent", label: "Final Confirmation Sent", group: "PRE_EVENT" },
     { key: "event-completed", label: "Event Completed", group: "EXECUTION" }
   ] as const;
@@ -811,17 +811,17 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
   await prisma.buyoutFinancial.upsert({
     where: { buyoutId: id },
     update: {
-      depositLink: input.depositLink,
-      balanceLink: input.balanceLink
+      depositLink: input.depositLink === "" ? null : input.depositLink,
+      balanceLink: input.balanceLink === "" ? null : input.balanceLink
     },
     create: {
       buyoutId: id,
-      depositLink: input.depositLink,
-      balanceLink: input.balanceLink
+      depositLink: input.depositLink === "" ? null : input.depositLink,
+      balanceLink: input.balanceLink === "" ? null : input.balanceLink
     }
   });
 
-  if (input.signupLink || existing.sourceSnapshot) {
+  if (input.signupLink !== undefined || existing.sourceSnapshot) {
     const snapshot =
       existing.sourceSnapshot && typeof existing.sourceSnapshot === "object" && !Array.isArray(existing.sourceSnapshot)
         ? { ...(existing.sourceSnapshot as Record<string, unknown>) }
@@ -831,7 +831,9 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
         ? { ...(snapshot.values as Record<string, unknown>) }
         : {};
 
-    if (input.signupLink) {
+    if (input.signupLink === "") {
+      delete values.signupLink;
+    } else if (input.signupLink) {
       values.signupLink = input.signupLink;
     }
 

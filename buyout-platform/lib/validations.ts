@@ -68,9 +68,9 @@ export const buyoutUpdateSchema = z.object({
   assignedTo: clearableText,
   instructor: clearableText,
   notes: optionalText,
-  depositLink: optionalText,
-  balanceLink: optionalText,
-  signupLink: optionalText
+  depositLink: clearableText,
+  balanceLink: clearableText,
+  signupLink: clearableText
 });
 
 export type BuyoutUpdateFormState = {
