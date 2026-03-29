@@ -5,7 +5,7 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "InquiryStatus" AS ENUM ('NEW', 'REVIEWED', 'CONVERTED', 'CLOSED');
 
 -- CreateEnum
-CREATE TYPE "BuyoutStage" AS ENUM ('INQUIRY', 'RESPOND', 'DISCUSS', 'FEASIBLE', 'QUOTE', 'DEPOSIT', 'PAID', 'SIGNUPS', 'CONFIRMED', 'FINAL', 'READY', 'COMPLETE', 'CANCELLED');
+CREATE TYPE "BuyoutStage" AS ENUM ('INQUIRY', 'RESPOND', 'DISCUSS', 'FEASIBLE', 'QUOTE', 'DEPOSIT', 'PAID', 'SIGNUPS', 'CONFIRMED', 'FINAL', 'READY', 'COMPLETE', 'CANCELLED', 'DOA', 'NOT_POSSIBLE', 'ON_HOLD');
 
 -- CreateEnum
 CREATE TYPE "TrackingHealth" AS ENUM ('ON_TRACK', 'AT_RISK', 'MAJOR_ISSUE', 'COMPLETE');
@@ -80,6 +80,14 @@ CREATE TABLE "Buyout" (
     "trackingHealth" "TrackingHealth" NOT NULL DEFAULT 'ON_TRACK',
     "ballInCourt" "BallInCourt" NOT NULL DEFAULT 'TEAM',
     "nextAction" TEXT,
+    "sourceStatusLabel" TEXT,
+    "sourceTrackingLabel" TEXT,
+    "sourceBallInCourtLabel" TEXT,
+    "sourceNextActionLabel" TEXT,
+    "sourceEmailTriggerLabel" TEXT,
+    "sourcePaymentStatusLabel" TEXT,
+    "sourceDeskStaff" TEXT,
+    "sourceSnapshot" JSONB,
     "notesInternal" TEXT,
     "eventDate" TIMESTAMP(3),
     "startTime" TEXT,

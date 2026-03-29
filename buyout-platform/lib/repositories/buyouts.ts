@@ -698,7 +698,7 @@ export async function createInquiryInDb(input: BuyoutInquiryInput) {
       buyoutId: buyout.id,
       stepKey: step.key,
       label: step.label,
-      stepGroup: step.group,
+      stepGroup: step.group as WorkflowGroup,
       isComplete: false
     }))
   });
