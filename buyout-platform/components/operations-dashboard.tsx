@@ -121,6 +121,15 @@ function formatDisplayDate(value: string) {
   }).format(parsed);
 }
 
+/** Replace any YYYY-MM-DD substrings in free text with human dates */
+function humanizeDatesInText(text: string) {
+  return text.replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (match) => {
+    const d = new Date(`${match}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return match;
+    return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" }).format(d);
+  });
+}
+
 function formatDateTime(value: string | null) {
   if (!value) {
     return "Unknown";
@@ -1094,7 +1103,7 @@ function Drawer({
                     <div className="ops-detail-line"><span>Email</span><strong>{buyout.clientEmail || "—"}</strong></div>
                     {buyout.clientPhone ? <div className="ops-detail-line"><span>Phone</span><strong>{buyout.clientPhone}</strong></div> : null}
                     <div className="ops-detail-line"><span>Type</span><strong>{buyout.eventType || "—"}</strong></div>
-                    <div className="ops-detail-line"><span>Dates</span><strong>{buyout.preferredDates || "—"}</strong></div>
+                    <div className="ops-detail-line"><span>Dates</span><strong>{buyout.preferredDates ? humanizeDatesInText(buyout.preferredDates) : "—"}</strong></div>
                     <div className="ops-detail-line"><span>Location</span><strong>{buyout.preferredLocation || "—"}</strong></div>
                     <div className="ops-detail-line"><span>Guests</span><strong>{buyout.capacity || "—"}</strong></div>
                     <div className="ops-detail-line"><span>Inquiry</span><strong>{buyout.inquiryDate ? formatDisplayDate(buyout.inquiryDate) : "—"}</strong></div>
@@ -2263,7 +2272,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       {buyout.startTime ? <><span className="ops-meta-dot">•</span><span>{buyout.startTime}{buyout.endTime ? `–${buyout.endTime}` : ""}</span></> : null}
                     </div>
                     {buyout.preferredDates && buyout.preferredDates !== buyout.eventDate ? (
-                      <div className="ops-client-pref">Requested: {buyout.preferredDates}</div>
+                      <div className="ops-client-pref">Requested: {humanizeDatesInText(buyout.preferredDates!)}</div>
                     ) : null}
                     <div className="ops-readiness-row">
                       <span className={`ops-ready-chip ${buyout.instructor && buyout.instructor !== "Unassigned" ? "ok" : "missing"}`}>
