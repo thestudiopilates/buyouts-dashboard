@@ -20,96 +20,88 @@ export type MomenceClassInfo = {
   attendees: MomenceAttendee[];
 };
 
-async function momenceFetch(endpoint: string, params: Record<string, string> = {}) {
+async function momenceFetch(endpoint: string) {
   const url = new URL(`${MOMENCE_BASE}/${endpoint}`);
   url.searchParams.set("hostId", MOMENCE_HOST_ID);
   url.searchParams.set("token", MOMENCE_TOKEN);
 
-  for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value);
-  }
-
   const response = await fetch(url.toString(), {
     headers: { Accept: "application/json" },
-    next: { revalidate: 300 }
+    cache: "no-store"
   });
 
   if (!response.ok) {
-    throw new Error(`Momence API error: ${response.status}`);
+    throw new Error(`Momence API error ${response.status} for ${endpoint}`);
   }
 
   return response.json();
 }
 
-export async function getMomenceClassByUrl(signupUrl: string): Promise<MomenceClassInfo | null> {
+// Resolve a short link (momence.com/l/slug) to a direct event ID.
+// The redirect lands on a slug path like /Host-Name/Event-Title/132559426 —
+// the numeric ID is always the last path segment.
+async function resolveShortLinkToEventId(slug: string): Promise<string | null> {
+  try {
+    const response = await fetch(`https://momence.com/l/${slug}`, {
+      method: "HEAD",
+      redirect: "follow",
+      headers: { "User-Agent": "Mozilla/5.0" }
+    });
+    // Final URL is something like /The-Studio-Pilates/Event-Name/132559426
+    const segments = response.url.split("/").filter(Boolean);
+    const last = segments[segments.length - 1];
+    return /^\d+$/.test(last) ? last : null;
+  } catch {
+    return null;
+  }
+}
+
+// Parse a Momence signup URL to a numeric event ID.
+// Handles: /s/{id}, /m/{id} (legacy), and /l/{slug} (short links).
+export async function resolveSignupLinkToEventId(signupUrl: string): Promise<string | null> {
   if (!signupUrl) return null;
 
-  // Extract class ID from Momence URL patterns:
-  // https://momence.com/l/4ZhnW48O or https://momence.com/m/63279
+  // Direct numeric IDs: momence.com/s/132559426 or momence.com/m/63279
+  const directMatch = signupUrl.match(/momence\.com\/[sm]\/(\d+)/);
+  if (directMatch) return directMatch[1];
+
+  // Short link: momence.com/l/4ZhnW48O — follow redirect for real ID
   const shortMatch = signupUrl.match(/momence\.com\/l\/([A-Za-z0-9]+)/);
-  const idMatch = signupUrl.match(/momence\.com\/m\/(\d+)/);
+  if (shortMatch) return resolveShortLinkToEventId(shortMatch[1]);
 
-  if (!shortMatch && !idMatch) return null;
+  return null;
+}
 
+// Surgical fetch: one call to GET /Events/{id}, no bulk listing.
+// The API returns an array — we take the first element.
+// Signup count comes from ticketsSold on the event object directly.
+export async function getMomenceEventById(eventId: string): Promise<MomenceClassInfo | null> {
   try {
-    // Fetch upcoming events and find the matching one
-    const data = await momenceFetch("Events") as { data?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>;
-    const events = Array.isArray(data) ? data : (data.data ?? []);
+    const raw = await momenceFetch(`Events/${eventId}`) as
+      | Record<string, unknown>
+      | Array<Record<string, unknown>>;
 
-    // For short links, we need to match by checking each event
-    // For direct IDs, we can match by sessionId
-    const classId = idMatch?.[1];
-
-    let matchedEvent: Record<string, unknown> | null = null;
-
-    for (const event of events) {
-      if (classId && String(event.sessionId ?? event.id) === classId) {
-        matchedEvent = event;
-        break;
-      }
-
-      // Check if the event URL matches
-      const eventUrl = String(event.signUpUrl ?? event.link ?? "");
-      if (eventUrl && signupUrl.includes(eventUrl.split("/").pop() ?? "NOMATCH")) {
-        matchedEvent = event;
-        break;
-      }
-    }
-
-    if (!matchedEvent) return null;
-
-    // Fetch attendees for this event
-    const eventId = String(matchedEvent.sessionId ?? matchedEvent.id);
-    let attendees: MomenceAttendee[] = [];
-
-    try {
-      const attendeeData = await momenceFetch(`Events/${eventId}/attendees`) as
-        | { data?: Array<Record<string, unknown>> }
-        | Array<Record<string, unknown>>;
-
-      const rawAttendees = Array.isArray(attendeeData) ? attendeeData : (attendeeData.data ?? []);
-
-      attendees = rawAttendees.map((a) => ({
-        id: String(a.id ?? a.userId ?? ""),
-        firstName: String(a.firstName ?? a.first_name ?? ""),
-        lastName: String(a.lastName ?? a.last_name ?? ""),
-        email: String(a.email ?? ""),
-        waiverSigned: Boolean(a.waiverSigned ?? a.waiver_signed ?? false)
-      }));
-    } catch {
-      // Attendee fetch failed — return class info without attendees
-    }
+    const event: Record<string, unknown> = Array.isArray(raw) ? raw[0] : raw;
+    if (!event) return null;
 
     return {
-      id: eventId,
-      name: String(matchedEvent.name ?? matchedEvent.title ?? ""),
-      startDate: String(matchedEvent.startDate ?? matchedEvent.start ?? ""),
-      endDate: String(matchedEvent.endDate ?? matchedEvent.end ?? ""),
-      maxCapacity: Number(matchedEvent.maxCapacity ?? matchedEvent.capacity ?? 0),
-      signupCount: attendees.length || Number(matchedEvent.signupCount ?? matchedEvent.attendeeCount ?? 0),
-      attendees
+      id: String(event.id ?? eventId),
+      name: String(event.title ?? event.name ?? ""),
+      startDate: String(event.dateTime ?? event.startDate ?? ""),
+      endDate: String(event.endDate ?? ""),
+      maxCapacity: Number(event.capacity ?? event.maxCapacity ?? 0),
+      // ticketsSold is the authoritative count from Momence
+      signupCount: Number(event.ticketsSold ?? event.signupCount ?? event.attendeeCount ?? 0),
+      attendees: [] // attendees list not needed for count-only sync
     };
   } catch {
     return null;
   }
+}
+
+// Convenience wrapper: resolve the signup URL then fetch directly.
+export async function getMomenceClassByUrl(signupUrl: string): Promise<MomenceClassInfo | null> {
+  const eventId = await resolveSignupLinkToEventId(signupUrl);
+  if (!eventId) return null;
+  return getMomenceEventById(eventId);
 }

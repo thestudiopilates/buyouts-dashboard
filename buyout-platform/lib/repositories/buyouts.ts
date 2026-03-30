@@ -3,24 +3,10 @@ import { BallInCourt, BuyoutStage, Prisma, TrackingHealth, WorkflowGroup } from 
 import { getBuyoutPhase, getPaymentTier, PAYMENT_RULES } from "@/lib/buyout-phases";
 import { deriveResponseUrgency, deriveStageFromWorkflow } from "@/lib/lifecycle";
 import { mockBuyouts } from "@/lib/mock-data";
-import { prisma } from "@/lib/prisma";
+import { hasDatabaseUrl, prisma } from "@/lib/prisma";
 import { BuyoutInquiryInput, BuyoutSummary, BuyoutUpdateInput, WorkflowStep } from "@/lib/types";
 import { buildWorkflow } from "@/lib/workflows";
 
-// Database is now the primary source of truth — no test overrides
-
-const TRACKING_SOURCE_LABEL_MAP: Record<string, BuyoutSummary["trackingHealth"]> = {
-  "So far so good": "On track",
-  "Running behind": "At risk",
-  "Major issue": "Major issue",
-  Complete: "Complete"
-};
-
-const BALL_SOURCE_LABEL_MAP: Record<string, BuyoutSummary["ballInCourt"]> = {
-  "TSP Team": "Team",
-  Client: "Client",
-  Both: "Both"
-};
 
 function getSignupLinkFromSnapshot(sourceSnapshot: unknown) {
   if (
@@ -56,125 +42,24 @@ function getSignupLink2FromSnapshot(sourceSnapshot: unknown): string | undefined
     : undefined;
 }
 
-function stageRank(stage: BuyoutSummary["lifecycleStage"]) {
-  return STAGE_ORDER.indexOf(stage);
+type PaymentStructure = "deposit-balance" | "standard" | "rush" | "custom";
+
+function getPaymentStructureFromSnapshot(sourceSnapshot: unknown): PaymentStructure | undefined {
+  if (
+    !sourceSnapshot ||
+    typeof sourceSnapshot !== "object" ||
+    !("values" in sourceSnapshot) ||
+    !sourceSnapshot.values ||
+    typeof sourceSnapshot.values !== "object" ||
+    !("paymentStructure" in sourceSnapshot.values)
+  ) {
+    return undefined;
+  }
+  const val = (sourceSnapshot.values as Record<string, unknown>).paymentStructure;
+  if (val === "deposit-balance" || val === "standard" || val === "rush" || val === "custom") return val;
+  return undefined;
 }
 
-function reconcileOperationalState({
-  workflow,
-  countdown,
-  sourceLifecycleStage,
-  sourceTrackingHealth,
-  sourceBallInCourt,
-  sourceStatusLabel,
-  sourceNextAction,
-  amountPaid,
-  isInternalTest
-}: {
-  workflow: WorkflowStep[];
-  countdown: number | null;
-  sourceLifecycleStage: BuyoutSummary["lifecycleStage"];
-  sourceTrackingHealth: BuyoutSummary["trackingHealth"];
-  sourceBallInCourt: BuyoutSummary["ballInCourt"];
-  sourceStatusLabel: string;
-  sourceNextAction: string;
-  amountPaid: number;
-  isInternalTest: boolean;
-}) {
-  const completed = new Set(workflow.filter((step) => step.complete).map((step) => step.key));
-
-  if (completed.has("momence-link-sign-up-sent") && stageRank(sourceLifecycleStage) < stageRank("Sign-Ups")) {
-    const phase = getBuyoutPhase("Sign-Ups");
-    return {
-      statusLabel: phase.statusLabel,
-      lifecycleStage: "Sign-Ups" as const,
-      trackingHealth: sourceTrackingHealth === "Major issue" ? sourceTrackingHealth : "At risk" as const,
-      ballInCourt: phase.ballInCourt,
-      nextAction: phase.nextAction
-    };
-  }
-
-  if (completed.has("deposit-paid-and-terms-signed") && stageRank(sourceLifecycleStage) < stageRank("Deposit")) {
-    const phase = getBuyoutPhase("Paid");
-    return {
-      statusLabel: phase.statusLabel,
-      lifecycleStage: "Paid" as const,
-      trackingHealth: "On track" as const,
-      ballInCourt: phase.ballInCourt,
-      nextAction: phase.nextAction
-    };
-  }
-
-  if (
-    completed.has("all-attendees-registered") &&
-    completed.has("all-waivers-signed") &&
-    stageRank(sourceLifecycleStage) < stageRank("Confirmed")
-  ) {
-    const phase = getBuyoutPhase("Confirmed");
-    return {
-      statusLabel: phase.statusLabel,
-      lifecycleStage: "Confirmed" as const,
-      trackingHealth: "On track" as const,
-      ballInCourt: phase.ballInCourt,
-      nextAction: phase.nextAction
-    };
-  }
-
-  if (completed.has("final-confirmation-emails-sent") && stageRank(sourceLifecycleStage) < stageRank("Final")) {
-    const phase = getBuyoutPhase("Final");
-    return {
-      statusLabel: phase.statusLabel,
-      lifecycleStage: "Final" as const,
-      trackingHealth: sourceTrackingHealth,
-      ballInCourt: phase.ballInCourt,
-      nextAction: phase.nextAction
-    };
-  }
-
-  if (completed.has("event-completed")) {
-    const phase = getBuyoutPhase("Complete");
-    return {
-      statusLabel: phase.statusLabel,
-      lifecycleStage: "Complete" as const,
-      trackingHealth: "Complete" as const,
-      ballInCourt: phase.ballInCourt,
-      nextAction: phase.nextAction
-    };
-  }
-
-  if (
-    !isInternalTest &&
-    countdown !== null &&
-    countdown < 0 &&
-    !["Complete", "Cancelled"].includes(sourceLifecycleStage)
-  ) {
-    return {
-      statusLabel: "Source Cleanup Required",
-      lifecycleStage: "Ready" as const,
-      trackingHealth: "Major issue" as const,
-      ballInCourt: "Team" as const,
-      nextAction: "Clean up event date and payment state"
-    };
-  }
-
-  if (!isInternalTest && completed.has("remaining-payment-received") && amountPaid === 0) {
-    return {
-      statusLabel: "Source Cleanup Required",
-      lifecycleStage: sourceLifecycleStage,
-      trackingHealth: "Major issue" as const,
-      ballInCourt: "Team" as const,
-      nextAction: "Resolve payment mismatch — verify totals"
-    };
-  }
-
-  return {
-    statusLabel: sourceStatusLabel,
-    lifecycleStage: sourceLifecycleStage,
-    trackingHealth: sourceTrackingHealth,
-    ballInCourt: sourceBallInCourt,
-    nextAction: sourceNextAction
-  };
-}
 
 function formatTime(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -413,10 +298,10 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
   const sentTemplateIds = Array.from(
     new Set(buyout.emails.filter((email) => email.status === "SENT").map((email) => email.templateKey))
   );
-  const sourceStatusLabel = buyout.sourceStatusLabel ?? lifecycleStage;
-  const sourceTrackingHealth = trackingLabelMap[buyout.trackingHealth];
-  const sourceBallInCourt = ballInCourtLabelMap[buyout.ballInCourt];
-  const sourceNextAction = buyout.sourceNextActionLabel ?? buyout.nextAction ?? "Review record";
+  const currentStatusLabel = getBuyoutPhase(lifecycleStage)?.statusLabel ?? lifecycleStage;
+  const currentTrackingHealth = trackingLabelMap[buyout.trackingHealth];
+  const currentBallInCourt = ballInCourtLabelMap[buyout.ballInCourt];
+  const currentNextAction = buyout.nextAction ?? "Review record";
   const derivedState = deriveStageFromWorkflow(workflow, sentTemplateIds, lifecycleStage, {
     countdownDays: countdown,
     daysWaiting: waiting,
@@ -429,15 +314,12 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
   const effectiveTrackingHealth = derivedState.trackingHealth;
   const effectiveBallInCourt = derivedState.ballInCourt;
   const effectiveNextAction = derivedState.nextAction;
-  const effectiveStatusLabel = getBuyoutPhase(derivedState.lifecycleStage)?.statusLabel ?? sourceStatusLabel;
+  const effectiveStatusLabel = getBuyoutPhase(derivedState.lifecycleStage)?.statusLabel ?? currentStatusLabel;
   const healthFlags = [
     countdown !== null && countdown < 0 ? "Event date is in the past." : null,
     workflow.some((step) => step.key === "remaining-payment-received" && step.complete) &&
     (buyout.financial?.amountPaid ?? 0) === 0
       ? "Workflow shows payment completed, but financials still show $0 paid."
-      : null,
-    effectiveStatusLabel !== sourceStatusLabel
-      ? `Dashboard status: "${effectiveStatusLabel}" — source record: "${sourceStatusLabel}".`
       : null
   ].filter((value): value is string => Boolean(value));
 
@@ -446,25 +328,16 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
     name: buyout.displayName,
     eventType: buyout.inquiry?.eventType ?? "Buyout",
     statusLabel: effectiveStatusLabel,
-    sourceStatusLabel,
     eventDate: toIsoDay(buyout.eventDate),
     countdownDays: countdown,
     location: buyout.location?.name ?? "Unassigned",
     assignedTo: buyout.assignedManager?.name ?? "Unassigned",
     instructor: buyout.instructorName ?? "Unassigned",
     lifecycleStage: effectiveLifecycleStage,
-    sourceLifecycleStage: lifecycleStage,
     lifecycleStep: Math.min(12, Math.max(0, STAGE_ORDER.indexOf(effectiveLifecycleStage))),
     trackingHealth: effectiveTrackingHealth,
-    sourceTrackingHealth: buyout.sourceTrackingLabel
-      ? TRACKING_SOURCE_LABEL_MAP[buyout.sourceTrackingLabel] ?? sourceTrackingHealth
-      : sourceTrackingHealth,
     ballInCourt: effectiveBallInCourt,
-    sourceBallInCourt: buyout.sourceBallInCourtLabel
-      ? BALL_SOURCE_LABEL_MAP[buyout.sourceBallInCourtLabel] ?? sourceBallInCourt
-      : sourceBallInCourt,
     nextAction: effectiveNextAction,
-    sourceNextAction,
     daysWaiting: waiting,
     lastAction: buyout.lastActionAt ? toIsoDay(buyout.lastActionAt) : null,
     signups: buyout.signupCount,
@@ -487,6 +360,7 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
     balanceLink: buyout.financial?.balanceLink ?? undefined,
     signupLink: getSignupLinkFromSnapshot(buyout.sourceSnapshot),
     signupLink2: getSignupLink2FromSnapshot(buyout.sourceSnapshot),
+    paymentStructure: getPaymentStructureFromSnapshot(buyout.sourceSnapshot),
     notes: buyout.notesInternal ?? "",
     healthFlags,
     sentTemplateIds,
@@ -496,7 +370,8 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
       ballInCourt: effectiveBallInCourt,
       daysWaiting: waiting,
       countdownDays: countdown,
-      lastClientContactDaysAgo: null,
+      // When it's the team's turn to respond, use daysWaiting as proxy for how long the client has been waiting on us
+      lastClientContactDaysAgo: effectiveBallInCourt === "Team" ? waiting : null,
       lastTeamActionDaysAgo: buyout.lastActionAt ? Math.floor((Date.now() - buyout.lastActionAt.getTime()) / 86400000) : null,
       lifecycleStage: effectiveLifecycleStage
     }),
@@ -872,4 +747,55 @@ export async function updateBuyoutInDb(id: string, input: BuyoutUpdateInput) {
   }
 
   return prisma.buyout.findUnique({ where: { id } });
+}
+
+export async function updateBuyoutFinancialsInDb(
+  id: string,
+  input: {
+    total?: number;
+    depositAmount?: number;
+    paymentStructure?: PaymentStructure;
+  }
+) {
+  if (!hasDatabaseUrl()) throw new Error("Database required.");
+
+  // Update BuyoutFinancial
+  const financialUpdate: Record<string, unknown> = {};
+  if (input.total !== undefined) {
+    financialUpdate.quotedTotal = input.total;
+    financialUpdate.remainingBalance = input.total; // will be recalculated on read
+  }
+  if (input.depositAmount !== undefined) {
+    financialUpdate.depositAmount = input.depositAmount;
+  }
+
+  if (Object.keys(financialUpdate).length > 0) {
+    await prisma.buyoutFinancial.upsert({
+      where: { buyoutId: id },
+      update: financialUpdate,
+      create: {
+        buyoutId: id,
+        quotedTotal: input.total ?? 0,
+        depositAmount: input.depositAmount ?? undefined,
+        amountPaid: 0,
+        remainingBalance: input.total ?? 0
+      }
+    });
+  }
+
+  // Store paymentStructure in sourceSnapshot.values
+  if (input.paymentStructure !== undefined) {
+    const existing = await prisma.buyout.findUnique({ where: { id }, select: { sourceSnapshot: true } });
+    const snapshot =
+      existing?.sourceSnapshot && typeof existing.sourceSnapshot === "object" && !Array.isArray(existing.sourceSnapshot)
+        ? { ...(existing.sourceSnapshot as Record<string, unknown>) }
+        : {};
+    const values =
+      snapshot.values && typeof snapshot.values === "object" && !Array.isArray(snapshot.values)
+        ? { ...(snapshot.values as Record<string, unknown>) }
+        : {};
+    values.paymentStructure = input.paymentStructure;
+    snapshot.values = values;
+    await prisma.buyout.update({ where: { id }, data: { sourceSnapshot: snapshot as never } });
+  }
 }

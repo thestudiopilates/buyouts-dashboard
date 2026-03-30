@@ -279,6 +279,14 @@ function Drawer({
   const [paymentForm, setPaymentForm] = useState({ amount: "", paymentMethod: "Zelle", date: "", notes: "" });
   const [paymentFormStatus, setPaymentFormStatus] = useState<"idle" | "saving" | "error">("idle");
   const [paymentFormError, setPaymentFormError] = useState("");
+  const [showFinancialForm, setShowFinancialForm] = useState(false);
+  const [financialForm, setFinancialForm] = useState({
+    total: String(buyout.total || ""),
+    depositAmount: String(buyout.depositAmount || ""),
+    paymentStructure: (buyout.paymentStructure ?? (buyout.paymentTier === "deposit" ? "deposit-balance" : buyout.paymentTier)) as string
+  });
+  const [financialFormStatus, setFinancialFormStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [financialFormError, setFinancialFormError] = useState("");
   const [notesList, setNotesList] = useState<Array<{ id: string; createdAt: string; text: string; author: string }>>([]);
   const [newNoteText, setNewNoteText] = useState("");
   const [activityLoaded, setActivityLoaded] = useState(false);
@@ -565,6 +573,34 @@ function Drawer({
       .catch(() => {});
   }
 
+  async function handleSaveFinancials() {
+    setFinancialFormStatus("saving");
+    setFinancialFormError("");
+    try {
+      const body: Record<string, unknown> = {};
+      if (financialForm.total !== "") body.total = Number(financialForm.total);
+      if (financialForm.depositAmount !== "") body.depositAmount = Number(financialForm.depositAmount);
+      if (financialForm.paymentStructure) body.paymentStructure = financialForm.paymentStructure;
+      const response = await fetch(`/api/buyouts/${buyout.id}/financials`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok) {
+        setFinancialFormStatus("error");
+        setFinancialFormError(data.error ?? "Failed to update financials.");
+      } else {
+        setFinancialFormStatus("idle");
+        setShowFinancialForm(false);
+        syncFreshBuyout();
+      }
+    } catch {
+      setFinancialFormStatus("error");
+      setFinancialFormError("Network error. Please try again.");
+    }
+  }
+
   async function handleSaveManualPayment() {
     if (!paymentForm.amount || Number(paymentForm.amount) <= 0) return;
     setPaymentFormStatus("saving");
@@ -777,7 +813,7 @@ function Drawer({
                 <span>{buyout.location}</span>
               </div>
               <div className="ops-drawer-meta">
-                Assigned: {buyout.assignedTo} · {buyout.clientEmail || "No email"}
+                Front Desk: {buyout.assignedTo} · {buyout.clientEmail || "No email"}
               </div>
             </div>
             <button className="ops-close-btn" onClick={onClose}>
@@ -1008,7 +1044,7 @@ function Drawer({
 
               {buyout.healthFlags.length > 0 ? (
                 <div className="ops-alert-box">
-                  <div className="ops-alert-title">Source board inconsistencies</div>
+                  <div className="ops-alert-title">Attention required</div>
                   {buyout.healthFlags.map((flag) => (
                     <div className="ops-alert-line" key={flag}>
                       {flag}
@@ -1568,6 +1604,83 @@ function Drawer({
 
           {tab === "financials" ? (
             <div>
+              {/* Payment Plan section */}
+              <div className="ops-payment-plan-card">
+                <div className="ops-payment-plan-header">
+                  <div>
+                    <span className="ops-section-label" style={{ margin: 0 }}>Payment Plan</span>
+                    {(() => {
+                      const structure = buyout.paymentStructure ?? (buyout.paymentTier === "deposit" ? "deposit-balance" : buyout.paymentTier);
+                      const labels: Record<string, string> = {
+                        "deposit-balance": "Deposit + Balance",
+                        standard: "Standard (Full)",
+                        rush: "Rush (Full + Fee)",
+                        custom: "Custom Amount"
+                      };
+                      return <span className="ops-plan-badge">{labels[structure] ?? "Standard"}</span>;
+                    })()}
+                    {buyout.total > 0 && buyout.outstanding === 0 && (
+                      <span className="ops-paid-in-full-badge">PAID IN FULL</span>
+                    )}
+                  </div>
+                  <button className="ops-mode-link" style={{ fontSize: "0.78rem" }} onClick={() => {
+                    setFinancialForm({
+                      total: String(buyout.total || ""),
+                      depositAmount: String(buyout.depositAmount || ""),
+                      paymentStructure: buyout.paymentStructure ?? (buyout.paymentTier === "deposit" ? "deposit-balance" : buyout.paymentTier)
+                    });
+                    setFinancialFormStatus("idle");
+                    setFinancialFormError("");
+                    setShowFinancialForm((v) => !v);
+                  }} type="button">
+                    {showFinancialForm ? "Cancel" : "Edit Amounts"}
+                  </button>
+                </div>
+                {showFinancialForm ? (
+                  <div className="ops-manual-payment-form" style={{ marginTop: 8 }}>
+                    <div className="ops-inline-editor-grid">
+                      <label className="field-half">
+                        <span>Payment Structure</span>
+                        <select className="select" value={financialForm.paymentStructure} onChange={(e) => setFinancialForm((f) => ({ ...f, paymentStructure: e.target.value }))}>
+                          <option value="deposit-balance">Deposit + Balance</option>
+                          <option value="standard">Standard (Full Payment)</option>
+                          <option value="rush">Rush (Full + Fee)</option>
+                          <option value="custom">Custom Amount</option>
+                        </select>
+                      </label>
+                      <label className="field-half">
+                        <span>Total Due ($)</span>
+                        <input className="input" type="number" min="0" value={financialForm.total} placeholder="e.g. 1500" onChange={(e) => setFinancialForm((f) => ({ ...f, total: e.target.value }))} />
+                      </label>
+                      {(financialForm.paymentStructure === "deposit-balance") && (
+                        <label className="field-half">
+                          <span>Deposit Amount ($)</span>
+                          <input className="input" type="number" min="0" value={financialForm.depositAmount} placeholder="e.g. 250" onChange={(e) => setFinancialForm((f) => ({ ...f, depositAmount: e.target.value }))} />
+                        </label>
+                      )}
+                    </div>
+                    {financialFormStatus === "error" && <div style={{ fontSize: "0.78rem", color: COLORS.cherry, marginTop: 4 }}>{financialFormError}</div>}
+                    <div className="ops-inline-editor-actions" style={{ marginTop: 8 }}>
+                      <button className="ops-footer-primary" type="button" disabled={financialFormStatus === "saving"} onClick={handleSaveFinancials}>
+                        {financialFormStatus === "saving" ? "Saving…" : "Save Payment Plan"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="ops-payment-plan-details">
+                    {buyout.paymentStructure === "deposit-balance" || (!buyout.paymentStructure && buyout.paymentTier === "deposit") ? (
+                      <>
+                        <div className="ops-plan-line"><span>Deposit</span><strong>{buyout.depositAmount ? formatMoney(buyout.depositAmount) : "—"}</strong></div>
+                        <div className="ops-plan-line"><span>Balance</span><strong>{buyout.depositAmount && buyout.total ? formatMoney(buyout.total - buyout.depositAmount) : formatMoney(buyout.total)}</strong></div>
+                        <div className="ops-plan-line ops-plan-total"><span>Total Due</span><strong>{formatMoney(buyout.total)}</strong></div>
+                      </>
+                    ) : (
+                      <div className="ops-plan-line ops-plan-total"><span>Total Due</span><strong>{buyout.total > 0 ? formatMoney(buyout.total) : "Not set"}</strong></div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="ops-financial-grid">
                 {[
                   ["Total", formatMoney(buyout.total), COLORS.coffee],
@@ -2154,10 +2267,10 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                     ) : null}
                     <div className="ops-readiness-row">
                       <span className={`ops-ready-chip ${buyout.instructor && buyout.instructor !== "Unassigned" ? "ok" : "missing"}`}>
-                        {buyout.instructor && buyout.instructor !== "Unassigned" ? buyout.instructor : "No instructor"}
+                        {buyout.instructor && buyout.instructor !== "Unassigned" ? `Instructor: ${buyout.instructor}` : "No instructor"}
                       </span>
                       <span className={`ops-ready-chip ${buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? "ok" : "missing"}`}>
-                        {buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? `Desk: ${buyout.assignedTo}` : "No front desk"}
+                        {buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? `Front Desk: ${buyout.assignedTo}` : "No front desk"}
                       </span>
                       <span className={`ops-ready-chip ${buyout.signupLink ? "ok" : "missing"}`}>
                         {buyout.signupLink ? `${buyout.signups}/${buyout.capacity || "?"} signed up` : "No Momence"}
