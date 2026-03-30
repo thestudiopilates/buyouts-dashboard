@@ -1599,15 +1599,15 @@ function Drawer({
                                 <div className="ops-timeline-meta">
                                   {msg.direction === "sent" ? `To: ${msg.to}` : `From: ${msg.from}`}
                                 </div>
-                                {expandedEmailIds.has(msg.id) ? (
+                                {expandedEmailIds.has(msg.id) && msg.bodyText ? (
                                   <>
-                                    <div className="ops-timeline-body">{msg.bodyText || msg.snippet}</div>
+                                    <div className="ops-timeline-body">{msg.bodyText}</div>
                                     <button className="ops-expand-btn" type="button" onClick={() => setExpandedEmailIds((prev) => { const next = new Set(prev); next.delete(msg.id); return next; })}>▲ Collapse</button>
                                   </>
                                 ) : (
                                   <>
                                     <div className="ops-timeline-snippet">{msg.snippet}</div>
-                                    {(msg.bodyText || msg.snippet) && (
+                                    {msg.bodyText && msg.bodyText !== msg.snippet && (
                                       <button className="ops-expand-btn" type="button" onClick={() => setExpandedEmailIds((prev) => new Set(prev).add(msg.id))}>▼ View full email</button>
                                     )}
                                   </>

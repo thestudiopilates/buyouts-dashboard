@@ -2883,7 +2883,7 @@ textarea {
 .ops-timeline-content {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .ops-timeline-date {

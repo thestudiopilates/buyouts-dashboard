@@ -118,9 +118,9 @@ export async function POST(request: Request) {
         if (isNaN(sentAt.getTime())) continue;
 
         await prisma.$executeRawUnsafe(
-          `INSERT INTO "StoredEmail" ("id","buyoutId","gmailMessageId","direction","fromAddress","toAddress","subject","snippet","sentAt","source")
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-          randomUUID(), buyout.id, msg.id, msg.direction, msg.from, msg.to, msg.subject, msg.snippet, sentAt, "gmail-backfill"
+          `INSERT INTO "StoredEmail" ("id","buyoutId","gmailMessageId","direction","fromAddress","toAddress","subject","snippet","bodyPreview","sentAt","source")
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+          randomUUID(), buyout.id, msg.id, msg.direction, msg.from, msg.to, msg.subject, msg.snippet, msg.bodyText || null, sentAt, "gmail-backfill"
         );
         stored++;
       }

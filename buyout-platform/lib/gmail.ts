@@ -189,6 +189,7 @@ export type GmailMessageSummary = {
   to: string;
   subject: string;
   snippet: string;
+  bodyText: string;
   direction: "sent" | "received";
 };
 
@@ -336,7 +337,7 @@ export async function searchGmailMessages(input: {
 
   const messages = await Promise.all(
     listData.messages.slice(0, input.maxResults ?? 20).map(async (ref) => {
-      const msgUrl = `https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages/${ref.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`;
+      const msgUrl = `https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages/${ref.id}?format=full`;
       const msgResponse = await fetch(msgUrl, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
@@ -352,6 +353,7 @@ export async function searchGmailMessages(input: {
         to: getHeader(msg, "To"),
         subject: getHeader(msg, "Subject"),
         snippet: msg.snippet ?? "",
+        bodyText: extractBodyText(msg),
         direction: input.direction
       } satisfies GmailMessageSummary;
     })
