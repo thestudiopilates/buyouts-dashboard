@@ -53,6 +53,49 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+  const body = (await request.json().catch(() => ({}))) as {
+    noteId?: string;
+    text?: string;
+  };
+
+  if (!body.noteId || typeof body.text !== "string" || !body.text.trim()) {
+    return NextResponse.json({ error: "noteId and text are required." }, { status: 400 });
+  }
+
+  try {
+    const buyout = await getBuyout(id);
+    if (!buyout) {
+      return NextResponse.json({ error: "Buyout not found." }, { status: 404 });
+    }
+
+    const existing = parseNotes(buyout.notes);
+    const idx = existing.findIndex((n) => n.id === body.noteId);
+    if (idx === -1) {
+      return NextResponse.json({ error: "Note not found." }, { status: 404 });
+    }
+
+    existing[idx] = { ...existing[idx], text: body.text.trim() };
+    const serialized = serializeNotes(existing);
+
+    if (hasDatabaseUrl()) {
+      await prisma.buyout.update({
+        where: { id },
+        data: { notesInternal: serialized }
+      });
+    }
+
+    return NextResponse.json({ notes: existing, buyout: await getBuyout(id) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to update note.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> }

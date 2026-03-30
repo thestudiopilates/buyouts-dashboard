@@ -310,6 +310,8 @@ function Drawer({
   const [financialFormError, setFinancialFormError] = useState("");
   const [notesList, setNotesList] = useState<Array<{ id: string; createdAt: string; text: string; author: string }>>([]);
   const [newNoteText, setNewNoteText] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
   const [activityLoaded, setActivityLoaded] = useState(false);
   const [emailSubTab, setEmailSubTab] = useState<"templates" | "sent" | "received">("templates");
   const [emailHistory, setEmailHistory] = useState<Array<{ id: string; date: string; from: string; to: string; subject: string; snippet: string; bodyText?: string; direction: string }>>([]);
@@ -369,6 +371,8 @@ function Drawer({
     setPaymentsLoaded(false);
     setNotesList([]);
     setNewNoteText("");
+    setEditingNoteId(null);
+    setEditingNoteText("");
     setActivityLoaded(false);
     setEmailSubTab("templates");
     setEmailHistory([]);
@@ -674,6 +678,29 @@ function Drawer({
       if (payload.notes) setNotesList(payload.notes);
       if (payload.buyout) onBuyoutUpdated(payload.buyout);
       setNewNoteText("");
+      setActivityLoaded(false);
+    });
+  }
+
+  function handleEditNote() {
+    if (!editingNoteId || !editingNoteText.trim()) return;
+
+    startTransition(async () => {
+      const response = await fetch(`/api/buyouts/${buyout.id}/notes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ noteId: editingNoteId, text: editingNoteText })
+      });
+
+      const payload = (await response.json()) as {
+        notes?: Array<{ id: string; createdAt: string; text: string; author: string }>;
+        buyout?: BuyoutSummary;
+      };
+
+      if (payload.notes) setNotesList(payload.notes);
+      if (payload.buyout) onBuyoutUpdated(payload.buyout);
+      setEditingNoteId(null);
+      setEditingNoteText("");
       setActivityLoaded(false);
     });
   }
@@ -1849,8 +1876,35 @@ function Drawer({
                       <div className="ops-activity-date">
                         {new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         <span className="ops-activity-author">{note.author}</span>
+                        <button
+                          className="ops-note-edit-btn"
+                          onClick={() => { setEditingNoteId(note.id); setEditingNoteText(note.text); }}
+                          title="Edit note"
+                          type="button"
+                        >
+                          ✎
+                        </button>
                       </div>
-                      <div className="ops-activity-text">{note.text}</div>
+                      {editingNoteId === note.id ? (
+                        <div className="ops-note-edit-row">
+                          <textarea
+                            className="ops-draft-textarea"
+                            onChange={(e) => setEditingNoteText(e.target.value)}
+                            rows={3}
+                            value={editingNoteText}
+                          />
+                          <div className="ops-note-edit-actions">
+                            <button className="ops-note-save-btn" disabled={isPending || !editingNoteText.trim()} onClick={handleEditNote} type="button">
+                              {isPending ? "Saving..." : "Save"}
+                            </button>
+                            <button className="ops-note-cancel-btn" onClick={() => { setEditingNoteId(null); setEditingNoteText(""); }} type="button">
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="ops-activity-text">{note.text}</div>
+                      )}
                     </div>
                   ))}
                 </div>

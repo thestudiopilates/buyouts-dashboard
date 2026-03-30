@@ -3009,6 +3009,65 @@ textarea {
   color: var(--terracotta);
 }
 
+.ops-note-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--warmGrey);
+  padding: 0 4px;
+  margin-left: auto;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.ops-note-edit-btn:hover {
+  opacity: 1;
+  color: var(--seaglass);
+}
+
+.ops-note-edit-row {
+  margin-top: 6px;
+}
+
+.ops-note-edit-row .ops-draft-textarea {
+  font-size: 0.78rem;
+  min-height: 60px;
+}
+
+.ops-note-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.ops-note-save-btn {
+  background: var(--seaglass);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ops-note-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ops-note-cancel-btn {
+  background: none;
+  color: var(--warmGrey);
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .ops-activity-text {
   font-size: 0.85rem;
   color: var(--coffee);
