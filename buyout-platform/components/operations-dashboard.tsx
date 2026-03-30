@@ -2321,33 +2321,67 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       ) : null}
                     </div>
 
-                    {/* Mobile-only compact stats strip (hidden on desktop via CSS) */}
-                    <div className="ops-mobile-stats">
-                      <span className="ops-status-badge" style={{ background: `${track}14`, color: track }}>
-                        {buyout.statusLabel}
-                      </span>
-                      <span
-                        className="ops-bic-pill"
-                        style={{ background: `${bicColor(buyout.ballInCourt)}14`, color: bicColor(buyout.ballInCourt) }}
-                      >
-                        <span className="ops-pill-dot" style={{ background: bicColor(buyout.ballInCourt) }} />
-                        {buyout.ballInCourt === "Team" ? "Us" : buyout.ballInCourt}
-                      </span>
-                      <span className="ops-countdown" style={{ background: countdown.bg, color: countdown.fg }}>
-                        {buyout.countdownDays === null ? "TBD" : buyout.countdownDays < 0 ? "Past" : buyout.countdownDays}
-                      </span>
-                      {buyout.daysWaiting > 0 ? (
-                        <span className="ops-wait-pill" style={{ background: `${wait}14`, color: wait }}>
-                          {buyout.daysWaiting}d
+                    {/* Mobile-only labeled card (hidden on desktop via CSS) */}
+                    <div className="ops-mobile-card">
+                      <div className="ops-mc-row">
+                        <span className="ops-mc-label">Stage</span>
+                        <span className="ops-mc-value">
+                          <span className="ops-status-badge" style={{ background: `${track}14`, color: track }}>{buyout.lifecycleStage}</span>
                         </span>
+                      </div>
+                      {buyout.nextAction ? (
+                        <div className="ops-mc-row">
+                          <span className="ops-mc-label">Next</span>
+                          <span className="ops-mc-value ops-mc-next">{buyout.nextAction}</span>
+                        </div>
                       ) : null}
-                      <span className="ops-cell-stat">
-                        {buyout.signups}<small>/{buyout.capacity || 0}</small>
-                      </span>
-                      <span className="ops-cell-stat">
-                        {buyout.workflowProgress}<small>%</small>
-                      </span>
+                      <div className="ops-mc-row">
+                        <span className="ops-mc-label">Event</span>
+                        <span className="ops-mc-value">
+                          {buyout.countdownDays === null
+                            ? "TBD"
+                            : buyout.countdownDays < 0
+                              ? "Past"
+                              : buyout.countdownDays === 0
+                                ? "Today"
+                                : buyout.countdownDays === 1
+                                  ? "Tomorrow"
+                                  : `${buyout.countdownDays} days out`}
+                        </span>
+                      </div>
+                      <div className="ops-mc-row">
+                        <span className="ops-mc-label">Ball</span>
+                        <span className="ops-mc-value">
+                          <span className="ops-bic-pill" style={{ background: `${bicColor(buyout.ballInCourt)}14`, color: bicColor(buyout.ballInCourt) }}>
+                            <span className="ops-pill-dot" style={{ background: bicColor(buyout.ballInCourt) }} />
+                            {buyout.ballInCourt === "Team" ? "Us" : buyout.ballInCourt}
+                          </span>
+                          {buyout.daysWaiting > 1 ? (
+                            <span className="ops-wait-pill" style={{ background: `${wait}14`, color: wait }}>{buyout.daysWaiting}d waiting</span>
+                          ) : null}
+                        </span>
+                      </div>
+                      <div className="ops-mc-row">
+                        <span className="ops-mc-label">Instructor</span>
+                        <span className={`ops-mc-value ${buyout.instructor && buyout.instructor !== "Unassigned" ? "ops-mc-ok" : "ops-mc-missing"}`}>
+                          {buyout.instructor && buyout.instructor !== "Unassigned" ? buyout.instructor : "Not assigned"}
+                        </span>
+                      </div>
+                      <div className="ops-mc-row">
+                        <span className="ops-mc-label">Front Desk</span>
+                        <span className={`ops-mc-value ${buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? "ops-mc-ok" : "ops-mc-missing"}`}>
+                          {buyout.assignedTo && buyout.assignedTo !== "Unassigned" ? buyout.assignedTo : "Not assigned"}
+                        </span>
+                      </div>
+                      {buyout.signupLink ? (
+                        <div className="ops-mc-row">
+                          <span className="ops-mc-label">Sign-ups</span>
+                          <span className="ops-mc-value">{buyout.signups}/{buyout.capacity || "?"}</span>
+                        </div>
+                      ) : null}
                     </div>
+                    {/* Mobile tap arrow */}
+                    <div className="ops-mobile-arrow">›</div>
                   </div>
                 </div>
 
