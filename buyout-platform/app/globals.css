@@ -2692,6 +2692,19 @@ textarea {
   color: #0a6b3a;
 }
 
+.ops-activity-badge.payment.manual {
+  background: rgba(242, 164, 8, 0.12);
+  color: #7a5200;
+}
+
+.ops-manual-payment-form {
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  margin: 10px 0;
+}
+
 .ops-activity-badge.checklist {
   background: rgba(121, 127, 93, 0.12);
   color: var(--sage);

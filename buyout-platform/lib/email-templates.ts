@@ -665,8 +665,9 @@ function toActivityRecord(row: EventRow): EmailActivityRecord {
   };
 }
 
-function toPaymentRecord(row: PaymentEventRecord): PaymentRecord {
+function toPaymentRecord(row: PaymentEventRecord & { eventType?: string }): PaymentRecord {
   const detail = asObject(row.detail) ?? {};
+  const isManual = row.eventType === "MANUAL_PAYMENT";
 
   return {
     id: typeof row.id === "string" ? row.id : randomUUID(),
@@ -681,7 +682,9 @@ function toPaymentRecord(row: PaymentEventRecord): PaymentRecord {
     productName: asString(detail.productName),
     rawSubject: asString(detail.rawSubject),
     gmailMessageId: asString(detail.gmailMessageId),
-    matchedBy: asString(detail.matchedBy) || null
+    matchedBy: asString(detail.matchedBy) || null,
+    isManual,
+    notes: asString(detail.notes) || undefined
   };
 }
 
@@ -833,15 +836,16 @@ export async function listPaymentActivity(buyoutId?: string | null): Promise<Pay
       SELECT
         "id",
         "createdAt",
+        "eventType",
         "detail"
       FROM "BuyoutEvent"
       WHERE "buyoutId" = $1
-        AND "eventType" = 'PAYMENT_DETECTED'
+        AND "eventType" IN ('PAYMENT_DETECTED', 'MANUAL_PAYMENT')
       ORDER BY "createdAt" DESC
       LIMIT 100
     `,
     buyoutId
-  )) as PaymentEventRecord[];
+  )) as (PaymentEventRecord & { eventType: string })[];
 
   return rows.map(toPaymentRecord);
 }

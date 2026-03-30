@@ -275,6 +275,10 @@ function Drawer({
   const [activityLog, setActivityLog] = useState<Array<{ id: string; createdAt: string; eventType: string; summary: string }>>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [paymentsLoaded, setPaymentsLoaded] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({ amount: "", paymentMethod: "Zelle", date: "", notes: "" });
+  const [paymentFormStatus, setPaymentFormStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [paymentFormError, setPaymentFormError] = useState("");
   const [notesList, setNotesList] = useState<Array<{ id: string; createdAt: string; text: string; author: string }>>([]);
   const [newNoteText, setNewNoteText] = useState("");
   const [activityLoaded, setActivityLoaded] = useState(false);
@@ -559,6 +563,38 @@ function Drawer({
         syncFreshBuyout();
       })
       .catch(() => {});
+  }
+
+  async function handleSaveManualPayment() {
+    if (!paymentForm.amount || Number(paymentForm.amount) <= 0) return;
+    setPaymentFormStatus("saving");
+    setPaymentFormError("");
+    try {
+      const response = await fetch(`/api/buyouts/${buyout.id}/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Number(paymentForm.amount),
+          paymentMethod: paymentForm.paymentMethod,
+          date: paymentForm.date || new Date().toISOString().slice(0, 10),
+          notes: paymentForm.notes
+        })
+      });
+      const data = (await response.json()) as { payments?: PaymentRecord[]; error?: string };
+      if (!response.ok) {
+        setPaymentFormStatus("error");
+        setPaymentFormError(data.error ?? "Failed to save payment.");
+      } else {
+        setPayments(data.payments ?? []);
+        setShowPaymentForm(false);
+        setPaymentForm({ amount: "", paymentMethod: "Zelle", date: "", notes: "" });
+        setPaymentFormStatus("idle");
+        syncFreshBuyout();
+      }
+    } catch {
+      setPaymentFormStatus("error");
+      setPaymentFormError("Network error. Please try again.");
+    }
   }
 
   function handleAddNote() {
@@ -1568,20 +1604,66 @@ function Drawer({
                         {formatDateTime(payment.processedAt || payment.createdAt)}
                       </div>
                       <div className="ops-activity-text">
-                        <span className="ops-activity-badge payment">Payment</span>
-                        {formatMoney(payment.amount)} from {payment.clientName}
+                        <span className={`ops-activity-badge payment${payment.isManual ? " manual" : ""}`}>
+                          {payment.isManual ? "Manual" : "Payment"}
+                        </span>
+                        {formatMoney(payment.amount)}{payment.isManual ? "" : ` from ${payment.clientName}`} · {payment.paymentMethod}
                       </div>
-                      <div className="ops-activity-subline">
-                        {payment.clientEmail || "No reply-to email"} • {payment.paymentMethod} • Order #{payment.orderNumber}
-                      </div>
-                      <div className="ops-activity-subline">
-                        {payment.productName || payment.rawSubject}
-                        {payment.matchedBy ? ` • matched by ${payment.matchedBy}` : ""}
-                      </div>
+                      {payment.isManual ? (
+                        payment.notes ? <div className="ops-activity-subline">{payment.notes}</div> : null
+                      ) : (
+                        <>
+                          <div className="ops-activity-subline">
+                            {payment.clientEmail || "No reply-to email"} · Order #{payment.orderNumber}
+                          </div>
+                          <div className="ops-activity-subline">
+                            {payment.productName || payment.rawSubject}
+                            {payment.matchedBy ? ` · matched by ${payment.matchedBy}` : ""}
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))
                 )}
               </div>
+
+              {showPaymentForm ? (
+                <div className="ops-manual-payment-form">
+                  <div className="ops-section-label" style={{ marginTop: "1rem" }}>Log Alternative Payment</div>
+                  <div className="ops-inline-editor-grid">
+                    <label className="field-half">
+                      <span>Amount ($)</span>
+                      <input className="input" type="number" min="1" step="0.01" placeholder="250.00" value={paymentForm.amount} onChange={(e) => setPaymentForm((f) => ({ ...f, amount: e.target.value }))} />
+                    </label>
+                    <label className="field-half">
+                      <span>Payment method</span>
+                      <select className="select" value={paymentForm.paymentMethod} onChange={(e) => setPaymentForm((f) => ({ ...f, paymentMethod: e.target.value }))}>
+                        <option>Zelle</option>
+                        <option>Venmo</option>
+                        <option>Cash</option>
+                        <option>Check</option>
+                        <option>Other</option>
+                      </select>
+                    </label>
+                    <label className="field-half">
+                      <span>Date received</span>
+                      <input className="input" type="date" value={paymentForm.date} onChange={(e) => setPaymentForm((f) => ({ ...f, date: e.target.value }))} />
+                    </label>
+                    <label className="field-full">
+                      <span>Notes (optional)</span>
+                      <input className="input" placeholder="e.g. Zelle from Sarah Chen on April 3" value={paymentForm.notes} onChange={(e) => setPaymentForm((f) => ({ ...f, notes: e.target.value }))} />
+                    </label>
+                  </div>
+                  {paymentFormStatus === "error" && <div style={{ fontSize: "0.78rem", color: COLORS.cherry, marginTop: 6 }}>{paymentFormError}</div>}
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button className="ops-footer-primary" type="button" disabled={paymentFormStatus === "saving" || !paymentForm.amount} onClick={handleSaveManualPayment}>
+                      {paymentFormStatus === "saving" ? "Saving…" : "Save Payment"}
+                    </button>
+                    <button className="ops-footer-secondary" type="button" onClick={() => { setShowPaymentForm(false); setPaymentFormStatus("idle"); setPaymentFormError(""); }}>Cancel</button>
+                  </div>
+                </div>
+              ) : null}
+
               <div className="ops-section-label">Payment Links</div>
               <div className="ops-pricing-link-list">
                 {PRICING_LINKS.map(({ label, url }) => (
@@ -1730,6 +1812,15 @@ function Drawer({
               </button>
               <button className="ops-footer-secondary" onClick={handleCancelEdit} type="button">
                 Cancel
+              </button>
+            </>
+          ) : tab === "financials" ? (
+            <>
+              <button className="ops-footer-primary" type="button" onClick={() => { setShowPaymentForm((v) => !v); setPaymentFormStatus("idle"); setPaymentFormError(""); }}>
+                {showPaymentForm ? "Cancel" : "Log Alternative Payment"}
+              </button>
+              <button className="ops-footer-secondary" onClick={() => loadPayments(true)} type="button">
+                Refresh
               </button>
             </>
           ) : tab === "notes" ? (

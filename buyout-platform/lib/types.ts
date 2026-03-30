@@ -39,6 +39,8 @@ export type PaymentRecord = {
   rawSubject: string;
   gmailMessageId: string;
   matchedBy: string | null;
+  isManual?: boolean;
+  notes?: string;
 };
 
 export type BuyoutSummary = {
