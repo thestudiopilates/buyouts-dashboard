@@ -1424,6 +1424,7 @@ function Drawer({
                       return (
                         <button
                           className={`ops-email-subtab${emailSubTab === st ? " active" : ""}`}
+                          data-tab={st}
                           key={st}
                           onClick={() => { setEmailSubTab(st); if (st !== "templates") loadEmailHistory(); }}
                           type="button"

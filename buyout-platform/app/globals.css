@@ -2716,35 +2716,58 @@ textarea {
   display: flex;
   gap: 0;
   margin-bottom: 16px;
-  border: 1px solid var(--divider);
-  border-radius: 8px;
-  overflow: hidden;
+  border-bottom: 2px solid var(--divider);
 }
 
 .ops-email-subtab {
   flex: 1;
   border: 0;
-  padding: 8px 0;
+  padding: 10px 0 8px;
   font-family: var(--font-body);
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--warmGrey);
-  background: var(--card);
+  background: transparent;
   cursor: pointer;
   text-align: center;
-}
-
-.ops-email-subtab:not(:last-child) {
-  border-right: 1px solid var(--divider);
-}
-
-.ops-email-subtab.active {
-  background: var(--coffee);
-  color: var(--oat);
+  position: relative;
+  transition: color 0.15s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
 }
 
 .ops-email-subtab:hover:not(.active) {
-  background: var(--oat-light);
+  color: var(--coffee);
+}
+
+/* Send tab — Seaglass */
+.ops-email-subtab[data-tab="templates"].active {
+  color: #006976;
+  border-bottom-color: #006976;
+}
+.ops-email-subtab[data-tab="templates"].active .ops-subtab-count {
+  background: rgba(0,105,118,0.12);
+  color: #006976;
+}
+
+/* Sent tab — Coffee */
+.ops-email-subtab[data-tab="sent"].active {
+  color: var(--coffee);
+  border-bottom-color: var(--coffee);
+}
+.ops-email-subtab[data-tab="sent"].active .ops-subtab-count {
+  background: rgba(40,32,14,0.1);
+  color: var(--coffee);
+}
+
+/* Received tab — Cherry/Terracotta */
+.ops-email-subtab[data-tab="received"].active {
+  color: #E8581B;
+  border-bottom-color: #E8581B;
+}
+.ops-email-subtab[data-tab="received"].active .ops-subtab-count {
+  background: rgba(232,88,27,0.1);
+  color: #E8581B;
 }
 
 .ops-subtab-count {
@@ -2758,11 +2781,7 @@ textarea {
   border-radius: 8px;
   min-width: 16px;
   text-align: center;
-}
-
-.ops-email-subtab.active .ops-subtab-count {
-  background: rgba(255,255,255,0.2);
-  color: var(--oat);
+  transition: background 0.15s, color 0.15s;
 }
 
 .ops-unresponded-alert {
