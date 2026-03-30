@@ -130,6 +130,18 @@ function humanizeDatesInText(text: string) {
   });
 }
 
+/** Convert 24h time strings like "14:00" to "2:00 PM". Passes through already-12h values. */
+function to12h(time: string): string {
+  const m = time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return time; // already "2:00 PM" or other format
+  let h = parseInt(m[1], 10);
+  const min = m[2];
+  const ampm = h >= 12 ? "PM" : "AM";
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${min} ${ampm}`;
+}
+
 function formatDateTime(value: string | null) {
   if (!value) {
     return "Unknown";
@@ -1115,7 +1127,7 @@ function Drawer({
                   <div className="ops-detail-card" style={{ background: `${COLORS.seaglass}06`, border: `1px solid ${COLORS.seaglass}22` }}>
                     {[
                       ["Date", buyout.eventDate === "TBD" ? null : formatDisplayDate(buyout.eventDate), true],
-                      ["Time", buyout.startTime && buyout.endTime ? `${buyout.startTime}–${buyout.endTime}` : buyout.startTime, true],
+                      ["Time", buyout.startTime && buyout.endTime ? `${to12h(buyout.startTime)}–${to12h(buyout.endTime)}` : buyout.startTime ? to12h(buyout.startTime) : undefined, true],
                       ["Location", buyout.location === "Unassigned" ? null : buyout.location, true],
                       ["Capacity", buyout.capacity ? String(buyout.capacity) : null, true],
                       ["Instructor", buyout.instructor === "Unassigned" ? null : buyout.instructor, true],
@@ -2269,7 +2281,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       <span>{formatDisplayDate(buyout.eventDate)}</span>
                       <span className="ops-meta-dot">•</span>
                       <span>{buyout.location}</span>
-                      {buyout.startTime ? <><span className="ops-meta-dot">•</span><span>{buyout.startTime}{buyout.endTime ? `–${buyout.endTime}` : ""}</span></> : null}
+                      {buyout.startTime ? <><span className="ops-meta-dot">•</span><span>{to12h(buyout.startTime)}{buyout.endTime ? `–${to12h(buyout.endTime)}` : ""}</span></> : null}
                     </div>
                     {buyout.preferredDates && buyout.preferredDates !== buyout.eventDate ? (
                       <div className="ops-client-pref">Requested: {humanizeDatesInText(buyout.preferredDates!)}</div>

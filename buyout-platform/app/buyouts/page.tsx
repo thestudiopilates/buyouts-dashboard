@@ -33,6 +33,17 @@ const MILESTONE_DEADLINES: Array<{
   { stepKey: "final-confirmation-emails-sent", daysBefore: 2, label: (n) => `Send final confirmation email for ${n}` },
 ];
 
+function to12h(time: string): string {
+  const m = time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return time;
+  let h = parseInt(m[1], 10);
+  const min = m[2];
+  const ampm = h >= 12 ? "PM" : "AM";
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${min} ${ampm}`;
+}
+
 function deriveThisWeekTodos(buyouts: BuyoutSummary[]): TodoItem[] {
   const TERMINAL = new Set(["Complete", "Cancelled", "DOA", "Not Possible", "On Hold"]);
   const active = buyouts.filter((b) => !TERMINAL.has(b.lifecycleStage));
@@ -141,7 +152,7 @@ function deriveThisWeekTodos(buyouts: BuyoutSummary[]): TodoItem[] {
         id: `${b.id}-event`,
         buyoutId: b.id,
         buyoutName: b.name,
-        label: `Event: ${b.name}${b.startTime ? ` at ${b.startTime}` : ""} — ${b.location}`,
+        label: `Event: ${b.name}${b.startTime ? ` at ${to12h(b.startTime)}` : ""} — ${b.location}`,
         dueLabel: dateLabel,
         urgency: cd === 0 ? "today" : cd <= 2 ? "soon" : "this-week"
       });
