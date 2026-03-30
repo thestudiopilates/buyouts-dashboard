@@ -20,6 +20,7 @@ export const prisma =
     }
   });
 
-if (process.env.NODE_ENV !== "production") {
-  global.__prisma = prisma;
-}
+// Cache the client globally to prevent connection pool exhaustion
+// in serverless environments (Vercel) where module-level state persists
+// across warm invocations but global.__prisma may be undefined.
+global.__prisma = prisma;
