@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { BuyoutSummary, PaymentRecord } from "@/lib/types";
@@ -1797,6 +1796,10 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
   const [sort, setSort] = useState("eventDate");
   const [showCompleted, setShowCompleted] = useState(false);
   const [inboxAlerts, setInboxAlerts] = useState<InboxAlert[]>([]);
+  const [showAddBuyout, setShowAddBuyout] = useState(false);
+  const [addBuyoutForm, setAddBuyoutForm] = useState({ clientName: "", clientEmail: "", clientPhone: "", companyName: "", eventType: "", guestCountEstimate: "", preferredLocation: "", preferredDates: "", notes: "" });
+  const [addBuyoutStatus, setAddBuyoutStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [addBuyoutError, setAddBuyoutError] = useState("");
 
   useEffect(() => {
     fetch("/api/inbox-alerts")
@@ -1813,6 +1816,35 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
 
     return () => clearInterval(interval);
   }, []);
+
+  async function handleAddBuyoutSubmit() {
+    if (!addBuyoutForm.clientName.trim() || !addBuyoutForm.clientEmail.trim()) return;
+    setAddBuyoutStatus("submitting");
+    setAddBuyoutError("");
+    try {
+      const response = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(addBuyoutForm)
+      });
+      const result = (await response.json()) as { status: string; message?: string };
+      if (!response.ok || result.status === "error") {
+        setAddBuyoutStatus("error");
+        setAddBuyoutError(result.message ?? "Something went wrong. Please try again.");
+      } else {
+        setAddBuyoutStatus("success");
+        setTimeout(() => {
+          setShowAddBuyout(false);
+          setAddBuyoutStatus("idle");
+          setAddBuyoutForm({ clientName: "", clientEmail: "", clientPhone: "", companyName: "", eventType: "", guestCountEstimate: "", preferredLocation: "", preferredDates: "", notes: "" });
+          window.location.reload();
+        }, 1200);
+      }
+    } catch {
+      setAddBuyoutStatus("error");
+      setAddBuyoutError("Network error. Please try again.");
+    }
+  }
 
   const locations = useMemo(
     () => ["All", ...new Set(localBuyouts.map((buyout) => buyout.location).filter(Boolean))],
@@ -1893,9 +1925,9 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
             through the internal review workflow.
           </div>
         </div>
-        <Link className="ops-mode-link" href="/buyouts/inquire">
-          Open intake form
-        </Link>
+        <button className="ops-mode-link" type="button" onClick={() => setShowAddBuyout(true)}>
+          + Add Buyout
+        </button>
       </div>
 
       <div className="ops-kpi-grid">
@@ -2149,6 +2181,83 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
           }}
           onClose={() => setSelected(null)}
         />
+      ) : null}
+
+      {showAddBuyout ? (
+        <div className="ops-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowAddBuyout(false); setAddBuyoutStatus("idle"); } }}>
+          <div className="ops-modal">
+            <div className="ops-modal-header">
+              <div className="ops-modal-title">Add Buyout</div>
+              <button className="ops-modal-close" type="button" onClick={() => { setShowAddBuyout(false); setAddBuyoutStatus("idle"); }}>✕</button>
+            </div>
+            <div className="ops-modal-body">
+              <div className="ops-inline-editor-grid">
+                <label className="field-half">
+                  <span>Client name <span style={{ color: COLORS.cherry }}>*</span></span>
+                  <input className="input" value={addBuyoutForm.clientName} onChange={(e) => setAddBuyoutForm((f) => ({ ...f, clientName: e.target.value }))} placeholder="Sarah Chen" />
+                </label>
+                <label className="field-half">
+                  <span>Email <span style={{ color: COLORS.cherry }}>*</span></span>
+                  <input className="input" type="email" value={addBuyoutForm.clientEmail} onChange={(e) => setAddBuyoutForm((f) => ({ ...f, clientEmail: e.target.value }))} placeholder="sarah@example.com" />
+                </label>
+                <label className="field-half">
+                  <span>Phone</span>
+                  <input className="input" value={addBuyoutForm.clientPhone} onChange={(e) => setAddBuyoutForm((f) => ({ ...f, clientPhone: e.target.value }))} placeholder="(404) 555-0112" />
+                </label>
+                <label className="field-half">
+                  <span>Company or group</span>
+                  <input className="input" value={addBuyoutForm.companyName} onChange={(e) => setAddBuyoutForm((f) => ({ ...f, companyName: e.target.value }))} placeholder="Acme Team Offsite" />
+                </label>
+                <label className="field-half">
+                  <span>Event type</span>
+                  <select className="select" value={addBuyoutForm.eventType} onChange={(e) => setAddBuyoutForm((f) => ({ ...f, eventType: e.target.value }))}>
+                    <option value="">Select an option</option>
+                    <option value="Birthday">Birthday</option>
+                    <option value="Corporate">Corporate</option>
+                    <option value="Bachelorette">Bachelorette</option>
+                    <option value="Team Building">Team Building</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </label>
+                <label className="field-half">
+                  <span>Estimated guest count</span>
+                  <input className="input" type="number" min="1" value={addBuyoutForm.guestCountEstimate} onChange={(e) => setAddBuyoutForm((f) => ({ ...f, guestCountEstimate: e.target.value }))} placeholder="20" />
+                </label>
+                <label className="field-half">
+                  <span>Preferred location</span>
+                  <select className="select" value={addBuyoutForm.preferredLocation} onChange={(e) => setAddBuyoutForm((f) => ({ ...f, preferredLocation: e.target.value }))}>
+                    <option value="">Select a studio</option>
+                    <option value="1583 Decatur">1583 Decatur (Emory)</option>
+                    <option value="1581 Decatur">1581 Decatur (Emory)</option>
+                    <option value="763 Trabert">763 Trabert (West Midtown)</option>
+                    <option value="Flexible">Flexible</option>
+                  </select>
+                </label>
+                <label className="field-half">
+                  <span>Preferred dates</span>
+                  <input className="input" value={addBuyoutForm.preferredDates} onChange={(e) => setAddBuyoutForm((f) => ({ ...f, preferredDates: e.target.value }))} placeholder="April 12, 15, or 18 after 2 PM" />
+                </label>
+                <label className="field-full">
+                  <span>Notes</span>
+                  <textarea className="textarea" rows={3} value={addBuyoutForm.notes} onChange={(e) => setAddBuyoutForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Occasion, goals, anything the team should know." />
+                </label>
+              </div>
+              {addBuyoutStatus === "error" && <div className="ops-modal-error">{addBuyoutError}</div>}
+              {addBuyoutStatus === "success" && <div className="ops-modal-success">Buyout added — refreshing…</div>}
+            </div>
+            <div className="ops-modal-footer">
+              <button className="ops-footer-secondary" type="button" onClick={() => { setShowAddBuyout(false); setAddBuyoutStatus("idle"); }}>Cancel</button>
+              <button
+                className="ops-footer-primary"
+                type="button"
+                disabled={addBuyoutStatus === "submitting" || addBuyoutStatus === "success" || !addBuyoutForm.clientName.trim() || !addBuyoutForm.clientEmail.trim()}
+                onClick={handleAddBuyoutSubmit}
+              >
+                {addBuyoutStatus === "submitting" ? "Adding…" : "Add Buyout"}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

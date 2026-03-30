@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_PATHS = [
   "/",
-  "/buyouts/inquire",
   "/feedback",
   "/api/inquiries"
 ];

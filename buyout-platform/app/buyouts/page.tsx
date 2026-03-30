@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { PortalShell } from "@/components/portal-shell";
 import { OperationsDashboard } from "@/components/operations-dashboard";
 import { listBuyouts } from "@/lib/buyouts";
@@ -20,9 +18,6 @@ export default async function BuyoutsPage() {
                 Pipeline &amp; Event Management
               </h1>
             </div>
-            <Link className="btn btn-primary" href="/buyouts/inquire">
-              New Inquiry
-            </Link>
           </div>
           <section style={{ marginTop: "1.25rem" }}>
             <OperationsDashboard buyouts={buyouts} />

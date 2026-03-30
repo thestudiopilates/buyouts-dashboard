@@ -75,15 +75,15 @@ export default async function DashboardPage() {
               </div>
             </Link>
 
-            <Link href="/buyouts/inquire" style={{ textDecoration: "none" }}>
+            <a href="https://thestudiopilates.com/private-events/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
               <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "32px 28px", transition: "opacity 0.2s" }}>
-                <div style={{ fontFamily: "Georgia, serif", fontSize: "1.4rem", fontWeight: 700, color: "var(--coffee)", marginBottom: 8 }}>Public Inquiry Form</div>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: "1.4rem", fontWeight: 700, color: "var(--coffee)", marginBottom: 8 }}>Buyout Form on Website</div>
                 <div style={{ fontSize: "0.88rem", color: "var(--warmGrey)", lineHeight: 1.5 }}>
-                  Preview the client-facing intake form. Submissions create new buyouts automatically and notify the team via email.
+                  View the client-facing buyout inquiry form on thestudiopilates.com.
                 </div>
-                <div style={{ marginTop: 16, fontSize: "0.82rem", fontWeight: 600, color: "var(--seaglass)" }}>Preview form →</div>
+                <div style={{ marginTop: 16, fontSize: "0.82rem", fontWeight: 600, color: "var(--seaglass)" }}>Open on website ↗</div>
               </div>
-            </Link>
+            </a>
           </div>
         </div>
       </PortalShell>
