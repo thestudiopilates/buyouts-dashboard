@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { hasDatabaseUrl, prisma } from "@/lib/prisma";
 
@@ -61,5 +61,28 @@ export async function GET() {
     return NextResponse.json({ alerts });
   } catch {
     return NextResponse.json({ alerts: [] });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  if (!hasDatabaseUrl()) {
+    return NextResponse.json({ ok: false }, { status: 500 });
+  }
+
+  try {
+    const body = (await request.json()) as { ids?: string[]; action?: "dismiss" };
+    const ids = body.ids;
+    if (!ids || ids.length === 0) {
+      return NextResponse.json({ ok: false, error: "No alert IDs provided" }, { status: 400 });
+    }
+
+    await prisma.inboxAlert.updateMany({
+      where: { id: { in: ids } },
+      data: { isDismissed: true },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

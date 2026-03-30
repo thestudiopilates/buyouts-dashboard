@@ -2036,6 +2036,54 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
   const [addBuyoutStatus, setAddBuyoutStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [addBuyoutError, setAddBuyoutError] = useState("");
 
+  // Snoozed alert IDs (localStorage, expires at stored timestamp)
+  const [snoozedIds, setSnoozedIds] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = localStorage.getItem("tsp-snoozed-alerts");
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw) as Record<string, number>;
+      const now = Date.now();
+      const still: string[] = [];
+      for (const [id, until] of Object.entries(parsed)) {
+        if (until > now) still.push(id);
+      }
+      return new Set(still);
+    } catch { return new Set(); }
+  });
+
+  const visibleAlerts = inboxAlerts.filter((a) => !snoozedIds.has(a.id));
+
+  async function dismissAlerts(ids: string[]) {
+    setInboxAlerts((prev) => prev.filter((a) => !ids.includes(a.id)));
+    await fetch("/api/inbox-alerts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+  }
+
+  function snoozeAlerts(ids: string[]) {
+    // Snooze until tomorrow 6 AM local
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(6, 0, 0, 0);
+    const until = tomorrow.getTime();
+
+    setSnoozedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) next.add(id);
+      return next;
+    });
+
+    try {
+      const raw = localStorage.getItem("tsp-snoozed-alerts");
+      const existing = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+      for (const id of ids) existing[id] = until;
+      localStorage.setItem("tsp-snoozed-alerts", JSON.stringify(existing));
+    } catch { /* localStorage unavailable */ }
+  }
+
   useEffect(() => {
     fetch("/api/inbox-alerts")
       .then((r) => r.json())
@@ -2125,29 +2173,54 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
 
   return (
     <div className="ops-shell">
-      {inboxAlerts.length > 0 ? (
+      {visibleAlerts.length > 0 ? (
         <div className="ops-inbox-alert-bar">
-          <div className="ops-inbox-alert-icon">{inboxAlerts.length}</div>
+          <div className="ops-inbox-alert-icon">{visibleAlerts.length}</div>
           <div className="ops-inbox-alert-content">
             <div className="ops-inbox-alert-title">
-              {inboxAlerts.length === 1 ? "1 client email needs a response" : `${inboxAlerts.length} client emails need responses`}
+              {visibleAlerts.length === 1 ? "1 client email needs a response" : `${visibleAlerts.length} client emails need responses`}
             </div>
             <div className="ops-inbox-alert-list">
-              {inboxAlerts.slice(0, 3).map((alert) => {
+              {visibleAlerts.slice(0, 5).map((alert) => {
                 const buyout = localBuyouts.find((b) => b.id === alert.buyoutId);
                 return (
-                  <button
-                    className="ops-inbox-alert-item"
-                    key={alert.id}
-                    onClick={() => { const b = localBuyouts.find((x) => x.id === alert.buyoutId); if (b) setSelected(b); }}
-                    type="button"
-                  >
-                    <strong>{buyout?.name ?? alert.clientEmail}</strong>
-                    <span>{alert.hoursWaiting >= 24 ? `${Math.floor(alert.hoursWaiting / 24)}d overdue` : `${alert.hoursWaiting}h ago`}</span>
-                  </button>
+                  <div className="ops-inbox-alert-item" key={alert.id}>
+                    <button
+                      className="ops-inbox-alert-link"
+                      onClick={() => { const b = localBuyouts.find((x) => x.id === alert.buyoutId); if (b) setSelected(b); }}
+                      type="button"
+                    >
+                      <strong>{buyout?.name ?? alert.clientEmail}</strong>
+                      <span>{alert.hoursWaiting >= 24 ? `${Math.floor(alert.hoursWaiting / 24)}d overdue` : `${alert.hoursWaiting}h ago`}</span>
+                    </button>
+                    <div className="ops-inbox-alert-actions">
+                      <button
+                        className="ops-inbox-dismiss-btn"
+                        onClick={() => dismissAlerts([alert.id])}
+                        title="Dismiss"
+                        type="button"
+                      >
+                        Dismiss
+                      </button>
+                      <button
+                        className="ops-inbox-snooze-btn"
+                        onClick={() => snoozeAlerts([alert.id])}
+                        title="Snooze until tomorrow"
+                        type="button"
+                      >
+                        Tomorrow
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
             </div>
+            {visibleAlerts.length > 1 ? (
+              <div className="ops-inbox-alert-bulk">
+                <button className="ops-inbox-dismiss-btn" onClick={() => dismissAlerts(visibleAlerts.map((a) => a.id))} type="button">Dismiss All</button>
+                <button className="ops-inbox-snooze-btn" onClick={() => snoozeAlerts(visibleAlerts.map((a) => a.id))} type="button">Snooze All Until Tomorrow</button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -2311,7 +2384,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       {buyout.ballInCourt === "Client" && buyout.daysWaiting > 7 ? (
                         <span className="ops-cold-badge">{buyout.daysWaiting > 14 ? "Suggest DOA" : "Going Cold"}</span>
                       ) : null}
-                      {inboxAlerts.some((a) => a.buyoutId === buyout.id) ? (
+                      {visibleAlerts.some((a) => a.buyoutId === buyout.id) ? (
                         <span className="ops-inbox-badge">Needs Response</span>
                       ) : null}
                       {buyout.responseUrgency === "overdue" || buyout.responseUrgency === "critical" ? (
