@@ -1133,7 +1133,7 @@ textarea {
   border: 1px solid #F5BBAF;
   border-radius: 8px;
   font-size: 0.8rem;
-  color: var(--cherry);
+  color: #E8581B;
 }
 
 .ops-modal-success {
@@ -1393,7 +1393,7 @@ textarea {
 
 .ops-ready-chip.missing {
   background: rgba(232, 88, 27, 0.08);
-  color: var(--cherry);
+  color: #E8581B;
 }
 
 .ops-alert-pills {
@@ -2259,7 +2259,7 @@ textarea {
 }
 
 .ops-detail-missing {
-  color: var(--cherry);
+  color: #E8581B;
   font-weight: 600;
 }
 
@@ -2373,7 +2373,7 @@ textarea {
 }
 
 .ops-due-label.overdue {
-  color: var(--cherry);
+  color: #E8581B;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -2469,7 +2469,7 @@ textarea {
 }
 
 .ops-unresponded-alert.overdue .ops-unresponded-icon {
-  background: var(--cherry);
+  background: #E8581B;
   color: #fff;
 }
 
@@ -2819,7 +2819,7 @@ textarea {
   padding: 2px 6px;
   border-radius: 8px;
   background: rgba(232, 88, 27, 0.12);
-  color: var(--cherry);
+  color: #E8581B;
 }
 
 .ops-mark-sent-check {
@@ -2862,7 +2862,7 @@ textarea {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--cherry);
+  background: #E8581B;
   color: #fff;
   font-size: 0.85rem;
   font-weight: 700;
@@ -2915,7 +2915,7 @@ textarea {
 }
 
 .ops-inbox-alert-item span {
-  color: var(--cherry);
+  color: #E8581B;
   font-weight: 600;
   font-size: 0.72rem;
   flex-shrink: 0;
@@ -2930,7 +2930,7 @@ textarea {
   letter-spacing: 0.06em;
   padding: 2px 8px;
   border-radius: 10px;
-  background: var(--cherry);
+  background: #E8581B;
   color: #fff;
   animation: pulse-badge 2s infinite;
 }
