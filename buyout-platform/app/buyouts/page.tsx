@@ -193,15 +193,19 @@ export default async function BuyoutsPage() {
           </div>
 
           {/* ── This Week To-Do ─────────────────────────────── */}
-          <div style={{ margin: "1rem 0 1.5rem", background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
-            <div style={{ padding: "14px 20px 12px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Auto-open on desktop, collapsed on mobile */}
+          {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+          <script dangerouslySetInnerHTML={{ __html: `document.addEventListener('DOMContentLoaded',function(){if(window.innerWidth>980){var d=document.querySelector('.todo-collapse');if(d)d.open=true}})` }} />
+          <details className="todo-collapse">
+            <summary className="todo-collapse-header">
               <span style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: "0.92rem", color: "var(--coffee)" }}>This Week</span>
               {todos.length > 0 && (
-                <span style={{ background: "var(--cherry)", color: "#fff", borderRadius: 999, fontSize: "0.68rem", fontWeight: 700, padding: "2px 7px", lineHeight: 1.4 }}>
+                <span style={{ background: "#E8581B", color: "#fff", borderRadius: 999, fontSize: "0.68rem", fontWeight: 700, padding: "2px 7px", lineHeight: 1.4 }}>
                   {todos.length}
                 </span>
               )}
-            </div>
+              <span className="todo-collapse-arrow" />
+            </summary>
             {todos.length === 0 ? (
               <div style={{ padding: "18px 20px", fontSize: "0.83rem", color: "var(--warmGrey)" }}>
                 No operator actions due this week.
@@ -234,7 +238,7 @@ export default async function BuyoutsPage() {
                 })}
               </div>
             )}
-          </div>
+          </details>
 
           <section style={{ marginTop: "0.5rem" }}>
             <OperationsDashboard buyouts={buyouts} />
