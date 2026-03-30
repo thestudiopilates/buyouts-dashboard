@@ -3193,6 +3193,50 @@ textarea {
   border-color: var(--warmGrey);
 }
 
+.ops-payment-alert-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 20px;
+  background: rgba(121, 127, 93, 0.08);
+  border: 1px solid rgba(121, 127, 93, 0.25);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.ops-payment-alert-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--sage);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ops-payment-alert-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--sage);
+  margin-bottom: 6px;
+}
+
+.ops-payment-link {
+  background: rgba(121, 127, 93, 0.06) !important;
+}
+
+.ops-payment-link:hover {
+  background: rgba(121, 127, 93, 0.12) !important;
+}
+
+.ops-payment-link span {
+  color: var(--sage) !important;
+}
+
 .ops-inbox-alert-bar {
   display: flex;
   align-items: flex-start;

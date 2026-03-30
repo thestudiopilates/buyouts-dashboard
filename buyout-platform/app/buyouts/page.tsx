@@ -169,6 +169,28 @@ function deriveThisWeekTodos(buyouts: BuyoutSummary[]): TodoItem[] {
         urgency: b.daysWaiting >= 14 ? "overdue" : "soon"
       });
     }
+
+    // 9. Payment received — surface next steps for recently paid buyouts
+    if (b.lifecycleStage === "Paid" || (b.amountPaid > 0 && (b.lifecycleStage === "Quote" || b.lifecycleStage === "Deposit"))) {
+      const POST_PAYMENT_STEPS: Array<{ key: string; label: (n: string) => string }> = [
+        { key: "instructor-finalized", label: (n) => `Confirm instructor for ${n}` },
+        { key: "momence-class-created", label: (n) => `Create Momence event for ${n}` },
+        { key: "momence-link-sign-up-sent", label: (n) => `Send signup link & event details to ${n}` },
+      ];
+      for (const step of POST_PAYMENT_STEPS) {
+        if (completedKeys.has(step.key)) continue;
+        const stepExists = b.workflow?.some((s) => s.key === step.key);
+        if (!stepExists) continue;
+        items.push({
+          id: `${b.id}-post-payment-${step.key}`,
+          buyoutId: b.id,
+          buyoutName: b.name,
+          label: `Payment received — ${step.label(b.name)}`,
+          dueLabel: "Action needed",
+          urgency: "today" as const
+        });
+      }
+    }
   }
 
   // Sort: overdue → today → soon → this-week, then by buyout name

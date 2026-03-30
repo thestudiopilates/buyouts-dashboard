@@ -2033,6 +2033,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
   const [sort, setSort] = useState("eventDate");
   const [showCompleted, setShowCompleted] = useState(false);
   const [inboxAlerts, setInboxAlerts] = useState<InboxAlert[]>([]);
+  const [paymentAlerts, setPaymentAlerts] = useState<Array<{ id: string; buyoutId: string; buyoutName: string; amount: number; clientName: string; paymentMethod: string; hoursAgo: number }>>([]);
   const [showAddBuyout, setShowAddBuyout] = useState(false);
   const [addBuyoutForm, setAddBuyoutForm] = useState({ clientName: "", clientEmail: "", clientPhone: "", companyName: "", eventType: "", guestCountEstimate: "", preferredLocation: "", preferredDates: "", notes: "" });
   const [addBuyoutStatus, setAddBuyoutStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
@@ -2055,6 +2056,17 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
   });
 
   const visibleAlerts = inboxAlerts.filter((a) => !snoozedIds.has(a.id));
+
+  const visiblePaymentAlerts = (() => {
+    if (typeof window === "undefined") return paymentAlerts;
+    try {
+      const raw = localStorage.getItem("tsp-snoozed-payment-alerts");
+      if (!raw) return paymentAlerts;
+      const parsed = JSON.parse(raw) as Record<string, number>;
+      const now = Date.now();
+      return paymentAlerts.filter((a) => !(parsed[a.id] && parsed[a.id] > now));
+    } catch { return paymentAlerts; }
+  })();
 
   async function dismissAlerts(ids: string[]) {
     setInboxAlerts((prev) => prev.filter((a) => !ids.includes(a.id)));
@@ -2086,19 +2098,43 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
     } catch { /* localStorage unavailable */ }
   }
 
-  useEffect(() => {
+  function loadAlerts() {
     fetch("/api/inbox-alerts")
       .then((r) => r.json())
       .then((data: { alerts?: InboxAlert[] }) => setInboxAlerts(data.alerts ?? []))
       .catch(() => {});
+    fetch("/api/payment-alerts")
+      .then((r) => r.json())
+      .then((data: { alerts?: typeof paymentAlerts }) => setPaymentAlerts(data.alerts ?? []))
+      .catch(() => {});
+  }
 
-    const interval = setInterval(() => {
-      fetch("/api/inbox-alerts")
-        .then((r) => r.json())
-        .then((data: { alerts?: InboxAlert[] }) => setInboxAlerts(data.alerts ?? []))
-        .catch(() => {});
-    }, 300000);
+  async function dismissPaymentAlerts(ids: string[]) {
+    setPaymentAlerts((prev) => prev.filter((a) => !ids.includes(a.id)));
+    await fetch("/api/payment-alerts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+  }
 
+  function snoozePaymentAlerts(ids: string[]) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(6, 0, 0, 0);
+    const until = tomorrow.getTime();
+    setPaymentAlerts((prev) => prev.filter((a) => !ids.includes(a.id)));
+    try {
+      const raw = localStorage.getItem("tsp-snoozed-payment-alerts");
+      const existing = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+      for (const id of ids) existing[id] = until;
+      localStorage.setItem("tsp-snoozed-payment-alerts", JSON.stringify(existing));
+    } catch { /* */ }
+  }
+
+  useEffect(() => {
+    loadAlerts();
+    const interval = setInterval(loadAlerts, 300000);
     return () => clearInterval(interval);
   }, []);
 
@@ -2221,6 +2257,40 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
               <div className="ops-inbox-alert-bulk">
                 <button className="ops-inbox-dismiss-btn" onClick={() => dismissAlerts(visibleAlerts.map((a) => a.id))} type="button">Dismiss All</button>
                 <button className="ops-inbox-snooze-btn" onClick={() => snoozeAlerts(visibleAlerts.map((a) => a.id))} type="button">Snooze All Until Tomorrow</button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {visiblePaymentAlerts.length > 0 ? (
+        <div className="ops-payment-alert-bar">
+          <div className="ops-payment-alert-icon">$</div>
+          <div className="ops-inbox-alert-content">
+            <div className="ops-payment-alert-title">
+              {visiblePaymentAlerts.length === 1 ? "Payment received" : `${visiblePaymentAlerts.length} payments received`}
+            </div>
+            <div className="ops-inbox-alert-list">
+              {visiblePaymentAlerts.map((alert) => (
+                <div className="ops-inbox-alert-item" key={alert.id}>
+                  <button
+                    className="ops-inbox-alert-link ops-payment-link"
+                    onClick={() => { const b = localBuyouts.find((x) => x.id === alert.buyoutId); if (b) setSelected(b); }}
+                    type="button"
+                  >
+                    <strong>${alert.amount.toLocaleString()} — {alert.buyoutName}</strong>
+                    <span>{alert.hoursAgo < 1 ? "Just now" : alert.hoursAgo < 24 ? `${alert.hoursAgo}h ago` : `${Math.floor(alert.hoursAgo / 24)}d ago`}</span>
+                  </button>
+                  <div className="ops-inbox-alert-actions">
+                    <button className="ops-inbox-dismiss-btn" onClick={() => dismissPaymentAlerts([alert.id])} type="button">Dismiss</button>
+                    <button className="ops-inbox-snooze-btn" onClick={() => snoozePaymentAlerts([alert.id])} type="button">Tomorrow</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {visiblePaymentAlerts.length > 1 ? (
+              <div className="ops-inbox-alert-bulk">
+                <button className="ops-inbox-dismiss-btn" onClick={() => dismissPaymentAlerts(visiblePaymentAlerts.map((a) => a.id))} type="button">Dismiss All</button>
               </div>
             ) : null}
           </div>
