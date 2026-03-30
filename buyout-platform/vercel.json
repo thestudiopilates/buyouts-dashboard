@@ -6,6 +6,10 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/check-payments",
+      "schedule": "*/30 * * * *"
+    },
+    {
       "path": "/api/cron/sync-signups",
       "schedule": "0 9 * * *"
     }
