@@ -46,7 +46,10 @@ export async function POST(request: Request) {
   await ensureStoredEmailTable();
 
   const buyouts = await listBuyouts();
-  const active = buyouts.filter((b) => b.clientEmail && !["Complete", "Cancelled", "DOA", "Not Possible"].includes(b.lifecycleStage));
+  const targetIds = searchParams.get("buyoutIds")?.split(",").filter(Boolean);
+  const active = targetIds
+    ? buyouts.filter((b) => targetIds.includes(b.id))
+    : buyouts.filter((b) => b.clientEmail && !["Complete", "Cancelled", "DOA", "Not Possible"].includes(b.lifecycleStage));
 
   if (mode === "payments") {
     // Backfill payments from 90-day window
@@ -94,8 +97,8 @@ export async function POST(request: Request) {
   let stored = 0;
   const errors: string[] = [];
 
-  // Process max 5 buyouts per run to stay within timeout
-  const batch = active.slice(0, 5);
+  // Process max 5 buyouts per run to stay within timeout (or all if targeted)
+  const batch = targetIds ? active : active.slice(0, 5);
 
   for (const buyout of batch) {
     try {
