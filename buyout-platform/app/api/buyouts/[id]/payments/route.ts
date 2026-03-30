@@ -50,15 +50,29 @@ export async function POST(
 
     await ensureEmailInfrastructure();
 
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO "BuyoutEvent" ("id","buyoutId","eventType","summary","detail","createdBy")
-       VALUES ($1,$2,'MANUAL_PAYMENT',$3,$4::jsonb,$5)`,
-      randomUUID(),
-      id,
-      `Manual payment recorded: $${amount} via ${method}`,
-      JSON.stringify({ amount, paymentMethod: method, date, notes, recordedBy: "team" }),
-      "team"
-    );
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `INSERT INTO "BuyoutEvent" ("id","buyoutId","eventType","summary","detail","createdBy")
+         VALUES ($1,$2,'MANUAL_PAYMENT',$3,$4::jsonb,$5)`,
+        randomUUID(),
+        id,
+        `Manual payment recorded: $${amount} via ${method}`,
+        JSON.stringify({ amount, paymentMethod: method, date, notes, recordedBy: "team" }),
+        "team"
+      );
+
+      // Increment amountPaid on the financial record (upsert in case it doesn't exist yet)
+      await tx.$executeRawUnsafe(
+        `INSERT INTO "BuyoutFinancial" ("id","buyoutId","amountPaid","createdAt","updatedAt")
+         VALUES ($1,$2,$3,now(),now())
+         ON CONFLICT ("buyoutId") DO UPDATE
+           SET "amountPaid" = "BuyoutFinancial"."amountPaid" + $3,
+               "updatedAt" = now()`,
+        randomUUID(),
+        id,
+        amount
+      );
+    });
 
     const payments = await listPaymentActivity(id);
     return NextResponse.json({ payments });
