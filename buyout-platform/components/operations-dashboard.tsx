@@ -1087,7 +1087,7 @@ function Drawer({
                     "Days Out",
                     buyout.countdownDays !== null && buyout.countdownDays >= 0 && buyout.countdownDays <= 7
                   ],
-                  [buyout.daysWaiting, "Waiting", buyout.daysWaiting > 5],
+                  [buyout.daysWaiting, "Since Contact", buyout.daysWaiting > 5],
                   [`${workflowDone(buyout)}/${buyout.workflow.length}`, "Checklist", false]
                 ].map(([value, label, warn]) => (
                   <div
@@ -1896,14 +1896,18 @@ function Drawer({
                             </div>
                             <div className="ops-activity-text">
                               <span className={`ops-activity-badge ${
-                                event.eventType.includes("EMAIL") ? "email"
+                                event.eventType === "GMAIL_SENT" ? "gmail-sent"
+                                : event.eventType === "GMAIL_RECEIVED" ? "gmail-received"
+                                : event.eventType.includes("EMAIL") ? "email"
                                 : event.eventType === "NOTE_ADDED" ? "note"
                                 : event.eventType === "INQUIRY_RECEIVED" ? "inquiry"
                                 : event.eventType === "PAYMENT_DETECTED" ? "payment"
                                 : event.eventType.includes("WORKFLOW") ? "checklist"
                                 : "status"
                               }`}>
-                                {event.eventType === "EMAIL_TEST_SENT" || event.eventType === "EMAIL_SENT" ? "Email"
+                                {event.eventType === "GMAIL_SENT" ? "Sent"
+                                  : event.eventType === "GMAIL_RECEIVED" ? "Received"
+                                  : event.eventType === "EMAIL_TEST_SENT" || event.eventType === "EMAIL_SENT" ? "Email"
                                   : event.eventType === "NOTE_ADDED" ? "Note"
                                   : event.eventType === "INQUIRY_RECEIVED" ? "Inquiry"
                                   : event.eventType === "BUYOUT_CREATED" ? "Created"
@@ -2241,14 +2245,6 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       >
                         Dismiss
                       </button>
-                      <button
-                        className="ops-inbox-snooze-btn"
-                        onClick={() => snoozeAlerts([alert.id])}
-                        title="Snooze until tomorrow"
-                        type="button"
-                      >
-                        Tomorrow
-                      </button>
                     </div>
                   </div>
                 );
@@ -2257,7 +2253,6 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
             {visibleAlerts.length > 1 ? (
               <div className="ops-inbox-alert-bulk">
                 <button className="ops-inbox-dismiss-btn" onClick={() => dismissAlerts(visibleAlerts.map((a) => a.id))} type="button">Dismiss All</button>
-                <button className="ops-inbox-snooze-btn" onClick={() => snoozeAlerts(visibleAlerts.map((a) => a.id))} type="button">Snooze All Until Tomorrow</button>
               </div>
             ) : null}
           </div>
@@ -2284,7 +2279,6 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                   </button>
                   <div className="ops-inbox-alert-actions">
                     <button className="ops-inbox-dismiss-btn" onClick={() => dismissPaymentAlerts([alert.id])} type="button">Dismiss</button>
-                    <button className="ops-inbox-snooze-btn" onClick={() => snoozePaymentAlerts([alert.id])} type="button">Tomorrow</button>
                   </div>
                 </div>
               ))}
@@ -2299,13 +2293,6 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
       ) : null}
 
       <div className="ops-mode-banner">
-        <div>
-          <div className="ops-mode-title">Live operations view</div>
-          <div className="ops-mode-copy">
-            Dashboard now surfaces the active buyout pipeline while outbound email remains routed
-            through the internal review workflow.
-          </div>
-        </div>
         <button className="ops-mode-link" type="button" onClick={() => setShowAddBuyout(true)}>
           + Add Buyout
         </button>
@@ -2503,7 +2490,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                             {buyout.ballInCourt === "Team" ? "Us" : buyout.ballInCourt}
                           </span>
                           {buyout.daysWaiting > 1 ? (
-                            <span className="ops-wait-pill" style={{ background: `${wait}14`, color: wait }}>{buyout.daysWaiting}d waiting</span>
+                            <span className="ops-wait-pill" style={{ background: `${wait}14`, color: wait }}>{buyout.daysWaiting}d since contact</span>
                           ) : null}
                         </span>
                       </div>
@@ -2551,12 +2538,12 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                   </div>
                   <div className="ops-row-meta">
                     {buyout.lastAction
-                      ? `Last action ${formatDisplayDate(buyout.lastAction)}`
-                      : "No action logged"}
+                      ? `Last contact ${formatDisplayDate(buyout.lastAction)}`
+                      : "No contact logged"}
                   </div>
                   {buyout.daysWaiting > 0 ? (
                     <span className="ops-wait-pill" style={{ background: `${wait}14`, color: wait }}>
-                      {buyout.daysWaiting}d waiting
+                      {buyout.daysWaiting}d since last contact
                     </span>
                   ) : null}
                 </div>

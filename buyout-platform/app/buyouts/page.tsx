@@ -231,7 +231,7 @@ export default async function BuyoutsPage() {
           <script dangerouslySetInnerHTML={{ __html: `document.addEventListener('DOMContentLoaded',function(){if(window.innerWidth>980){var d=document.querySelector('.todo-collapse');if(d)d.open=true}})` }} />
           <details className="todo-collapse">
             <summary className="todo-collapse-header">
-              <span style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: "0.92rem", color: "var(--coffee)" }}>This Week</span>
+              <span style={{ fontFamily: "Georgia, serif", fontWeight: 700, fontSize: "0.92rem", color: "var(--coffee)" }}>To Do This Week</span>
               {todos.length > 0 && (
                 <span style={{ background: "#E8581B", color: "#fff", borderRadius: 999, fontSize: "0.68rem", fontWeight: 700, padding: "2px 7px", lineHeight: 1.4 }}>
                   {todos.length}

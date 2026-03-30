@@ -270,11 +270,13 @@ const buyoutInclude = {
 
 type BuyoutRecord = Prisma.BuyoutGetPayload<{ include: typeof buyoutInclude }>;
 
-function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
+function mapBuyoutRecord(buyout: BuyoutRecord, latestEmailDate?: Date | null): BuyoutSummary {
   const workflow = normalizeWorkflow(buyout.workflowSteps);
   const lifecycleStage = stageLabelMap[buyout.lifecycleStage];
   const countdown = differenceInDaysFromToday(buyout.eventDate);
-  const waiting = daysWaiting(buyout.lastActionAt, buyout.createdAt);
+  // Use the most recent of: lastActionAt, latest email sent/received
+  const lastContact = [buyout.lastActionAt, latestEmailDate].filter(Boolean).sort((a, b) => b!.getTime() - a!.getTime())[0] ?? null;
+  const waiting = daysWaiting(lastContact, buyout.createdAt);
   const outstanding = Math.max(0, (buyout.financial?.quotedTotal ?? 0) - (buyout.financial?.amountPaid ?? 0));
   const signupFillPercent =
     buyout.capacity && buyout.capacity > 0 ? Math.round((buyout.signupCount / buyout.capacity) * 100) : null;
@@ -339,7 +341,7 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
     ballInCourt: effectiveBallInCourt,
     nextAction: effectiveNextAction,
     daysWaiting: waiting,
-    lastAction: buyout.lastActionAt ? toIsoDay(buyout.lastActionAt) : null,
+    lastAction: lastContact ? toIsoDay(lastContact) : (buyout.lastActionAt ? toIsoDay(buyout.lastActionAt) : null),
     signups: buyout.signupCount,
     capacity: buyout.capacity ?? 0,
     signupFillPercent,
@@ -391,22 +393,54 @@ function mapBuyoutRecord(buyout: BuyoutRecord): BuyoutSummary {
   };
 }
 
-export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
-  const buyouts = await prisma.buyout.findMany({
-    include: buyoutInclude,
-    orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }]
-  });
+async function fetchLatestEmailDates(): Promise<Map<string, Date>> {
+  try {
+    const rows = (await prisma.$queryRawUnsafe(`
+      SELECT "buyoutId", MAX("sentAt") AS "latestEmail"
+      FROM "StoredEmail"
+      GROUP BY "buyoutId"
+    `)) as Array<{ buyoutId: string; latestEmail: Date }>;
+    return new Map(rows.map((r) => [r.buyoutId, r.latestEmail instanceof Date ? r.latestEmail : new Date(r.latestEmail)]));
+  } catch {
+    return new Map();
+  }
+}
 
-  return buyouts.map(mapBuyoutRecord);
+async function fetchLatestEmailDate(buyoutId: string): Promise<Date | null> {
+  try {
+    const rows = (await prisma.$queryRawUnsafe(
+      `SELECT MAX("sentAt") AS "latestEmail" FROM "StoredEmail" WHERE "buyoutId" = $1`,
+      buyoutId
+    )) as Array<{ latestEmail: Date | null }>;
+    const val = rows[0]?.latestEmail;
+    return val ? (val instanceof Date ? val : new Date(val)) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function listBuyoutsFromDb(): Promise<BuyoutSummary[]> {
+  const [buyouts, emailDates] = await Promise.all([
+    prisma.buyout.findMany({
+      include: buyoutInclude,
+      orderBy: [{ eventDate: "asc" }, { createdAt: "desc" }]
+    }),
+    fetchLatestEmailDates()
+  ]);
+
+  return buyouts.map((b) => mapBuyoutRecord(b, emailDates.get(b.id) ?? null));
 }
 
 export async function getBuyoutFromDb(id: string): Promise<BuyoutSummary | null> {
-  const buyout = await prisma.buyout.findUnique({
-    where: { id },
-    include: buyoutInclude
-  });
+  const [buyout, latestEmail] = await Promise.all([
+    prisma.buyout.findUnique({
+      where: { id },
+      include: buyoutInclude
+    }),
+    fetchLatestEmailDate(id)
+  ]);
 
-  return buyout ? mapBuyoutRecord(buyout) : null;
+  return buyout ? mapBuyoutRecord(buyout, latestEmail) : null;
 }
 
 export async function seedMockBuyoutsToDb() {

@@ -821,7 +821,54 @@ export async function listEmailActivity(buyoutId?: string | null): Promise<Email
     buyoutId
   )) as EventRow[];
 
-  return rows.map(toActivityRecord);
+  const items: EmailActivityRecord[] = rows.map(toActivityRecord);
+
+  // Merge StoredEmail (backfilled Gmail history) into the timeline
+  try {
+    const stored = (await prisma.$queryRawUnsafe(
+      `SELECT "id","direction","fromAddress","toAddress","subject","snippet","sentAt"
+       FROM "StoredEmail"
+       WHERE "buyoutId" = $1
+       ORDER BY "sentAt" DESC
+       LIMIT 100`,
+      buyoutId
+    )) as Array<{
+      id: string;
+      direction: string;
+      fromAddress: string;
+      toAddress: string;
+      subject: string;
+      snippet: string;
+      sentAt: Date;
+    }>;
+
+    // Deduplicate: skip StoredEmails that overlap with BuyoutEvent EMAIL_SENT entries (same subject within 5 min)
+    for (const row of stored) {
+      const sentAt = row.sentAt instanceof Date ? row.sentAt : new Date(row.sentAt);
+      const isDup = items.some(
+        (i) =>
+          (i.eventType === "EMAIL_SENT" || i.eventType === "EMAIL_TEST_SENT") &&
+          i.summary.includes(row.subject ?? "") &&
+          Math.abs(new Date(i.createdAt).getTime() - sentAt.getTime()) < 300000
+      );
+      if (isDup) continue;
+
+      items.push({
+        id: `stored_${row.id}`,
+        createdAt: sentAt.toISOString(),
+        eventType: row.direction === "sent" ? "GMAIL_SENT" : "GMAIL_RECEIVED",
+        summary: `${row.direction === "sent" ? "→" : "←"} ${row.subject || "(no subject)"}`,
+        workflowKeys: []
+      });
+    }
+  } catch {
+    // StoredEmail table may not exist yet
+  }
+
+  // Re-sort merged list by date descending
+  items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return items;
 }
 
 export async function listPaymentActivity(buyoutId?: string | null): Promise<PaymentRecord[]> {

@@ -3159,6 +3159,16 @@ textarea {
   color: var(--sage);
 }
 
+.ops-activity-badge.gmail-sent {
+  background: rgba(0, 105, 118, 0.12);
+  color: #006976;
+}
+
+.ops-activity-badge.gmail-received {
+  background: rgba(232, 88, 27, 0.10);
+  color: #E8581B;
+}
+
 /* ── Inbox Alert Bar ───────────────────────────────────── */
 
 .ops-recommended-badge {
