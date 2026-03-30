@@ -585,7 +585,9 @@ function Drawer({
     if (paymentsLoaded && !force) return;
     setPaymentsLoaded(true);
 
-    fetch(`/api/buyouts/${buyout.id}/payments`)
+    // When force=true, use PUT to trigger an on-demand Gmail scan
+    const method = force ? "PUT" : "GET";
+    fetch(`/api/buyouts/${buyout.id}/payments`, { method })
       .then((r) => r.json())
       .then((data: { payments?: PaymentRecord[] }) => {
         setPayments(data.payments ?? []);
@@ -1964,7 +1966,7 @@ function Drawer({
                 {showPaymentForm ? "Cancel" : "Log Alternative Payment"}
               </button>
               <button className="ops-footer-secondary" onClick={() => loadPayments(true)} type="button">
-                Refresh
+                Check for Payments
               </button>
             </>
           ) : tab === "notes" ? (
