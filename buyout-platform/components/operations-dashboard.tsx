@@ -2289,6 +2289,34 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                         <span className="ops-urgency-badge" style={{ background: COLORS.sunshine, color: COLORS.coffee }}>Follow Up</span>
                       ) : null}
                     </div>
+
+                    {/* Mobile-only compact stats strip (hidden on desktop via CSS) */}
+                    <div className="ops-mobile-stats">
+                      <span className="ops-status-badge" style={{ background: `${track}14`, color: track }}>
+                        {buyout.statusLabel}
+                      </span>
+                      <span
+                        className="ops-bic-pill"
+                        style={{ background: `${bicColor(buyout.ballInCourt)}14`, color: bicColor(buyout.ballInCourt) }}
+                      >
+                        <span className="ops-pill-dot" style={{ background: bicColor(buyout.ballInCourt) }} />
+                        {buyout.ballInCourt === "Team" ? "Us" : buyout.ballInCourt}
+                      </span>
+                      <span className="ops-countdown" style={{ background: countdown.bg, color: countdown.fg }}>
+                        {buyout.countdownDays === null ? "TBD" : buyout.countdownDays < 0 ? "Past" : buyout.countdownDays}
+                      </span>
+                      {buyout.daysWaiting > 0 ? (
+                        <span className="ops-wait-pill" style={{ background: `${wait}14`, color: wait }}>
+                          {buyout.daysWaiting}d
+                        </span>
+                      ) : null}
+                      <span className="ops-cell-stat">
+                        {buyout.signups}<small>/{buyout.capacity || 0}</small>
+                      </span>
+                      <span className="ops-cell-stat">
+                        {buyout.workflowProgress}<small>%</small>
+                      </span>
+                    </div>
                   </div>
                 </div>
 

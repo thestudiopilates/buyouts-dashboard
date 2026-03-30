@@ -100,7 +100,7 @@ export async function POST(request: Request) {
         d.guestCountEstimate ? `Guest Count: ${d.guestCountEstimate}` : null,
         d.notes ? `\nNotes:\n${d.notes}` : null,
         "",
-        "View in dashboard: https://buyout-platform.vercel.app/dashboard"
+        "View in dashboard: https://buyouts.thestudiopilates.com/buyouts"
       ].filter(Boolean).join("\n");
 
       const bodyHtml = renderEmailHtml({

@@ -1407,6 +1407,11 @@ textarea {
   display: none;
 }
 
+/* Mobile stats strip: hidden on desktop, shown via media query */
+.ops-mobile-stats {
+  display: none;
+}
+
 .ops-client-meta {
   display: flex;
   align-items: center;
@@ -2153,9 +2158,111 @@ textarea {
   }
 
   .table-header,
-  .table-row,
-  .ops-grid-row {
+  .table-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Hide the desktop column header row */
+  .ops-grid-head {
+    display: none;
+  }
+
+  /* Convert grid rows into stacked cards */
+  .ops-grid-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0.75rem 1rem;
+  }
+
+  .ops-row {
+    border-bottom: 1px solid rgba(224, 214, 204, 0.5);
+  }
+
+  /* Client cell: full width on top */
+  .ops-client-cell {
+    width: 100%;
+    gap: 0.6rem;
+  }
+
+  .ops-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 0.85rem;
+  }
+
+  .ops-client-name {
+    font-size: 0.88rem;
+  }
+
+  /* Status + stats row below client info */
+  .ops-grid-row > div:not(.ops-client-cell) {
+    display: none;
+  }
+
+  /* Show a compact mobile stats strip using the data attributes */
+  .ops-row .ops-mobile-stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(224, 214, 204, 0.3);
+  }
+
+  .ops-mobile-stats .ops-status-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .ops-mobile-stats .ops-bic-pill {
+    margin-top: 0;
+    font-size: 0.6rem;
+    padding: 0.12rem 0.35rem;
+  }
+
+  .ops-mobile-stats .ops-countdown {
+    width: 28px;
+    height: 28px;
+    font-size: 0.72rem;
+  }
+
+  .ops-mobile-stats .ops-next-text {
+    font-size: 0.7rem;
+    width: 100%;
+    line-height: 1.3;
+  }
+
+  .ops-mobile-stats .ops-wait-pill {
+    margin-top: 0;
+    font-size: 0.6rem;
+    padding: 0.12rem 0.35rem;
+  }
+
+  .ops-mobile-stats .ops-mini-progress {
+    width: 50px;
+    margin-top: 0;
+  }
+
+  .ops-mobile-stats .ops-cell-stat {
+    font-size: 0.7rem;
+  }
+
+  .ops-mobile-stats .ops-cell-stat small {
+    font-size: 0.58rem;
+  }
+
+  /* Readiness chips smaller on mobile */
+  .ops-ready-chip {
+    font-size: 0.58rem;
+    padding: 1px 5px;
+  }
+
+  /* Alert pills */
+  .ops-urgency-badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
   }
 
   .ops-drawer {
@@ -2232,6 +2339,75 @@ textarea {
   .ops-mode-banner {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* ── Small phone (≤480px) ──────────────────────────────────── */
+@media (max-width: 480px) {
+  .ops-quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ops-grid-row {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .ops-client-name {
+    font-size: 0.82rem;
+  }
+
+  .ops-type-pill {
+    font-size: 0.56rem;
+    padding: 0.08rem 0.35rem;
+  }
+
+  .ops-client-event-line {
+    font-size: 0.66rem;
+  }
+
+  .ops-readiness-row {
+    gap: 3px;
+  }
+
+  .ops-ready-chip {
+    font-size: 0.54rem;
+    padding: 1px 4px;
+  }
+
+  /* Page layout compact */
+  .section-block {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .portal-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+  }
+
+  .page-title {
+    font-size: 1.5rem !important;
+  }
+
+  /* Filter bar */
+  .ops-search {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ops-filter-pill {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.65rem;
+  }
+
+  .ops-filter-divider {
+    display: none;
+  }
+
+  /* Table frame */
+  .ops-table-frame {
+    border-radius: 10px;
   }
 }
 
