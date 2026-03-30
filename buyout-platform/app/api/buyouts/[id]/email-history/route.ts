@@ -55,7 +55,7 @@ export async function GET(
       // Read from StoredEmail (backfilled Gmail history)
       try {
         const stored = await prisma.$queryRawUnsafe(
-          `SELECT "id","direction","fromAddress","toAddress","subject","snippet","bodyText","sentAt","source"
+          `SELECT "id","direction","fromAddress","toAddress","subject","snippet","bodyPreview","sentAt","source"
            FROM "StoredEmail"
            WHERE "buyoutId" = $1
            ORDER BY "sentAt" DESC
@@ -68,7 +68,7 @@ export async function GET(
           toAddress: string;
           subject: string;
           snippet: string;
-          bodyText?: string;
+          bodyPreview?: string;
           sentAt: Date;
           source: string;
         }>;
@@ -84,7 +84,7 @@ export async function GET(
             to: row.toAddress,
             subject: row.subject ?? "",
             snippet: row.snippet ?? "",
-            bodyText: row.bodyText ?? undefined,
+            bodyText: row.bodyPreview ?? undefined,
             direction: row.direction,
             source: row.source
           });
