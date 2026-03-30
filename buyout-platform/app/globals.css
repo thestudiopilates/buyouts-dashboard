@@ -3675,3 +3675,126 @@ textarea {
   width: 100%;
   border: 0;
 }
+
+/* ── Feedback Tab ── */
+.ops-feedback-tab {
+  padding: 4px 0;
+}
+
+.ops-feedback-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.ops-feedback-submitted-badge {
+  background: rgba(0, 105, 118, 0.1);
+  color: #006976;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.ops-feedback-date {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.ops-feedback-ratings {
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.ops-feedback-rating-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.ops-feedback-rating-label {
+  font-size: 0.8rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.ops-feedback-stars {
+  font-size: 1rem;
+  color: #F2A408;
+  letter-spacing: 2px;
+}
+
+.ops-feedback-section {
+  margin-bottom: 14px;
+}
+
+.ops-feedback-section-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.ops-feedback-section-text {
+  font-size: 0.84rem;
+  color: var(--text);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.ops-feedback-from {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.ops-feedback-empty {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--text);
+}
+
+.ops-feedback-link-box {
+  background: var(--panel);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: left;
+}
+
+.ops-feedback-link-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.ops-feedback-link-url {
+  font-size: 0.75rem;
+  color: var(--text);
+  word-break: break-all;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.ops-feedback-copy-btn {
+  background: var(--positive);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}

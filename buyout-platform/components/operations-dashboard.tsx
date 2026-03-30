@@ -28,7 +28,8 @@ const TABS = [
   ["emails", "Emails"],
   ["notes", "Notes"],
   ["financials", "Payments"],
-  ["activity", "Activity"]
+  ["activity", "Activity"],
+  ["feedback", "Feedback"]
 ] as const;
 
 const PRICING_LINKS = [
@@ -313,6 +314,11 @@ function Drawer({
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
   const [activityLoaded, setActivityLoaded] = useState(false);
+  const [feedbackData, setFeedbackData] = useState<{
+    feedback: { id: string; rating: number | null; experienceText: string | null; instructorRating: number | null; venueRating: number | null; wouldRecommend: boolean | null; highlights: string | null; improvements: string | null; clientName: string | null; clientEmail: string | null; isSubmitted: boolean; submittedAt: string | null } | null;
+    feedbackUrl: string | null;
+  } | null>(null);
+  const [feedbackLoaded, setFeedbackLoaded] = useState(false);
   const [emailSubTab, setEmailSubTab] = useState<"templates" | "sent" | "received">("templates");
   const [emailHistory, setEmailHistory] = useState<Array<{ id: string; date: string; from: string; to: string; subject: string; snippet: string; bodyText?: string; direction: string }>>([]);
   const [expandedEmailIds, setExpandedEmailIds] = useState<Set<string>>(new Set());
@@ -943,6 +949,13 @@ function Drawer({
                 }
                 if (key === "financials" && !paymentsLoaded) {
                   loadPayments();
+                }
+                if (key === "feedback" && !feedbackLoaded) {
+                  setFeedbackLoaded(true);
+                  fetch(`/api/buyouts/${buyout.id}/feedback`)
+                    .then((r) => r.json())
+                    .then((d) => setFeedbackData(d as typeof feedbackData))
+                    .catch(() => setFeedbackData({ feedback: null, feedbackUrl: null }));
                 }
               }}
             >
@@ -1983,6 +1996,105 @@ function Drawer({
               )}
             </div>
           ) : null}
+
+          {tab === "feedback" ? (
+            <div>
+              {!feedbackLoaded ? (
+                <div className="ops-draft-loading">Loading feedback...</div>
+              ) : !feedbackData ? (
+                <div className="ops-draft-loading">Loading feedback...</div>
+              ) : feedbackData.feedback?.isSubmitted ? (
+                <div className="ops-feedback-tab">
+                  <div className="ops-feedback-header">
+                    <div className="ops-feedback-submitted-badge">Feedback Received</div>
+                    {feedbackData.feedback.submittedAt && (
+                      <div className="ops-feedback-date">
+                        {new Date(feedbackData.feedback.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="ops-feedback-ratings">
+                    <div className="ops-feedback-rating-row">
+                      <span className="ops-feedback-rating-label">Overall</span>
+                      <span className="ops-feedback-stars">{"★".repeat(feedbackData.feedback.rating ?? 0)}{"☆".repeat(5 - (feedbackData.feedback.rating ?? 0))}</span>
+                    </div>
+                    {feedbackData.feedback.instructorRating != null && (
+                      <div className="ops-feedback-rating-row">
+                        <span className="ops-feedback-rating-label">Instructor</span>
+                        <span className="ops-feedback-stars">{"★".repeat(feedbackData.feedback.instructorRating)}{"☆".repeat(5 - feedbackData.feedback.instructorRating)}</span>
+                      </div>
+                    )}
+                    {feedbackData.feedback.venueRating != null && (
+                      <div className="ops-feedback-rating-row">
+                        <span className="ops-feedback-rating-label">Venue</span>
+                        <span className="ops-feedback-stars">{"★".repeat(feedbackData.feedback.venueRating)}{"☆".repeat(5 - feedbackData.feedback.venueRating)}</span>
+                      </div>
+                    )}
+                    {feedbackData.feedback.wouldRecommend != null && (
+                      <div className="ops-feedback-rating-row">
+                        <span className="ops-feedback-rating-label">Recommend</span>
+                        <span style={{ color: feedbackData.feedback.wouldRecommend ? COLORS.seaglass : COLORS.terracotta, fontWeight: 600, fontSize: "0.82rem" }}>
+                          {feedbackData.feedback.wouldRecommend ? "Yes" : "No"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {feedbackData.feedback.experienceText && (
+                    <div className="ops-feedback-section">
+                      <div className="ops-feedback-section-label">Experience</div>
+                      <div className="ops-feedback-section-text">{feedbackData.feedback.experienceText}</div>
+                    </div>
+                  )}
+                  {feedbackData.feedback.highlights && (
+                    <div className="ops-feedback-section">
+                      <div className="ops-feedback-section-label">Highlights</div>
+                      <div className="ops-feedback-section-text">{feedbackData.feedback.highlights}</div>
+                    </div>
+                  )}
+                  {feedbackData.feedback.improvements && (
+                    <div className="ops-feedback-section">
+                      <div className="ops-feedback-section-label">Improvements</div>
+                      <div className="ops-feedback-section-text">{feedbackData.feedback.improvements}</div>
+                    </div>
+                  )}
+
+                  {feedbackData.feedback.clientName && (
+                    <div className="ops-feedback-from">
+                      — {feedbackData.feedback.clientName}
+                      {feedbackData.feedback.clientEmail ? ` (${feedbackData.feedback.clientEmail})` : ""}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="ops-feedback-tab">
+                  <div className="ops-feedback-empty">
+                    <div style={{ fontSize: "1.5rem", marginBottom: 8, opacity: 0.4 }}>&#9993;</div>
+                    <div style={{ fontWeight: 600, marginBottom: 6 }}>No feedback yet</div>
+                    <div style={{ fontSize: "0.8rem", color: "#B5AA9F", lineHeight: 1.5, marginBottom: 16 }}>
+                      Share the feedback link with your client after their event.
+                    </div>
+                    {feedbackData.feedbackUrl && (
+                      <div className="ops-feedback-link-box">
+                        <div className="ops-feedback-link-label">Feedback Link</div>
+                        <div className="ops-feedback-link-url">{feedbackData.feedbackUrl}</div>
+                        <button
+                          className="ops-feedback-copy-btn"
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(feedbackData.feedbackUrl!);
+                          }}
+                        >
+                          Copy Link
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
         </div>
 
         <div className="ops-drawer-footer">
@@ -2047,6 +2159,20 @@ function Drawer({
               </button>
               <button className="ops-footer-secondary" onClick={() => { setTab("notes"); }} type="button">
                 Add Note
+              </button>
+              <button className="ops-footer-tertiary" onClick={() => { setTab("overview"); setEditorMode(null); }} type="button">
+                Overview
+              </button>
+            </>
+          ) : tab === "feedback" ? (
+            <>
+              {feedbackData?.feedbackUrl && (
+                <button className="ops-footer-primary" type="button" onClick={() => navigator.clipboard.writeText(feedbackData.feedbackUrl!)}>
+                  Copy Feedback Link
+                </button>
+              )}
+              <button className="ops-footer-secondary" onClick={() => { setFeedbackLoaded(false); setFeedbackData(null); setTab("feedback"); setTimeout(() => { setFeedbackLoaded(true); fetch(`/api/buyouts/${buyout.id}/feedback`).then(r => r.json()).then(d => setFeedbackData(d)).catch(() => setFeedbackData({ feedback: null, feedbackUrl: null })); }, 50); }} type="button">
+                Refresh
               </button>
               <button className="ops-footer-tertiary" onClick={() => { setTab("overview"); setEditorMode(null); }} type="button">
                 Overview
