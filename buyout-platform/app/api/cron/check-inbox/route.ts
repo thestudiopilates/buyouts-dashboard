@@ -138,7 +138,21 @@ export async function GET(request: Request) {
           new Date(reply.date)
         );
 
-        // Also record a BuyoutEvent for the activity trail
+        // Flip ball in court to Team — client responded, now waiting on us
+        await prisma.$executeRawUnsafe(
+          `UPDATE "Buyout" SET "ballInCourt" = 'TEAM', "lastActionAt" = NOW() WHERE "id" = $1`,
+          buyout.id
+        );
+
+        // Auto-check "customer-responded" workflow step if not already done
+        await prisma.$executeRawUnsafe(
+          `UPDATE "BuyoutWorkflowStep"
+           SET "isComplete" = TRUE, "completedAt" = NOW(), "completedBy" = 'client-reply-auto'
+           WHERE "buyoutId" = $1 AND "stepKey" = 'customer-responded' AND "isComplete" = FALSE`,
+          buyout.id
+        );
+
+        // Record a BuyoutEvent for the activity trail
         await prisma.$executeRawUnsafe(
           `INSERT INTO "BuyoutEvent" ("id","buyoutId","eventType","summary","detail","createdBy")
            VALUES ($1,$2,'CLIENT_REPLY',$3,$4::jsonb,$5)`,
