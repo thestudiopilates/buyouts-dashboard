@@ -2883,6 +2883,7 @@ textarea {
 .ops-timeline-content {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .ops-timeline-date {
@@ -2922,10 +2923,10 @@ textarea {
   line-height: 1.55;
   margin-top: 8px;
   white-space: pre-wrap;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 12px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .ops-expand-btn {
