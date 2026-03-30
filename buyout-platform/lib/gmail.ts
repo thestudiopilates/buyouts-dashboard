@@ -468,6 +468,74 @@ export async function searchPaymentEmails(maxResults = 20, newerThanDays = 7): P
   return payments;
 }
 
+export type ClientReply = {
+  gmailMessageId: string;
+  threadId: string;
+  fromEmail: string;
+  subject: string;
+  snippet: string;
+  date: string;
+};
+
+export async function searchClientReplies(
+  clientEmails: string[],
+  newerThanDays = 3
+): Promise<ClientReply[]> {
+  const config = getGmailConfig();
+  if (!config) return [];
+
+  const accessToken = await getAccessToken(config);
+  const senderEmail = config.senderEmail;
+
+  // Search for emails TO our account FROM any client, recent only
+  const fromClause = clientEmails.map((e) => `from:${e}`).join(" OR ");
+  const query = `in:anywhere to:${senderEmail} (${fromClause}) newer_than:${newerThanDays}d`;
+
+  const listUrl = new URL(`https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages`);
+  listUrl.searchParams.set("q", query);
+  listUrl.searchParams.set("maxResults", "30");
+
+  const listResponse = await fetch(listUrl.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+
+  if (!listResponse.ok) return [];
+
+  const listData = (await listResponse.json()) as GmailListResponse;
+  if (!listData.messages?.length) return [];
+
+  const replies: ClientReply[] = [];
+
+  for (const ref of listData.messages.slice(0, 30)) {
+    const msgUrl = `https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages/${ref.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`;
+    const msgResponse = await fetch(msgUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    if (!msgResponse.ok) continue;
+
+    const msg = (await msgResponse.json()) as GmailMessageResponse;
+    const from = getHeader(msg, "From");
+    const fromAddr = extractEmailAddress(from);
+    const subject = getHeader(msg, "Subject");
+    const date = getHeader(msg, "Date");
+
+    // Only include if the sender is one of our clients (not our own sent mail)
+    if (fromAddr && fromAddr !== senderEmail.toLowerCase()) {
+      replies.push({
+        gmailMessageId: ref.id,
+        threadId: msg.threadId,
+        fromEmail: fromAddr,
+        subject,
+        snippet: msg.snippet ?? "",
+        date
+      });
+    }
+  }
+
+  return replies;
+}
+
 export async function getEmailHistory(clientEmail: string): Promise<GmailMessageSummary[]> {
   if (!getGmailConfig()) return [];
 

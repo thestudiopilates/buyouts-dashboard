@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 import { listBuyouts } from "@/lib/buyouts";
 import { ensureEmailInfrastructure } from "@/lib/email-templates";
-import { getGmailReadiness, searchPaymentEmails } from "@/lib/gmail";
+import { getGmailReadiness, searchClientReplies, searchPaymentEmails } from "@/lib/gmail";
 import { hasDatabaseUrl, prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -92,5 +92,71 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ matched, skipped, total: payments.length, errors: errors.slice(0, 3) });
+  // --- Client reply detection ---
+  // Collect unique client emails from active (non-terminal) buyouts
+  const TERMINAL = new Set(["Complete", "Cancelled", "DOA", "Not Possible"]);
+  const activeBuyouts = allBuyouts.filter((b) => !TERMINAL.has(b.lifecycleStage));
+  const clientEmailMap = new Map<string, typeof activeBuyouts>();
+  for (const b of activeBuyouts) {
+    const email = (b.clientEmail || "").trim().toLowerCase();
+    if (!email) continue;
+    const existing = clientEmailMap.get(email) ?? [];
+    existing.push(b);
+    clientEmailMap.set(email, existing);
+  }
+
+  let repliesDetected = 0;
+  let repliesSkipped = 0;
+
+  if (clientEmailMap.size > 0) {
+    const replies = await searchClientReplies([...clientEmailMap.keys()], 3);
+
+    for (const reply of replies) {
+      // Skip if this Gmail message already has an InboxAlert
+      const exists = await prisma.$queryRawUnsafe(
+        `SELECT 1 FROM "InboxAlert" WHERE "gmailMessageId" = $1 LIMIT 1`,
+        reply.gmailMessageId
+      ) as Array<Record<string, unknown>>;
+
+      if (exists.length > 0) { repliesSkipped++; continue; }
+
+      // Match reply to buyout(s) by client email
+      const matchedBuyouts = clientEmailMap.get(reply.fromEmail) ?? [];
+      if (matchedBuyouts.length === 0) continue;
+
+      // Create an InboxAlert for each matched buyout
+      for (const buyout of matchedBuyouts) {
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "InboxAlert" ("id","buyoutId","clientEmail","gmailMessageId","subject","snippet","receivedAt","isRead","isDismissed")
+           VALUES ($1,$2,$3,$4,$5,$6,$7,FALSE,FALSE)`,
+          randomUUID(),
+          buyout.id,
+          reply.fromEmail,
+          reply.gmailMessageId,
+          reply.subject.slice(0, 200),
+          reply.snippet.slice(0, 300),
+          new Date(reply.date)
+        );
+
+        // Also record a BuyoutEvent for the activity trail
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "BuyoutEvent" ("id","buyoutId","eventType","summary","detail","createdBy")
+           VALUES ($1,$2,'CLIENT_REPLY',$3,$4::jsonb,$5)`,
+          randomUUID(),
+          buyout.id,
+          `Client reply received from ${reply.fromEmail}: ${reply.subject.slice(0, 80)}`,
+          JSON.stringify({ gmailMessageId: reply.gmailMessageId, fromEmail: reply.fromEmail, subject: reply.subject, snippet: reply.snippet.slice(0, 200) }),
+          "cron"
+        );
+
+        repliesDetected++;
+      }
+    }
+  }
+
+  return NextResponse.json({
+    payments: { matched, skipped, total: payments.length },
+    replies: { detected: repliesDetected, skipped: repliesSkipped },
+    errors: errors.slice(0, 3)
+  });
 }
