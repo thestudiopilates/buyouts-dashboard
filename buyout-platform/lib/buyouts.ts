@@ -150,7 +150,27 @@ export async function toggleWorkflowStep(
     });
   }
 
-  return getBuyout(buyoutId);
+  // Derive the current stage from workflow and write it back to the DB
+  // so that cron queries filtering on lifecycleStage stay accurate.
+  const derived = await getBuyout(buyoutId);
+  if (derived) {
+    const stageEnum = STAGE_TO_ENUM[derived.lifecycleStage as StageKey];
+    const trackingEnum = TRACKING_TO_ENUM[derived.trackingHealth] ?? TrackingHealth.ON_TRACK;
+    const bicEnum = BIC_TO_ENUM[derived.ballInCourt] ?? BallInCourt.TEAM;
+    if (stageEnum) {
+      await prisma.buyout.update({
+        where: { id: buyoutId },
+        data: {
+          lifecycleStage: stageEnum,
+          trackingHealth: trackingEnum,
+          ballInCourt: bicEnum,
+          nextAction: derived.nextAction
+        }
+      });
+    }
+  }
+
+  return derived;
 }
 
 export async function setManualStage(

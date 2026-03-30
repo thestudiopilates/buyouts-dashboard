@@ -61,12 +61,13 @@ export async function POST(
         "team"
       );
 
-      // Increment amountPaid on the financial record (upsert in case it doesn't exist yet)
+      // Increment amountPaid and recalculate remainingBalance
       await tx.$executeRawUnsafe(
-        `INSERT INTO "BuyoutFinancial" ("id","buyoutId","amountPaid","createdAt","updatedAt")
-         VALUES ($1,$2,$3,now(),now())
+        `INSERT INTO "BuyoutFinancial" ("id","buyoutId","amountPaid","remainingBalance","createdAt","updatedAt")
+         VALUES ($1,$2,$3,0,now(),now())
          ON CONFLICT ("buyoutId") DO UPDATE
            SET "amountPaid" = "BuyoutFinancial"."amountPaid" + $3,
+               "remainingBalance" = GREATEST(0, COALESCE("BuyoutFinancial"."quotedTotal",0) - ("BuyoutFinancial"."amountPaid" + $3)),
                "updatedAt" = now()`,
         randomUUID(),
         id,
