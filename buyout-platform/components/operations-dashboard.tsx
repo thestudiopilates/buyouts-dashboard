@@ -2071,8 +2071,8 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
       })
       .sort((a, b) => {
         if (sort === "eventDate") {
-          if (a.eventDate === "TBD") return 1;
-          if (b.eventDate === "TBD") return -1;
+          if (a.eventDate === "TBD") return -1;
+          if (b.eventDate === "TBD") return 1;
           return a.eventDate.localeCompare(b.eventDate);
         }
         if (sort === "daysWaiting") return b.daysWaiting - a.daysWaiting;
