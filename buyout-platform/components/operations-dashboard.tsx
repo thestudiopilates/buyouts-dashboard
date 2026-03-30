@@ -1828,6 +1828,16 @@ function Drawer({
                   rows={3}
                   value={newNoteText}
                 />
+                {newNoteText.trim() && (
+                  <button
+                    className="ops-inline-note-save"
+                    disabled={isPending}
+                    onClick={handleAddNote}
+                    type="button"
+                  >
+                    {isPending ? "Saving..." : "Save Note"}
+                  </button>
+                )}
               </div>
               {notesList.length > 0 ? (
                 <div className="ops-activity-list" style={{ marginTop: "0.5rem" }}>

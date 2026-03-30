@@ -1571,6 +1571,7 @@ textarea {
   min-width: 380px;
   max-width: 90vw;
   height: 100vh;
+  height: 100dvh;
   background: var(--card);
   box-shadow: -8px 0 32px rgba(40, 32, 14, 0.1);
 }
@@ -2114,6 +2115,7 @@ textarea {
 
 .ops-drawer-footer {
   display: flex;
+  flex-shrink: 0;
   gap: 0.45rem;
   padding: 0.6rem 1.25rem;
   border-top: 1px solid var(--border);
@@ -2896,6 +2898,25 @@ textarea {
 
 .ops-note-input-row {
   margin-bottom: 20px;
+}
+
+.ops-inline-note-save {
+  display: block;
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--positive);
+  color: var(--oat-light);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ops-inline-note-save:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .ops-activity-list {
