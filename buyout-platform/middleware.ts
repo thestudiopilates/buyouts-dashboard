@@ -10,7 +10,8 @@ const PUBLIC_PATHS = [
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
     || pathname.startsWith("/_next")
-    || pathname.startsWith("/api/cron");
+    || pathname.startsWith("/api/cron")
+    || pathname.startsWith("/api/admin");
 }
 
 export function middleware(request: NextRequest) {
