@@ -2441,7 +2441,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                       </span>
                     </div>
                     <div className="ops-alert-pills">
-                      {buyout.ballInCourt === "Client" && buyout.daysWaiting > 7 ? (
+                      {buyout.ballInCourt === "Client" && buyout.daysWaiting > 7 && buyout.amountPaid === 0 && ["Inquiry", "Discussion", "Quote", "Deposit"].includes(buyout.lifecycleStage) ? (
                         <span className="ops-cold-badge">{buyout.daysWaiting > 14 ? "Suggest DOA" : "Going Cold"}</span>
                       ) : null}
                       {visibleAlerts.some((a) => a.buyoutId === buyout.id) ? (
