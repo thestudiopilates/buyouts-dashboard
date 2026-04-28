@@ -118,6 +118,7 @@ model Buyout {
   displayName       String
   inquiryId         String?              @unique
   lifecycleStage    BuyoutStage          @default(INQUIRY)
+  stageLockedManually Boolean            @default(false)
   trackingHealth    TrackingHealth       @default(ON_TRACK)
   ballInCourt       BallInCourt          @default(TEAM)
   nextAction        String?

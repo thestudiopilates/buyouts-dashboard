@@ -21,6 +21,11 @@ ALTER TABLE "Buyout" ADD COLUMN IF NOT EXISTS "sourceDeskStaff" TEXT;
 ALTER TABLE "Buyout" ADD COLUMN IF NOT EXISTS "sourceSnapshot" JSONB;
 
 -- ============================================================
+-- 2b. Add stageLockedManually column (manual dropdown override)
+-- ============================================================
+ALTER TABLE "Buyout" ADD COLUMN IF NOT EXISTS "stageLockedManually" BOOLEAN NOT NULL DEFAULT false;
+
+-- ============================================================
 -- 3. Verify all tables exist (idempotent - only creates if missing)
 -- ============================================================
 -- All tables from init.sql should already exist:

@@ -152,12 +152,26 @@ export async function toggleWorkflowStep(
 
   // Derive the current stage from workflow and write it back to the DB
   // so that cron queries filtering on lifecycleStage stay accurate.
+  // However, if the stage was manually locked via dropdown, don't override it —
+  // only update tracking health / ball-in-court / next action.
   const derived = await getBuyout(buyoutId);
   if (derived) {
     const stageEnum = STAGE_TO_ENUM[derived.lifecycleStage as StageKey];
     const trackingEnum = TRACKING_TO_ENUM[derived.trackingHealth] ?? TrackingHealth.ON_TRACK;
     const bicEnum = BIC_TO_ENUM[derived.ballInCourt] ?? BallInCourt.TEAM;
-    if (stageEnum) {
+
+    if (record.stageLockedManually) {
+      // Stage is manually locked — update ancillary fields only, keep stage as-is
+      await prisma.buyout.update({
+        where: { id: buyoutId },
+        data: {
+          trackingHealth: trackingEnum,
+          ballInCourt: bicEnum,
+          nextAction: derived.nextAction
+        }
+      });
+    } else if (stageEnum) {
+      // No manual lock — auto-advance stage from workflow derivation
       await prisma.buyout.update({
         where: { id: buyoutId },
         data: {
@@ -205,6 +219,7 @@ export async function setManualStage(
     where: { id: buyoutId },
     data: {
       lifecycleStage: stageEnum,
+      stageLockedManually: true,
       ballInCourt: BIC_TO_ENUM[phase?.ballInCourt ?? "Team"],
       nextAction: phase?.nextAction ?? "Review record",
       lastActionAt: new Date()

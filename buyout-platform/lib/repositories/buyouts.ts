@@ -312,11 +312,18 @@ function mapBuyoutRecord(buyout: BuyoutRecord, latestEmailDate?: Date | null): B
     signups: buyout.signupCount,
     capacity: buyout.capacity ?? 0
   });
-  const effectiveLifecycleStage = derivedState.lifecycleStage;
+
+  // When the stage was manually set via the dropdown, the DB stage takes priority
+  // over workflow-derived stage. Tracking health and other ancillary fields still derive normally.
+  const effectiveLifecycleStage = buyout.stageLockedManually ? lifecycleStage : derivedState.lifecycleStage;
   const effectiveTrackingHealth = derivedState.trackingHealth;
-  const effectiveBallInCourt = derivedState.ballInCourt;
-  const effectiveNextAction = derivedState.nextAction;
-  const effectiveStatusLabel = getBuyoutPhase(derivedState.lifecycleStage)?.statusLabel ?? currentStatusLabel;
+  const effectiveBallInCourt = buyout.stageLockedManually
+    ? (currentBallInCourt as typeof derivedState.ballInCourt)
+    : derivedState.ballInCourt;
+  const effectiveNextAction = buyout.stageLockedManually
+    ? currentNextAction
+    : derivedState.nextAction;
+  const effectiveStatusLabel = getBuyoutPhase(effectiveLifecycleStage)?.statusLabel ?? currentStatusLabel;
   const healthFlags = [
     countdown !== null && countdown < 0 ? "Event date is in the past." : null,
     workflow.some((step) => step.key === "remaining-payment-received" && step.complete) &&
