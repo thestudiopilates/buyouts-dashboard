@@ -1206,11 +1206,7 @@ function Drawer({
                 </div>
               </div>
 
-              {buyout.notes ? (
-                <div className="ops-notes-box">
-                  <pre>{buyout.notes}</pre>
-                </div>
-              ) : null}
+              {/* Notes are displayed in the dedicated Notes tab */}
             </div>
           ) : null}
 
