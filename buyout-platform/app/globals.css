@@ -3415,7 +3415,8 @@ textarea {
 }
 
 .ops-inbox-dismiss-btn,
-.ops-inbox-snooze-btn {
+.ops-inbox-snooze-btn,
+.ops-inbox-read-btn {
   border: 0;
   border-radius: 5px;
   font-family: var(--font-body);
@@ -3424,6 +3425,15 @@ textarea {
   padding: 4px 8px;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.ops-inbox-read-btn {
+  background: rgba(0, 105, 118, 0.12);
+  color: #006976;
+}
+
+.ops-inbox-read-btn:hover {
+  background: rgba(0, 105, 118, 0.22);
 }
 
 .ops-inbox-dismiss-btn {

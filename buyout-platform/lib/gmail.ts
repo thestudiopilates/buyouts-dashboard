@@ -538,6 +538,35 @@ export async function searchClientReplies(
   return replies;
 }
 
+/**
+ * Mark a Gmail message as read by removing the UNREAD label.
+ * Returns true on success, false on failure.
+ */
+export async function markMessageAsRead(gmailMessageId: string): Promise<boolean> {
+  const config = getGmailConfig();
+  if (!config) return false;
+
+  try {
+    const accessToken = await getAccessToken(config);
+    const response = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/${encodeURIComponent(config.userId)}/messages/${gmailMessageId}/modify`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          removeLabelIds: ["UNREAD"]
+        })
+      }
+    );
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function getEmailHistory(clientEmail: string): Promise<GmailMessageSummary[]> {
   if (!getGmailConfig()) return [];
 

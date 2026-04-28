@@ -2197,6 +2197,7 @@ type InboxAlert = {
   id: string;
   buyoutId: string;
   clientEmail: string;
+  gmailMessageId: string;
   subject: string;
   snippet: string;
   receivedAt: string;
@@ -2236,7 +2237,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
     } catch { return new Set(); }
   });
 
-  const visibleAlerts = inboxAlerts.filter((a) => !snoozedIds.has(a.id));
+  const visibleAlerts = inboxAlerts.filter((a) => !snoozedIds.has(a.id) && !a.isRead);
 
   const visiblePaymentAlerts = (() => {
     if (typeof window === "undefined") return paymentAlerts;
@@ -2254,7 +2255,16 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
     await fetch("/api/inbox-alerts", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
+      body: JSON.stringify({ ids, action: "dismiss" }),
+    });
+  }
+
+  async function markAlertsRead(ids: string[]) {
+    setInboxAlerts((prev) => prev.map((a) => ids.includes(a.id) ? { ...a, isRead: true } : a));
+    await fetch("/api/inbox-alerts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids, action: "mark-read" }),
     });
   }
 
@@ -2397,7 +2407,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
           <div className="ops-inbox-alert-icon">{visibleAlerts.length}</div>
           <div className="ops-inbox-alert-content">
             <div className="ops-inbox-alert-title">
-              {visibleAlerts.length === 1 ? "1 client email needs a response" : `${visibleAlerts.length} client emails need responses`}
+              {visibleAlerts.length === 1 ? "1 unread client email" : `${visibleAlerts.length} unread client emails`}
             </div>
             <div className="ops-inbox-alert-list">
               {visibleAlerts.slice(0, 5).map((alert) => {
@@ -2414,9 +2424,17 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                     </button>
                     <div className="ops-inbox-alert-actions">
                       <button
+                        className="ops-inbox-read-btn"
+                        onClick={() => markAlertsRead([alert.id])}
+                        title="Mark as read (also marks read in Gmail)"
+                        type="button"
+                      >
+                        Mark Read
+                      </button>
+                      <button
                         className="ops-inbox-dismiss-btn"
                         onClick={() => dismissAlerts([alert.id])}
-                        title="Dismiss"
+                        title="Dismiss permanently"
                         type="button"
                       >
                         Dismiss
@@ -2428,6 +2446,7 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
             </div>
             {visibleAlerts.length > 1 ? (
               <div className="ops-inbox-alert-bulk">
+                <button className="ops-inbox-read-btn" onClick={() => markAlertsRead(visibleAlerts.map((a) => a.id))} type="button">Mark All Read</button>
                 <button className="ops-inbox-dismiss-btn" onClick={() => dismissAlerts(visibleAlerts.map((a) => a.id))} type="button">Dismiss All</button>
               </div>
             ) : null}
@@ -2621,7 +2640,9 @@ export function OperationsDashboard({ buyouts }: { buyouts: BuyoutSummary[] }) {
                         <span className="ops-cold-badge">{buyout.daysWaiting > 14 ? "Suggest DOA" : "Going Cold"}</span>
                       ) : null}
                       {visibleAlerts.some((a) => a.buyoutId === buyout.id) ? (
-                        <span className="ops-inbox-badge">Needs Response</span>
+                        <span className="ops-inbox-badge">
+                          {(() => { const count = visibleAlerts.filter((a) => a.buyoutId === buyout.id).length; return count === 1 ? "1 Unread" : `${count} Unread`; })()}
+                        </span>
                       ) : null}
                       {buyout.responseUrgency === "overdue" || buyout.responseUrgency === "critical" ? (
                         <span className="ops-urgency-badge" style={{ background: buyout.responseUrgency === "critical" ? "#8b0000" : COLORS.cherry, color: "#fff" }}>{buyout.responseUrgency === "critical" ? "Critical" : "Overdue"}</span>
