@@ -75,6 +75,7 @@ export type BuyoutSummary = {
   endTime?: string;
   preferredDates?: string;
   preferredLocation?: string;
+  guestCountEstimate?: number;
   depositAmount?: number;
   depositLink?: string;
   balanceLink?: string;

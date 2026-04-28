@@ -357,6 +357,7 @@ function mapBuyoutRecord(buyout: BuyoutRecord, latestEmailDate?: Date | null): B
     endTime: derivedEndTime,
     preferredDates: buyout.inquiry?.preferredDates ?? undefined,
     preferredLocation: buyout.inquiry?.preferredLocation ?? undefined,
+    guestCountEstimate: buyout.inquiry?.guestCountEstimate ?? undefined,
     depositAmount: buyout.financial?.depositAmount ?? undefined,
     depositLink: buyout.financial?.depositLink ?? undefined,
     balanceLink: buyout.financial?.balanceLink ?? undefined,
@@ -578,11 +579,9 @@ export async function createInquiryInDb(input: BuyoutInquiryInput) {
       trackingHealth: "ON_TRACK",
       ballInCourt: "TEAM",
       nextAction: "Review inquiry and send initial response",
-      eventDate: validEventDate,
-      startTime: input.preferredTime ?? null,
-      capacity: input.guestCountEstimate ?? null,
-      notesInternal: input.notes ?? null,
-      locationId: location?.id ?? null
+      // Finalized fields (eventDate, startTime, capacity, locationId) are NOT
+      // populated from the inquiry — they must be filled manually once confirmed.
+      notesInternal: input.notes ?? null
     }
   });
 

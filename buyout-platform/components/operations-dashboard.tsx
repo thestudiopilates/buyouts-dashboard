@@ -1159,7 +1159,7 @@ function Drawer({
                     <div className="ops-detail-line"><span>Type</span><strong>{buyout.eventType || "—"}</strong></div>
                     <div className="ops-detail-line"><span>Dates</span><strong>{buyout.preferredDates ? humanizeDatesInText(buyout.preferredDates) : "—"}</strong></div>
                     <div className="ops-detail-line"><span>Location</span><strong>{buyout.preferredLocation || "—"}</strong></div>
-                    <div className="ops-detail-line"><span>Guests</span><strong>{buyout.capacity || "—"}</strong></div>
+                    <div className="ops-detail-line"><span>Guests</span><strong>{buyout.guestCountEstimate || "—"}</strong></div>
                     <div className="ops-detail-line"><span>Inquiry</span><strong>{buyout.inquiryDate ? formatDisplayDate(buyout.inquiryDate) : "—"}</strong></div>
                     <div className="ops-detail-line"><span>Tier</span><strong>{buyout.paymentTier === "deposit" ? "Deposit" : buyout.paymentTier === "rush" ? "Rush" : "Standard"}</strong></div>
                   </div>
